@@ -1,0 +1,136 @@
+/* titulo */
+h2 {
+  margin-bottom: 20px;
+  font-size: 28px;
+  font-weight: 600;
+  color: #4f6422;
+  font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
+}
+
+/* --- contenedor -------*/
+.configuracion {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* ----- Encabezado -----*/
+section p {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: #2d5f2d;
+  font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
+}
+
+hr {
+  border: none;
+  height: 1px;
+  background: #ccc;
+  margin-bottom: 20px;
+}
+
+/* ----- Formulario -------*/
+.form {
+  background: #cee4cb;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ----- Labels ---*/
+.form-label {
+  font-size: 11px;
+  font-weight: 650;
+  color: #7e9c85;
+  font-family:
+    "Lucida Sans", "Lucida Sans Regular", "Lucida Grande",
+    "Lucida Sans Unicode", Geneva, Verdana, sans-serif;
+}
+
+/* ------ inputs ----------*/
+.form-input,
+.form-select {
+  padding: 10px 12px;
+  border-radius: 15px;
+  border: 1px solid #dcdcdc;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+/* efectos */
+.form-input:focus,
+.form-select:focus {
+  border-color: #8fa878;
+  box-shadow: 0 0 0 2px rgba(143, 168, 120, 0.2);
+}
+
+/*------ descripcion ----- */
+#descripcion {
+  padding: 12px;
+  height: 60px;
+  border: 0px solid;
+  border-radius: 15px;
+}
+
+/* ---------- botón -----------*/
+.form-button {
+  margin-top: 10px;
+  padding: 12px;
+  background: #8fa878;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+/* efecto hover */
+.form-button:hover {
+  background: #7b9366;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* --- campos del formulario -----*/
+.form-campo {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ----- form grid -----*/
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px 20px;
+}
+
+.form-grid label {
+  grid-column: span 1;
+}
+
+.form-grid input,
+.form-grid select {
+  width: 100%;
+}
+
+.full {
+  grid-column: span 2;
+}
+
+/*-------------- ERRORES -----------*/
+.error {
+  color: red;
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
+}
+
+.input-error {
+  border: 2px solid red;
+}

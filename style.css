@@ -1,0 +1,28 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Times New Roman", Times, serif;
+  min-height: 100vh;
+  display: flex;
+  background-color: black;
+}
+
+#nav {
+  flex: 0 0 auto;
+}
+
+#app {
+  flex: 1;
+  padding: 10px;
+}
+
+.informacion h2 {
+  color: #2f3e1f;
+}
+#app {
+  background-color: #f2f4ee !important;
+}

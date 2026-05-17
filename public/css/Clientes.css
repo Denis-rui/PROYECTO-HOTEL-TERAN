@@ -1,0 +1,64 @@
+.header-clientes {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.header-clientes h2 {
+  color: #2f3e1f;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.header-clientes .boton-nuevo-cliente {
+  background-color: #4f6422;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.header-clientes .boton-nuevo-cliente:hover {
+  background-color: #3d4e1a;
+}
+
+.buscar {
+  margin-bottom: 20px;
+}
+
+.buscar input {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+  width: 200px;
+}
+
+.tabla {
+  width: 100%;
+  border-radius: 20px 20px;
+  overflow: hidden;
+  background-color: rgba(232, 223, 200, 0.5);
+}
+
+.tabla .tbl-clientes {
+  width: 100%;
+  border-spacing: 0;
+}
+
+.tabla .tbl-clientes thead {
+  background-color: rgba(232, 223, 200, 1);
+}
+
+.tabla th,
+.tabla td {
+  padding: 12px;
+  text-align: left;
+}
+
+.tabla th {
+  color: #2f3e1f;
+}

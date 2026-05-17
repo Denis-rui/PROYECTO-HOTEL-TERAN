@@ -1,0 +1,282 @@
+/* CONTENEDOR DEL MODAL DE PAGO */
+.modal-pago {
+  display: none;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+}
+
+.modal-pago.activo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* CAJA DEL MODAL */
+.modal-pago-contenido {
+  background: #f5f1dc;
+  width: 60%;
+  max-width: 760px;
+  margin: 3% auto;
+  padding: 25px;
+  border-radius: 15px;
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  animation: entradaModalPago 0.25s ease-out;
+}
+
+/* BOTON CERRAR */
+.cerrar-modal-pago {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  font-size: 22px;
+  cursor: pointer;
+  color: #2f3e1f;
+}
+
+/* TITULOS */
+.titulo-modal-pago {
+  margin-bottom: 20px;
+  font-size: 22px;
+  color: #2f3e1f;
+  font-weight: bold;
+}
+
+.subtitulo-pago {
+  margin: 18px 0 12px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #4f6422;
+  text-transform: uppercase;
+}
+
+/* SECCION DE RESUMEN DE RESERVA */
+.seccion-info-reserva {
+  background: #ede8d2;
+  border: 1px solid #d7d0b5;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.info-reserva-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.etiqueta-info {
+  font-size: 12px;
+  font-weight: bold;
+  color: #4f6422;
+}
+
+.valor-info {
+  font-size: 14px;
+  color: #2f3e1f;
+}
+
+.valor-info.monto-total,
+.valor-info.pagado {
+  font-weight: bold;
+}
+
+/* FORMULARIO */
+#formPago {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 12px;
+}
+
+.form-group label {
+  font-size: 13px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #2f3e1f;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  background: #fff;
+}
+
+.form-group textarea {
+  resize: vertical;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #4f6422;
+  box-shadow: 0 0 0 2px rgba(79, 100, 34, 0.14);
+}
+
+/* CAMPO MONTO */
+.contenedor-monto {
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background: #fff;
+  padding-left: 10px;
+}
+
+.moneda {
+  color: #4f6422;
+  font-weight: bold;
+  margin-right: 6px;
+}
+
+.contenedor-monto input {
+  border: none;
+  box-shadow: none;
+  width: 100%;
+  padding-left: 0;
+}
+
+.contenedor-monto input:focus {
+  outline: none;
+}
+
+/* ACCIONES */
+.form-acciones-pago {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.boton-cancelar-pago,
+.boton-confirmar-pago {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.25s;
+}
+
+.boton-cancelar-pago {
+  background: #c9c2a8;
+  color: #2f3e1f;
+}
+
+.boton-cancelar-pago:hover {
+  background: #bab398;
+}
+
+.boton-confirmar-pago {
+  background: #3b5d2a;
+  color: #fff;
+}
+
+.boton-confirmar-pago:hover {
+  background: #2f4a21;
+}
+
+/* HISTORIAL DE PAGOS */
+.seccion-historial-pagos {
+  margin-top: 18px;
+}
+
+.tabla-historial {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #d7d0b5;
+  background: #fff;
+}
+
+.tabla-pagos {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tabla-pagos thead {
+  background: rgba(232, 223, 200, 1);
+}
+
+.tabla-pagos th,
+.tabla-pagos td {
+  padding: 10px;
+  text-align: left;
+  font-size: 13px;
+}
+
+.tabla-pagos th {
+  color: #2f3e1f;
+}
+
+.tabla-pagos tbody tr {
+  border-top: 1px solid #efead8;
+}
+
+@keyframes entradaModalPago {
+  from {
+    transform: translateY(-8px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .modal-pago-contenido {
+    width: 88%;
+  }
+}
+
+@media (max-width: 768px) {
+  .modal-pago-contenido {
+    width: 94%;
+    padding: 18px;
+  }
+
+  .info-reserva-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-acciones-pago {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .titulo-modal-pago {
+    font-size: 19px;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    font-size: 16px;
+  }
+}

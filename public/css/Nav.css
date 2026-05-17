@@ -1,0 +1,118 @@
+.sidebar {
+  width: 260px;
+  height: 100vh;
+  background: #b5c78a;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.imagen {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  margin-bottom: 10px;
+}
+
+.nav-info {
+  text-align: center;
+}
+
+.nombre-principal {
+  font-size: 18px;
+  letter-spacing: 2px;
+  color: #3d4e1a;
+  font-weight: bold;
+}
+
+.nombre-secundario {
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: #6b7a40;
+  margin-top: 5px;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+}
+/* ===== NAV ===== */
+.nav ul {
+  list-style: none;
+  flex: 1;
+}
+
+/* Línea superior */
+.nav ul::before {
+  content: "";
+  display: block;
+  margin-top: 15px;
+  height: 1px;
+  background: #b5b08c;
+  margin-bottom: 15px;
+}
+
+/* ITEMS */
+.nav li {
+  margin: 6px 0;
+  border-radius: 12px;
+  cursor: pointer;
+  color: #2f3e1f;
+  padding: 0; /* Eliminado para que el link ocupe todo */
+}
+
+/* ICONOS */
+.nav-icon {
+  width: 25px;
+  text-align: center;
+  margin-right: 10px;
+}
+
+/* LINKS */
+.nav a {
+  display: flex;
+  align-items: center;
+  padding: 12px 15px;
+  text-decoration: none;
+  color: inherit;
+  font-size: 15px;
+  width: 100%;
+}
+
+/* HOVER */
+.nav li:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.activo {
+  background: #cfcaa3;
+  border: 1px solid #a6a07a;
+}
+
+/* DIVISIÓN */
+.nav-division {
+  border-top: 1px solid #b5b08c;
+  margin: 15px 0;
+}
+
+/*btn cerrar sesion*/
+.btn-cs {
+  width: 100%;
+  margin-top: 8px;
+  padding: 9px 16px;
+  background: #8b4a2a17;
+  border: 1px solid rgba(139, 74, 42, 0.22);
+  border-radius: 15px;
+  color: #7a3015;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.04em;
+  text-align: center;
+}

@@ -1,0 +1,93 @@
+.login {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #e8dfc8;
+}
+.contenido-login {
+  background-color: #f0ead8;
+  margin: 20px;
+  padding: 40px;
+  border-radius: 20px;
+  .login-logo {
+    text-align: center;
+    img {
+      border-radius: 50%;
+      width: 150px;
+      height: 150px;
+      margin: 20px 0px;
+      object-fit: cover;
+    }
+
+    h1 {
+      color: #2e3a14;
+      font-size: 24px;
+      padding: 0 0 5px 0;
+      font-weight: bold;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    h2 {
+      font-size: 18px;
+      color: #4f6422;
+      font-weight: 100;
+    }
+  }
+
+  .formulario {
+    margin-top: 20px;
+
+    .formulario-login {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      h2 {
+        font-size: 20px;
+        text-align: center;
+        color: #333;
+        font-weight: 500;
+      }
+      .label-input {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        width: 350px;
+      }
+      label {
+        font-size: 14px;
+        color: #555;
+        font-weight: bold;
+      }
+      .input {
+        padding: 15px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        background-color: rgb(232, 223, 200);
+      }
+
+      .error-login {
+        padding: 10px;
+        background-color: red;
+        color: white;
+        border-radius: 10px;
+      }
+      .exito-login {
+        padding: 10px;
+        background-color: green;
+        color: white;
+        border-radius: 10px;
+      }
+      .boton {
+        padding: 15px;
+        background-color: #8a9e5a;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+      }
+    }
+  }
+}

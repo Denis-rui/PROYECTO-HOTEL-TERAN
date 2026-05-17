@@ -1,0 +1,134 @@
+.header-reservas {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-direction: row;
+  .titulo-reservas {
+    color: #2f3e1f;
+    font-size: 28px;
+    font-weight: bold;
+  }
+  .boton-nueva-reserva {
+    background-color: #4f6422;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+
+    &:hover {
+      background-color: #3d4e1a;
+    }
+  }
+}
+.buscar-filtro {
+  display: flex;
+  gap: 20px;
+  .filtro-estado {
+    margin-bottom: 20px;
+    padding: 10px;
+    width: 200px;
+    border: none;
+  }
+}
+
+.tabla {
+  .tbl-reservas {
+    width: 100%;
+    border-spacing: 0;
+    thead {
+      background-color: rgba(232, 223, 200, 1);
+    }
+  }
+  th,
+  td {
+    padding: 12px;
+    text-align: left;
+  }
+
+  th {
+    color: #2f3e1f;
+  }
+}
+
+/* Estilos para la celda de pago */
+.celda-pago {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.porcentaje-pago {
+  font-weight: 600;
+  color: #2f3e1f;
+  min-width: 35px;
+}
+
+.boton-pago-tabla {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.boton-pago-tabla:hover {
+  background-color: #2980b9;
+  transform: translateY(-1px);
+}
+
+.boton-pago-tabla:active {
+  transform: translateY(0);
+}
+
+.badge-vencido {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: #fee2e2;
+  color: #991b1b;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.boton-checkin-reserva,
+.boton-checkout-reserva,
+.boton-extender-reserva,
+.boton-consumo-reserva,
+.boton-cambio-habitacion {
+  border: 0;
+  border-radius: 6px;
+  padding: 6px 8px;
+  margin: 2px;
+  cursor: pointer;
+}
+
+.boton-checkin-reserva {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.boton-checkout-reserva {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.boton-extender-reserva {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.boton-consumo-reserva {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.boton-cambio-habitacion {
+  background: #ede9fe;
+  color: #5b21b6;
+}

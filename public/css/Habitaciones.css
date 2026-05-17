@@ -1,0 +1,212 @@
+body {
+  margin: 0;
+  font-family: "Segoe UI", sans-serif;
+  background-color: #d9d2b6;
+}
+
+.contenedor-habitaciones {
+  padding: 20px 40px;
+}
+
+/* Cabecera */
+.cabecera-habitaciones {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cabecera-habitaciones h1 {
+  margin: 0;
+  font-size: 40px;
+  color: #2e3d1f;
+}
+
+.cabecera-derecha {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.btn-nueva-habitacion {
+  background-color: #3f5c2d;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Filtros */
+.seccion-filtros {
+  margin-top: 20px;
+  display: flex;
+  gap: 15px;
+}
+
+.caja-busqueda {
+  display: flex;
+  align-items: center;
+  background: #e8e2c8;
+  padding: 10px 15px;
+  border-radius: 15px;
+}
+
+.caja-busqueda input {
+  border: none;
+  background: transparent;
+  outline: none;
+  margin-left: 8px;
+}
+
+select {
+  padding: 10px 15px;
+  border-radius: 15px;
+  border: none;
+  background: #e8e2c8;
+  cursor: pointer;
+}
+
+/* Cuadrícula */
+.grid-habitaciones {
+  margin-top: 30px;
+}
+
+.tarjeta-habitacion {
+  background-color: #e8e2c8;
+  border-radius: 15px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 2px solid #ccc;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.tarjeta-habitacion:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+/* Bordes por estado */
+.tarjeta-habitacion.disponible { border-color: #00b853; }
+.tarjeta-habitacion.ocupada, .tarjeta-habitacion.ocupado { border-color: #ff3b3b; }
+.tarjeta-habitacion.mantenimiento { border-color: #ff9d2e; }
+.tarjeta-habitacion.reservada { border-color: #8c8c8c; }
+
+/* Número Habitación */
+.habitacion-numero {
+  color: white;
+  padding: 5px 15px;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 14px;
+  width: fit-content;
+}
+.tarjeta-habitacion.disponible .habitacion-numero { background-color: #00b853; }
+.tarjeta-habitacion.ocupada .habitacion-numero { background-color: #ff3b3b; }
+.tarjeta-habitacion.mantenimiento .habitacion-numero { background-color: #ff9d2e; }
+.tarjeta-habitacion.reservada .habitacion-numero { background-color: #8c8c8c; }
+
+/* Tipo y Capacidad */
+.habitacion-tipo {
+  font-size: 15px;
+  font-weight: 600;
+  margin-top: 5px;
+}
+.tarjeta-habitacion.disponible .habitacion-tipo { color: #00b853; }
+.tarjeta-habitacion.ocupada .habitacion-tipo { color: #ff3b3b; }
+.tarjeta-habitacion.mantenimiento .habitacion-tipo { color: #ff9d2e; }
+.tarjeta-habitacion.reservada .habitacion-tipo { color: #8c8c8c; }
+
+/* Precio */
+.habitacion-precio {
+  font-size: 18px;
+  font-weight: bold;
+  color: #2e3d1f;
+}
+
+/* Descripción */
+.habitacion-descripcion {
+  font-size: 13px;
+  color: #555;
+  min-height: 40px;
+}
+
+/* Status Badges */
+.habitacion-status-badges {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.badge-status {
+    padding: 10px 25px;
+    border-radius: 25px;
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
+    width: 100%;
+    text-align: center;
+}
+
+/* Colores Badges */
+.tarjeta-habitacion.disponible .badge-status.operativo,
+.tarjeta-habitacion.limpia .badge-status.limpieza { background-color: #00b853; }
+
+.tarjeta-habitacion.ocupada .badge-status.operativo,
+.tarjeta-habitacion.sucia .badge-status.limpieza { background-color: #ff3b3b; }
+
+.tarjeta-habitacion.mantenimiento .badge-status.operativo,
+.tarjeta-habitacion.en_limpieza .badge-status.limpieza { background-color: #ff9d2e; }
+
+.tarjeta-habitacion.reservada .badge-status.operativo,
+.tarjeta-habitacion.inspeccion_pendiente .badge-status.limpieza { background-color: #8c8c8c; }
+
+/* Acciones */
+.habitacion-acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.selector-estado, .selector-limpieza {
+  background-color: #e8e2c8;
+  border: 1px solid #ccc;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: bold;
+  color: #2e3d1f;
+  cursor: pointer;
+  width: 100%;
+}
+
+/* Pisos */
+.titulo-piso {
+  margin: 30px 0 15px;
+  color: #2e3d1f;
+  font-size: 22px;
+  border-bottom: 2px solid #3f5c2d;
+  padding-bottom: 5px;
+  width: fit-content;
+}
+
+.grupo-piso {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+  margin-bottom: 35px;
+}
+
+.habitacion-alerta {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  background: #fff3cd;
+  color: #856404;
+  font-size: 12px;
+  border: 1px solid #ffeeba;
+}
