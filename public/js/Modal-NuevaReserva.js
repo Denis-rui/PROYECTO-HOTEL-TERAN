@@ -34,6 +34,18 @@ window.abrirModalReserva = (modo = "nuevo", datos = null) => {
   let clientes = [];
   let habitacionesDisponibles = [];
 
+  // Evitar seleccionar check-in en el pasado y ajustar mínimo de check-out
+  if (fechaEntrada) {
+    const hoy = new Date().toISOString().split("T")[0];
+    fechaEntrada.min = hoy;
+    if (fechaSalida) fechaSalida.min = hoy;
+
+    fechaEntrada.addEventListener("change", () => {
+      if (fechaEntrada.value && fechaSalida)
+        fechaSalida.min = fechaEntrada.value;
+    });
+  }
+
   const mostrarClientes = () => {
     selectorCliente.innerHTML = '<option value="">Seleccionar cliente</option>';
 
@@ -236,6 +248,30 @@ window.abrirModalReserva = (modo = "nuevo", datos = null) => {
     }
     if (!habitacion) {
       alert("Selecciona una habitacion");
+      return;
+    }
+
+    // Validaciones de fecha/hora: check-in no puede ser en el pasado
+    const ahora = new Date();
+    const fechaHoraCheckIn = new Date(`${checkIn}T${horaEntradaValor}`);
+    const fechaHoraCheckOut = new Date(`${checkOut}T${horaSalidaValor}`);
+
+    if (Number.isNaN(fechaHoraCheckIn.getTime())) {
+      alert("Fecha/hora de check-in inválida");
+      return;
+    }
+    if (Number.isNaN(fechaHoraCheckOut.getTime())) {
+      alert("Fecha/hora de check-out inválida");
+      return;
+    }
+
+    if (fechaHoraCheckIn < ahora) {
+      alert("La fecha y hora de check-in debe ser igual o posterior a ahora");
+      return;
+    }
+
+    if (fechaHoraCheckOut <= fechaHoraCheckIn) {
+      alert("La fecha y hora de check-out debe ser posterior al check-in");
       return;
     }
 

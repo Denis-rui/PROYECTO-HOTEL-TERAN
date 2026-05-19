@@ -21,7 +21,7 @@ class ReservaModel extends Model
     public function obtenerReservas()
     {
         try {
-            return Reserva::with(['cliente', 'habitacion', 'pagos', 'reservaHabitacion'])
+            return Reserva::with(['cliente', 'pagos', 'reservaHabitacion.habitacion'])
                 ->orderByDesc('id')
                 ->get()
                 ->map(fn ($reserva) => $this->formatearReserva($reserva))
@@ -134,9 +134,13 @@ class ReservaModel extends Model
 
     private function formatearReserva($reserva)
     {
+
+
+    // temporañl
         $cliente = $reserva->cliente;
-        $habitacion = $reserva->habitacion;
+        
         $reservaHabitacion = $reserva->reservaHabitacion;
+        $habitacion = $reservaHabitacion->habitacion ?? null;
         $totalPagado = (float) ($reserva->pagos->sum('monto') ?? 0);
         $checkIn = $reservaHabitacion->check_in ?? $reserva->check_in ?? null;
         $checkOut = $reservaHabitacion->check_out ?? $reserva->check_out ?? null;
@@ -162,7 +166,8 @@ class ReservaModel extends Model
             'cliente' => $cliente->nombre_completo ?? '',
             'correo_electronico' => $cliente->correo_electronico ?? '',
             'id_habitacion' => $reserva->id_habitacion,
-            'habitacion' => $habitacion->numero_habitacion ?? '',
+            'habitacion' => $habitacion ? 'Hab. ' . + $habitacion->numero_habitacion . ' - Piso ' . $habitacion->piso
+    : '',
             'piso' => $habitacion->piso ?? null,
             'check_in' => $checkIn,
             'check_out' => $checkOut,

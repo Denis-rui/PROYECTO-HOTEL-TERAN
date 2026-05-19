@@ -19,11 +19,11 @@ class ReservaController extends Controller
         $this->views->render($this, 'index', $data);
     }
 
-    public function listar($params = '')
-    {
-        header('Content-Type: application/json');
-        echo json_encode($this->model->obtenerReservas());
-    }
+    // public function listar($params = '')
+    // {
+    //     header('Content-Type: application/json');
+    //     echo json_encode($this->model->obtenerReservas());
+    // }
 
     public function registrar($params = '')
     {
