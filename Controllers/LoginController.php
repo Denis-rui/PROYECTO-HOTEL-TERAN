@@ -21,14 +21,15 @@ class LoginController extends Controller
         $contrasenia = $_POST['contrasena']        ?? '';
 
         $user = $this->model->obtenerUsuarios($usuario);
-
         $contraseniaGuardada = $user['contrasenia'] ?? '';
         $contraseniaValida   =
             password_verify($contrasenia, $contraseniaGuardada)
-            || hash_equals($contraseniaGuardada, md5($contrasenia))
-            || hash_equals($contraseniaGuardada, $contrasenia);
+            || (is_string($contraseniaGuardada) && hash_equals($contraseniaGuardada, md5($contrasenia)))
+            || (is_string($contraseniaGuardada) && hash_equals($contraseniaGuardada, $contrasenia));
 
-        if ($user && $tipousuario === $user['rol'] && $contraseniaValida) {
+        // Comparación de rol insensible a mayúsculas y espacios
+        $rolUsuario = isset($user['rol']) ? trim((string)$user['rol']) : '';
+        if ($user && strcasecmp(trim($tipousuario), $rolUsuario) === 0 && $contraseniaValida) {
             $_SESSION['usuario']       = $user['nombre_usuario'];
             $_SESSION['nombreUsuario'] = $user['nombre_usuario'];
             $_SESSION['rol']           = $user['rol'];

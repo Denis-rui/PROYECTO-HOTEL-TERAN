@@ -14,14 +14,31 @@ class UsuarioModel extends Model
     public function obtenerUsuarios($usuario)
     {
         try {
-            $sql  = "SELECT u.id, r.rol, u.nombre_usuario, u.contrasenia
-                     FROM rol r
-                     JOIN usuario u ON r.id = u.id_rol
-                     WHERE u.nombre_usuario = ? AND u.estado = 1";
-            $stmt = $this->conectar()->prepare($sql);
-            $stmt->execute([$usuario]);
-            return $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (\PDOException $e) {
+            $sqlUsuario = "SELECT id, nombre_usuario, estado, id_rol, contrasenia
+                           FROM usuario
+                           WHERE nombre_usuario = ? AND estado = 1
+                           LIMIT 1";
+            $stmtUsuario = $this->conectar()->prepare($sqlUsuario);
+            $stmtUsuario->execute([$usuario]);
+            $user = $stmtUsuario->fetch(PDO::FETCH_ASSOC);
+
+            if (!$user) {
+                return [];
+            }
+
+            $sqlRol = "SELECT rol FROM rol WHERE id = ? LIMIT 1";
+            $stmtRol = $this->conectar()->prepare($sqlRol);
+            $stmtRol->execute([$user['id_rol']]);
+            $rol = $stmtRol->fetchColumn();
+
+            return [
+                'id' => $user['id'],
+                'nombre_usuario' => $user['nombre_usuario'],
+                'rol' => $rol ?: '',
+                'contrasenia' => $user['contrasenia'],
+            ];
+        } catch (\Throwable $e) {
+            error_log('LOGIN ERROR obtenerUsuarios: ' . $e->getMessage());
             return [];
         }
     }
