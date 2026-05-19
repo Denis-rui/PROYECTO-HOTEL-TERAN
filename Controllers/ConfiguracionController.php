@@ -13,7 +13,7 @@ class ConfiguracionController extends Controller
             exit();
         }
         $data['page_title'] = "Configuración del Hotel";
-        $data['hotel'] = $this->model->read();
+        $data['hotel'] = $this->model->find(1);
         
         // Cargar tipos de habitación
         $con = $this->model->conectar();
