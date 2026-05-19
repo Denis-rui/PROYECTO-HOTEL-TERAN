@@ -1,5 +1,519 @@
 let eventosDashboardConfigurados = false;
 
+window.__modalReservaState = window.__modalReservaState || {};
+
+const obtenerEstadoModalReserva = () => window.__modalReservaState;
+
+const obtenerFechaActualISO = () => new Date().toISOString().split("T")[0];
+
+const obtenerHoraActualISO = () => {
+  const ahora = new Date();
+  const horas = String(ahora.getHours()).padStart(2, "0");
+  const minutos = String(ahora.getMinutes()).padStart(2, "0");
+  return `${horas}:${minutos}`;
+};
+
+const normalizarHabitacion = (habitacion) => ({
+  id: String(habitacion.id),
+  numero_habitacion: habitacion.numero_habitacion,
+  piso: habitacion.piso,
+  tipo_nombre: habitacion.tipo_nombre,
+  precio: Number(habitacion.precio || 0),
+});
+
+const formatearHabitacionTexto = (habitacion) =>
+  `Hab. ${habitacion.numero_habitacion} - Piso ${habitacion.piso} - ${habitacion.tipo_nombre} - S/ ${Number(habitacion.precio || 0).toFixed(2)}`;
+
+const obtenerDiasEstadia = (checkIn, checkOut) => {
+  if (!checkIn || !checkOut) return 0;
+
+  const inicio = new Date(checkIn);
+  const fin = new Date(checkOut);
+  if (
+    Number.isNaN(inicio.getTime()) ||
+    Number.isNaN(fin.getTime()) ||
+    fin <= inicio
+  ) {
+    return 0;
+  }
+
+  return Math.max(1, Math.ceil((fin - inicio) / 86400000));
+};
+
+const obtenerHabitacionSeleccionadaPorId = (id) => {
+  const estado = obtenerEstadoModalReserva();
+  return (estado.habitacionesSeleccionadas || []).find(
+    (habitacion) => String(habitacion.id) === String(id),
+  );
+};
+
+const calcularTotalReserva = () => {
+  const estado = obtenerEstadoModalReserva();
+  const fechaEntrada = estado.elementos?.fechaEntrada?.value || "";
+  const horaEntrada = estado.elementos?.horaEntrada?.value || "";
+  const fechaSalida = estado.elementos?.fechaSalida?.value || "";
+  const horaSalida = estado.elementos?.horaSalida?.value || "";
+  const habitaciones = estado.habitacionesSeleccionadas || [];
+
+  const checkIn =
+    fechaEntrada && horaEntrada ? `${fechaEntrada}T${horaEntrada}` : "";
+  const checkOut =
+    fechaSalida && horaSalida ? `${fechaSalida}T${horaSalida}` : "";
+  const dias = obtenerDiasEstadia(checkIn, checkOut);
+  if (dias === 0 || habitaciones.length === 0) return 0;
+
+  const sumaPrecio = habitaciones.reduce(
+    (acumulado, habitacion) => acumulado + Number(habitacion.precio || 0),
+    0,
+  );
+
+  return dias * sumaPrecio;
+};
+
+const sincronizarHabitaciones = () => {
+  const estado = obtenerEstadoModalReserva();
+  const habitaciones = estado.habitacionesSeleccionadas || [];
+
+  if (estado.elementos?.inputHabitacionesReserva) {
+    estado.elementos.inputHabitacionesReserva.value =
+      JSON.stringify(habitaciones);
+  }
+
+  if (estado.elementos?.contadorHabitacionesSeleccionadas) {
+    estado.elementos.contadorHabitacionesSeleccionadas.textContent = `${habitaciones.length} ${habitaciones.length === 1 ? "habitación" : "habitaciones"}`;
+  }
+
+  if (estado.elementos?.totalHabitacionesReserva) {
+    estado.elementos.totalHabitacionesReserva.textContent = `S/ ${calcularTotalReserva().toFixed(2)}`;
+  }
+};
+
+const renderizarClientes = () => {
+  const estado = obtenerEstadoModalReserva();
+  const selectorCliente = estado.elementos?.selectorCliente;
+  if (!selectorCliente) return;
+
+  selectorCliente.innerHTML = '<option value="">Seleccionar cliente</option>';
+
+  if (!estado.clientes || estado.clientes.length === 0) {
+    selectorCliente.innerHTML +=
+      '<option value="" disabled>Sin resultados</option>';
+    return;
+  }
+
+  estado.clientes.forEach((cliente) => {
+    selectorCliente.innerHTML += `<option value="${cliente.id}">${cliente.nombre}</option>`;
+  });
+};
+
+const renderizarHabitacionesDisponibles = () => {
+  const estado = obtenerEstadoModalReserva();
+  const lista = estado.elementos?.listaHabitacionesDisponibles;
+  if (!lista) return;
+
+  lista.innerHTML = "";
+
+  const habitaciones = estado.habitacionesDisponibles || [];
+  if (habitaciones.length === 0) {
+    lista.innerHTML =
+      '<div class="vacío-habitaciones">No hay habitaciones para mostrar con los filtros actuales.</div>';
+    return;
+  }
+
+  habitaciones.forEach((habitacion) => {
+    const seleccionada = obtenerHabitacionSeleccionadaPorId(habitacion.id);
+    const card = document.createElement("article");
+    card.className = `habitacion-card${seleccionada ? " seleccionada" : ""}`;
+    card.innerHTML = `
+      <div class="habitacion-card-info">
+        <strong>${formatearHabitacionTexto(habitacion)}</strong>
+      </div>
+      <div class="habitacion-card-acciones">
+        <button type="button" class="boton-habitacion agregar" ${seleccionada ? "disabled" : ""} data-id="${habitacion.id}">
+          ${seleccionada ? "Seleccionada" : "Agregar"}
+        </button>
+      </div>
+    `;
+    lista.appendChild(card);
+  });
+};
+
+const renderizarHabitacionesSeleccionadas = () => {
+  const estado = obtenerEstadoModalReserva();
+  const lista = estado.elementos?.listaHabitacionesSeleccionadas;
+  if (!lista) return;
+
+  lista.innerHTML = "";
+
+  const habitaciones = estado.habitacionesSeleccionadas || [];
+  if (habitaciones.length === 0) {
+    lista.innerHTML =
+      '<div class="vacío-habitaciones">Aún no has agregado habitaciones.</div>';
+    sincronizarHabitaciones();
+    return;
+  }
+
+  habitaciones.forEach((habitacion) => {
+    const card = document.createElement("article");
+    card.className = "habitacion-card seleccionada";
+    card.innerHTML = `
+      <div class="habitacion-card-info">
+        <strong>${formatearHabitacionTexto(habitacion)}</strong>
+      </div>
+      <div class="habitacion-card-acciones">
+        <button type="button" class="boton-habitacion quitar" data-id="${habitacion.id}">Quitar</button>
+      </div>
+    `;
+    lista.appendChild(card);
+  });
+
+  sincronizarHabitaciones();
+};
+
+const actualizarHoraMinimaEntrada = () => {
+  const estado = obtenerEstadoModalReserva();
+  const fechaEntrada = estado.elementos?.fechaEntrada;
+  const horaEntrada = estado.elementos?.horaEntrada;
+  if (!fechaEntrada || !horaEntrada) return;
+
+  const hoy = obtenerFechaActualISO();
+  if (fechaEntrada.value === hoy) {
+    const horaMinima = obtenerHoraActualISO();
+    horaEntrada.min = horaMinima;
+    if (horaEntrada.value && horaEntrada.value < horaMinima) {
+      horaEntrada.value = horaMinima;
+    }
+  } else {
+    horaEntrada.min = "";
+  }
+};
+
+const actualizarMinimosFecha = () => {
+  const estado = obtenerEstadoModalReserva();
+  const fechaEntrada = estado.elementos?.fechaEntrada;
+  const fechaSalida = estado.elementos?.fechaSalida;
+  if (!fechaEntrada || !fechaSalida) return;
+
+  const hoy = obtenerFechaActualISO();
+  fechaEntrada.min = hoy;
+  fechaSalida.min = fechaEntrada.value || hoy;
+  actualizarHoraMinimaEntrada();
+};
+
+const limpiarSeleccionHabitaciones = () => {
+  const estado = obtenerEstadoModalReserva();
+  estado.habitacionesSeleccionadas = [];
+  renderizarHabitacionesSeleccionadas();
+  renderizarHabitacionesDisponibles();
+};
+
+const agregarHabitacionSeleccionada = (idHabitacion) => {
+  const estado = obtenerEstadoModalReserva();
+  const habitacion = (estado.habitacionesDisponibles || []).find(
+    (item) => String(item.id) === String(idHabitacion),
+  );
+
+  if (!habitacion) return;
+
+  const yaExiste = (estado.habitacionesSeleccionadas || []).some(
+    (item) => String(item.id) === String(habitacion.id),
+  );
+
+  if (yaExiste) return;
+
+  estado.habitacionesSeleccionadas.push(normalizarHabitacion(habitacion));
+  renderizarHabitacionesDisponibles();
+  renderizarHabitacionesSeleccionadas();
+};
+
+const quitarHabitacionSeleccionada = (idHabitacion) => {
+  const estado = obtenerEstadoModalReserva();
+  estado.habitacionesSeleccionadas = (
+    estado.habitacionesSeleccionadas || []
+  ).filter((item) => String(item.id) !== String(idHabitacion));
+  renderizarHabitacionesDisponibles();
+  renderizarHabitacionesSeleccionadas();
+};
+
+const cargarClientes = (texto = "") => {
+  const estado = obtenerEstadoModalReserva();
+  const mensajeBusquedaCliente = estado.elementos?.mensajeBusquedaCliente;
+
+  fetch(BASE_URL + `?url=Cliente/buscar&q=${encodeURIComponent(texto)}`)
+    .then((res) => res.json())
+    .then((respuesta) => {
+      if (respuesta.error) {
+        alert("No se pudo cargar clientes");
+        return;
+      }
+
+      estado.clientes = respuesta.clientes || [];
+      renderizarClientes();
+
+      if (mensajeBusquedaCliente) {
+        mensajeBusquedaCliente.textContent =
+          texto !== "" && estado.clientes.length === 0
+            ? "No se encontraron clientes."
+            : "Selecciona un cliente de la lista.";
+      }
+    })
+    .catch(() => {
+      if (mensajeBusquedaCliente) {
+        mensajeBusquedaCliente.textContent =
+          "No se pudieron cargar los clientes.";
+      }
+    });
+};
+
+const seleccionarCliente = () => {
+  const estado = obtenerEstadoModalReserva();
+  const selectorCliente = estado.elementos?.selectorCliente;
+  const idClienteReserva = estado.elementos?.idClienteReserva;
+  const campoNombre = estado.elementos?.campoNombre;
+  const campoEmail = estado.elementos?.campoEmail;
+  const mensajeBusquedaCliente = estado.elementos?.mensajeBusquedaCliente;
+
+  if (!selectorCliente) return;
+
+  const idSeleccionado = selectorCliente.value;
+  if (idClienteReserva) idClienteReserva.value = "";
+
+  if (!idSeleccionado) {
+    if (campoNombre) campoNombre.value = "";
+    if (campoEmail) campoEmail.value = "";
+    return;
+  }
+
+  const cliente = (estado.clientes || []).find(
+    (item) => String(item.id) === String(idSeleccionado),
+  );
+
+  if (!cliente) return;
+
+  if (idClienteReserva) idClienteReserva.value = cliente.id;
+  if (campoNombre) campoNombre.value = cliente.nombre || "";
+  if (campoEmail) campoEmail.value = cliente.correo || "";
+  if (mensajeBusquedaCliente)
+    mensajeBusquedaCliente.textContent = "Cliente seleccionado correctamente.";
+};
+
+const validarFechasReserva = () => {
+  const estado = obtenerEstadoModalReserva();
+  const fechaEntrada = estado.elementos?.fechaEntrada?.value || "";
+  const horaEntrada = estado.elementos?.horaEntrada?.value || "";
+  const fechaSalida = estado.elementos?.fechaSalida?.value || "";
+  const horaSalida = estado.elementos?.horaSalida?.value || "";
+
+  if (!fechaEntrada || !horaEntrada || !fechaSalida || !horaSalida) {
+    alert("Completa check-in y check-out");
+    return false;
+  }
+
+  const checkIn = new Date(`${fechaEntrada}T${horaEntrada}`);
+  const checkOut = new Date(`${fechaSalida}T${horaSalida}`);
+  const ahora = new Date();
+
+  if (Number.isNaN(checkIn.getTime()) || Number.isNaN(checkOut.getTime())) {
+    alert("Fecha/hora inválida");
+    return false;
+  }
+
+  if (checkIn < ahora) {
+    alert("La fecha y hora de check-in debe ser igual o posterior a ahora");
+    return false;
+  }
+
+  if (checkOut <= checkIn) {
+    alert("La fecha y hora de check-out debe ser posterior al check-in");
+    return false;
+  }
+
+  return true;
+};
+
+const cargarHabitacionesDisponibles = () => {
+  const estado = obtenerEstadoModalReserva();
+  const fechaEntrada = estado.elementos?.fechaEntrada?.value || "";
+  const horaEntrada = estado.elementos?.horaEntrada?.value || "";
+  const fechaSalida = estado.elementos?.fechaSalida?.value || "";
+  const horaSalida = estado.elementos?.horaSalida?.value || "";
+  const filtroTipoReserva = estado.elementos?.filtroTipoReserva;
+  const filtroPisoReserva = estado.elementos?.filtroPisoReserva;
+  const mensajeHabitaciones = estado.elementos?.mensajeHabitaciones;
+  const listaDisponibles = estado.elementos?.listaHabitacionesDisponibles;
+
+  const checkIn =
+    fechaEntrada && horaEntrada ? `${fechaEntrada} ${horaEntrada}` : "";
+  const checkOut =
+    fechaSalida && horaSalida ? `${fechaSalida} ${horaSalida}` : "";
+
+  estado.habitacionesDisponibles = [];
+  renderizarHabitacionesDisponibles();
+
+  if (!checkIn || !checkOut) {
+    if (mensajeHabitaciones)
+      mensajeHabitaciones.textContent =
+        "Primero selecciona check-in y check-out.";
+    if (listaDisponibles) {
+      listaDisponibles.innerHTML =
+        '<div class="vacío-habitaciones">Selecciona fechas para cargar habitaciones.</div>';
+    }
+    return;
+  }
+
+  if (
+    new Date(checkOut.replace(" ", "T")) <= new Date(checkIn.replace(" ", "T"))
+  ) {
+    if (mensajeHabitaciones)
+      mensajeHabitaciones.textContent =
+        "El check-out debe ser posterior al check-in.";
+    if (listaDisponibles) {
+      listaDisponibles.innerHTML =
+        '<div class="vacío-habitaciones">Corrige las fechas para ver habitaciones disponibles.</div>';
+    }
+    return;
+  }
+
+  const params = new URLSearchParams({
+    check_in: checkIn,
+    check_out: checkOut,
+  });
+
+  if (filtroTipoReserva && filtroTipoReserva.value)
+    params.append("tipo", filtroTipoReserva.value);
+  if (filtroPisoReserva && filtroPisoReserva.value)
+    params.append("piso", filtroPisoReserva.value);
+
+  fetch(BASE_URL + `?url=Habitacion/disponiblesPorRango&${params.toString()}`)
+    .then((res) => res.json())
+    .then((respuesta) => {
+      const habitaciones = Array.isArray(respuesta)
+        ? respuesta
+        : (respuesta.habitaciones || []);
+
+      estado.habitacionesDisponibles = habitaciones.map(
+        normalizarHabitacion,
+      );
+      renderizarHabitacionesDisponibles();
+      renderizarHabitacionesSeleccionadas();
+
+      if (mensajeHabitaciones) {
+        mensajeHabitaciones.textContent = estado.habitacionesDisponibles.length
+          ? "Habitaciones disponibles para el rango seleccionado."
+          : "No hay habitaciones limpias y disponibles para esas fechas.";
+      }
+    })
+    .catch(() => {
+      if (mensajeHabitaciones) {
+        mensajeHabitaciones.textContent =
+          "No se pudieron cargar habitaciones disponibles.";
+      }
+    });
+};
+
+const cargarFiltrosHabitacion = () => {
+  const estado = obtenerEstadoModalReserva();
+  const filtroTipoReserva = estado.elementos?.filtroTipoReserva;
+  const filtroPisoReserva = estado.elementos?.filtroPisoReserva;
+
+  fetch(BASE_URL + "?url=Habitacion/obtenerFiltros")
+    .then((res) => res.json())
+    .then((data) => {
+      if (filtroTipoReserva && data.tipos) {
+        filtroTipoReserva.innerHTML =
+          '<option value="">Todos los tipos</option>';
+        data.tipos.forEach((tipo) => {
+          filtroTipoReserva.innerHTML += `<option value="${tipo.id}">${tipo.tipo}</option>`;
+        });
+      }
+
+      if (filtroPisoReserva && data.pisos) {
+        filtroPisoReserva.innerHTML =
+          '<option value="">Todos los pisos</option>';
+        data.pisos.forEach((piso) => {
+          filtroPisoReserva.innerHTML += `<option value="${piso}">Piso ${piso}</option>`;
+        });
+      }
+    })
+    .catch((err) => console.error("Error cargando filtros:", err));
+};
+
+const prepararResumenReserva = () => {
+  const estado = obtenerEstadoModalReserva();
+  const habitaciones = estado.habitacionesSeleccionadas || [];
+
+  return {
+    habitaciones,
+    habitacionTexto: habitaciones.map(formatearHabitacionTexto).join(" | "),
+    habitacionPrincipal: habitaciones[0]?.id || "",
+    totalReserva: calcularTotalReserva(),
+  };
+};
+
+const validarYContinuarPago = () => {
+  const estado = obtenerEstadoModalReserva();
+  const selectorCliente = estado.elementos?.selectorCliente;
+  const campoNombre = estado.elementos?.campoNombre;
+  const campoEmail = estado.elementos?.campoEmail;
+  const fechaEntrada = estado.elementos?.fechaEntrada;
+  const horaEntrada = estado.elementos?.horaEntrada;
+  const fechaSalida = estado.elementos?.fechaSalida;
+  const horaSalida = estado.elementos?.horaSalida;
+  const modal = estado.elementos?.modal;
+  const contenedor = estado.elementos?.contenedor;
+
+  const cliente = selectorCliente?.value || "";
+  const nombre = campoNombre?.value.trim() || "";
+  const email = campoEmail?.value.trim() || "";
+  const habitaciones = estado.habitacionesSeleccionadas || [];
+
+  if (!cliente) return alert("Selecciona un cliente");
+  if (!nombre) return alert("Nombre y apellido obligatorio");
+  if (!email) return alert("Correo electronico obligatorio");
+  if (habitaciones.length === 0)
+    return alert("Selecciona al menos una habitacion");
+
+  if (!validarFechasReserva()) return;
+  if (
+    !fechaEntrada?.value ||
+    !horaEntrada?.value ||
+    !fechaSalida?.value ||
+    !horaSalida?.value
+  )
+    return;
+
+  const textoClienteSeleccionado =
+    selectorCliente?.options?.[selectorCliente.selectedIndex]?.text || "";
+  const resumen = prepararResumenReserva();
+
+  abrirModalPagoConDatos({
+    cliente,
+    clienteTexto: textoClienteSeleccionado,
+    nombre,
+    email,
+    checkIn: fechaEntrada.value,
+    horaEntrada: horaEntrada.value,
+    checkOut: fechaSalida.value,
+    horaSalida: horaSalida.value,
+    habitacion: resumen.habitacionTexto,
+    habitaciones: resumen.habitaciones,
+    habitacionPrincipal: resumen.habitacionPrincipal,
+    totalReserva: resumen.totalReserva,
+  });
+
+  if (modal) modal.style.display = "none";
+  if (contenedor) contenedor.style.display = "none";
+};
+
+const abrirModalPagoConDatos = (datosReserva) => {
+  if (typeof window.abrirModalPago !== "function") {
+    alert("No se pudo abrir el modulo de pago");
+    return;
+  }
+
+  window.abrirModalPago(datosReserva);
+};
+
 window.abrirModalReserva = (modo = "nuevo", datos = null) => {
   const contenedor = document.getElementById("contenedor-modal-reserva");
   if (!contenedor) return;
@@ -9,352 +523,143 @@ window.abrirModalReserva = (modo = "nuevo", datos = null) => {
   const modal = document.getElementById("modalReserva");
   if (modal) modal.style.display = "flex";
 
-  const form = document.getElementById("formReserva");
-  const cerrar = document.getElementById("cerrarModal");
-  const btnContinuarPago = document.getElementById("btnContinuarPago");
-  const inputBuscarCliente = document.getElementById("buscarCliente");
-  const selectorCliente = document.getElementById("selectorClienteReserva");
-  const idClienteReserva = document.getElementById("idClienteReserva");
-  const campoNombre = document.getElementById("nombre");
-  const campoEmail = document.getElementById("email");
-  const fechaEntrada = document.getElementById("fechaEntrada");
-  const horaEntrada = document.getElementById("horaEntrada");
-  const fechaSalida = document.getElementById("fechaSalida");
-  const horaSalida = document.getElementById("horaSalida");
-  const selectorHabitacion = document.getElementById("seleccioneHabitacion");
-  const filtroTipoReserva = document.getElementById("filtroTipoReserva");
-  const filtroPisoReserva = document.getElementById("filtroPisoReserva");
-  const mensajeHabitaciones = document.getElementById(
-    "mensajeHabitacionesDisponibles",
-  );
-  const mensajeBusquedaCliente = document.getElementById(
-    "mensajeBusquedaCliente",
-  );
-
-  let clientes = [];
-  let habitacionesDisponibles = [];
-
-  // Evitar seleccionar check-in en el pasado y ajustar mínimo de check-out
-  if (fechaEntrada) {
-    const hoy = new Date().toISOString().split("T")[0];
-    fechaEntrada.min = hoy;
-    if (fechaSalida) fechaSalida.min = hoy;
-
-    fechaEntrada.addEventListener("change", () => {
-      if (fechaEntrada.value && fechaSalida)
-        fechaSalida.min = fechaEntrada.value;
-    });
-  }
-
-  const mostrarClientes = () => {
-    selectorCliente.innerHTML = '<option value="">Seleccionar cliente</option>';
-
-    if (clientes.length === 0) {
-      selectorCliente.innerHTML +=
-        '<option value="" disabled>Sin resultados</option>';
-      return;
-    }
-
-    clientes.forEach((cliente) => {
-      selectorCliente.innerHTML += `<option value="${cliente.id}">${cliente.nombre}</option>`;
-    });
+  const estado = obtenerEstadoModalReserva();
+  estado.elementos = {
+    contenedor,
+    modal,
+    form: document.getElementById("formReserva"),
+    cerrar: document.getElementById("cerrarModal"),
+    btnContinuarPago: document.getElementById("btnContinuarPago"),
+    inputBuscarCliente: document.getElementById("buscarCliente"),
+    selectorCliente: document.getElementById("selectorClienteReserva"),
+    idClienteReserva: document.getElementById("idClienteReserva"),
+    campoNombre: document.getElementById("nombre"),
+    campoEmail: document.getElementById("email"),
+    fechaEntrada: document.getElementById("fechaEntrada"),
+    horaEntrada: document.getElementById("horaEntrada"),
+    fechaSalida: document.getElementById("fechaSalida"),
+    horaSalida: document.getElementById("horaSalida"),
+    filtroTipoReserva: document.getElementById("filtroTipoReserva"),
+    filtroPisoReserva: document.getElementById("filtroPisoReserva"),
+    mensajeHabitaciones: document.getElementById(
+      "mensajeHabitacionesDisponibles",
+    ),
+    mensajeBusquedaCliente: document.getElementById("mensajeBusquedaCliente"),
+    listaHabitacionesDisponibles: document.getElementById(
+      "listaHabitacionesDisponibles",
+    ),
+    listaHabitacionesSeleccionadas: document.getElementById(
+      "listaHabitacionesSeleccionadas",
+    ),
+    inputHabitacionesReserva: document.getElementById("habitacionesReserva"),
+    totalHabitacionesReserva: document.getElementById(
+      "totalHabitacionesReserva",
+    ),
+    contadorHabitacionesSeleccionadas: document.getElementById(
+      "contadorHabitacionesSeleccionadas",
+    ),
   };
 
-  const cargarClientes = (texto = "") => {
-    fetch(BASE_URL + `?url=Cliente/buscar&q=${encodeURIComponent(texto)}`)
-      .then((res) => res.json())
-      .then((respuesta) => {
-        if (respuesta.error) {
-          alert("No se pudo cargar clientes");
-          return;
-        }
+  estado.clientes = [];
+  estado.habitacionesDisponibles = [];
+  estado.habitacionesSeleccionadas = [];
 
-        clientes = respuesta.clientes || [];
-        mostrarClientes();
-
-        if (texto !== "" && clientes.length === 0) {
-          mensajeBusquedaCliente.textContent = "No se encontraron clientes.";
-        } else {
-          mensajeBusquedaCliente.textContent =
-            "Selecciona un cliente de la lista.";
-        }
-      })
-      .catch(() => {
-        mensajeBusquedaCliente.textContent =
-          "No se pudieron cargar los clientes.";
-      });
-  };
-
-  const seleccionarCliente = () => {
-    const idSeleccionado = selectorCliente.value;
-
-    idClienteReserva.value = "";
-
-    if (!idSeleccionado) {
-      campoNombre.value = "";
-      campoEmail.value = "";
-      return;
-    }
-
-    for (let i = 0; i < clientes.length; i++) {
-      if (String(clientes[i].id) === String(idSeleccionado)) {
-        idClienteReserva.value = clientes[i].id;
-        campoNombre.value = clientes[i].nombre || "";
-        campoEmail.value = clientes[i].correo || "";
-        break;
-      }
-    }
-
-    mensajeBusquedaCliente.textContent = "Cliente seleccionado correctamente.";
-  };
-
-  const obtenerFechaHora = (fecha, hora) => {
-    if (!fecha || !hora) return "";
-    return `${fecha} ${hora}`;
-  };
-
-  const calcularTotalReserva = () => {
-    const habitacion = habitacionesDisponibles.find(
-      (item) => String(item.id) === String(selectorHabitacion.value),
-    );
-    if (!habitacion) return 0;
-
-    const inicio = new Date(`${fechaEntrada.value}T${horaEntrada.value}`);
-    const fin = new Date(`${fechaSalida.value}T${horaSalida.value}`);
-    if (
-      Number.isNaN(inicio.getTime()) ||
-      Number.isNaN(fin.getTime()) ||
-      fin <= inicio
-    ) {
-      return 0;
-    }
-
-    const dias = Math.max(1, Math.ceil((fin - inicio) / 86400000));
-    return dias * Number(habitacion.precio || 0);
-  };
-
-  const mostrarHabitacionesDisponibles = () => {
-    selectorHabitacion.innerHTML =
-      '<option value="">Seleccionar habitacion</option>';
-
-    if (habitacionesDisponibles.length === 0) {
-      selectorHabitacion.innerHTML =
-        '<option value="" disabled>No hay habitaciones disponibles para ese rango</option>';
-      return;
-    }
-
-    habitacionesDisponibles.forEach((habitacion) => {
-      selectorHabitacion.innerHTML += `
-        <option value="${habitacion.id}" data-precio="${habitacion.precio}">
-          Piso ${habitacion.piso} - Hab. ${habitacion.numero_habitacion} - ${habitacion.tipo_nombre} - S/ ${habitacion.precio}
-        </option>`;
-    });
-  };
-
-  const cargarHabitacionesDisponibles = () => {
-    const checkIn = obtenerFechaHora(fechaEntrada.value, horaEntrada.value);
-    const checkOut = obtenerFechaHora(fechaSalida.value, horaSalida.value);
-
-    habitacionesDisponibles = [];
-    mostrarHabitacionesDisponibles();
-
-    if (!checkIn || !checkOut) {
-      mensajeHabitaciones.textContent =
-        "Primero selecciona check-in y check-out.";
-      return;
-    }
-
-    if (
-      new Date(checkOut.replace(" ", "T")) <=
-      new Date(checkIn.replace(" ", "T"))
-    ) {
-      mensajeHabitaciones.textContent =
-        "El check-out debe ser posterior al check-in.";
-      return;
-    }
-
-    const params = new URLSearchParams({
-      check_in: checkIn,
-      check_out: checkOut,
-    });
-
-    if (filtroTipoReserva && filtroTipoReserva.value)
-      params.append("tipo", filtroTipoReserva.value);
-    if (filtroPisoReserva && filtroPisoReserva.value)
-      params.append("piso", filtroPisoReserva.value);
-
-    fetch(BASE_URL + `?url=Habitacion/disponiblesPorRango&${params.toString()}`)
-      .then((res) => res.json())
-      .then((respuesta) => {
-        habitacionesDisponibles = respuesta.habitaciones || [];
-        mostrarHabitacionesDisponibles();
-        mensajeHabitaciones.textContent = habitacionesDisponibles.length
-          ? "Habitaciones disponibles para el rango seleccionado."
-          : "No hay habitaciones limpias y disponibles para esas fechas.";
-      })
-      .catch(() => {
-        mensajeHabitaciones.textContent =
-          "No se pudieron cargar habitaciones disponibles.";
-      });
-  };
-
-  const cargarFiltrosHabitacion = () => {
-    fetch(BASE_URL + "?url=Habitacion/obtenerFiltros")
-      .then((res) => res.json())
-      .then((data) => {
-        if (filtroTipoReserva && data.tipos) {
-          filtroTipoReserva.innerHTML =
-            '<option value="">Todos los tipos</option>';
-          data.tipos.forEach((tipo) => {
-            filtroTipoReserva.innerHTML += `<option value="${tipo.id}">${tipo.tipo}</option>`;
-          });
-        }
-        if (filtroPisoReserva && data.pisos) {
-          filtroPisoReserva.innerHTML =
-            '<option value="">Todos los pisos</option>';
-          data.pisos.forEach((piso) => {
-            filtroPisoReserva.innerHTML += `<option value="${piso}">Piso ${piso}</option>`;
-          });
-        }
-      })
-      .catch((err) => console.error("Error cargando filtros:", err));
-  };
-
-  const continuarPago = () => {
-    const cliente = selectorCliente.value;
-    const nombre = campoNombre.value.trim();
-    const email = campoEmail.value.trim();
-    const checkIn = fechaEntrada.value;
-    const horaEntradaValor = horaEntrada.value;
-    const checkOut = fechaSalida.value;
-    const horaSalidaValor = horaSalida.value;
-    const habitacion = selectorHabitacion.value;
-
-    if (!cliente) {
-      alert("Selecciona un cliente");
-      return;
-    }
-    if (!nombre) {
-      alert("Nombre y apellido obligatorio");
-      return;
-    }
-    if (!email) {
-      alert("Correo electronico obligatorio");
-      return;
-    }
-    if (!checkIn || !horaEntradaValor || !checkOut || !horaSalidaValor) {
-      alert("Completa check-in y check-out");
-      return;
-    }
-    if (!habitacion) {
-      alert("Selecciona una habitacion");
-      return;
-    }
-
-    // Validaciones de fecha/hora: check-in no puede ser en el pasado
-    const ahora = new Date();
-    const fechaHoraCheckIn = new Date(`${checkIn}T${horaEntradaValor}`);
-    const fechaHoraCheckOut = new Date(`${checkOut}T${horaSalidaValor}`);
-
-    if (Number.isNaN(fechaHoraCheckIn.getTime())) {
-      alert("Fecha/hora de check-in inválida");
-      return;
-    }
-    if (Number.isNaN(fechaHoraCheckOut.getTime())) {
-      alert("Fecha/hora de check-out inválida");
-      return;
-    }
-
-    if (fechaHoraCheckIn < ahora) {
-      alert("La fecha y hora de check-in debe ser igual o posterior a ahora");
-      return;
-    }
-
-    if (fechaHoraCheckOut <= fechaHoraCheckIn) {
-      alert("La fecha y hora de check-out debe ser posterior al check-in");
-      return;
-    }
-
-    const textoClienteSeleccionado =
-      selectorCliente.options[selectorCliente.selectedIndex].text;
-
-    abrirModalPagoConDatos({
-      cliente: cliente,
-      clienteTexto: textoClienteSeleccionado,
-      nombre: nombre,
-      email: email,
-      checkIn: checkIn,
-      horaEntrada: horaEntradaValor,
-      checkOut: checkOut,
-      horaSalida: horaSalidaValor,
-      habitacion: habitacion,
-      totalReserva: calcularTotalReserva(),
-    });
-
-    if (modal) modal.style.display = "none";
-    if (contenedor) contenedor.style.display = "none";
-  };
+  actualizarMinimosFecha();
 
   if (modo === "nuevo") {
-    if (form) form.reset();
-    const tit = document.querySelector(".titulo-modal");
-    if (tit) tit.textContent = "Nueva Reserva";
+    estado.elementos.form?.reset();
+    limpiarSeleccionHabitaciones();
+    const titulo = document.querySelector(".titulo-modal");
+    if (titulo) titulo.textContent = "Nueva Reserva";
   }
 
   if (modo === "editar" && datos) {
-    const tit = document.querySelector(".titulo-modal");
-    if (tit) tit.textContent = "Editar Reserva";
-    if (btnContinuarPago) btnContinuarPago.textContent = "Actualizar";
-    if (campoNombre) campoNombre.value = datos.cliente || "";
-    if (campoEmail) campoEmail.value = datos.email || "";
+    const titulo = document.querySelector(".titulo-modal");
+    if (titulo) titulo.textContent = "Editar Reserva";
+    if (estado.elementos.btnContinuarPago) {
+      estado.elementos.btnContinuarPago.textContent = "Actualizar";
+    }
+    if (estado.elementos.campoNombre)
+      estado.elementos.campoNombre.value = datos.cliente || "";
+    if (estado.elementos.campoEmail)
+      estado.elementos.campoEmail.value = datos.email || "";
   }
 
   cargarClientes();
   cargarFiltrosHabitacion();
+  cargarHabitacionesDisponibles();
 
   if (!eventosDashboardConfigurados) {
-    if (inputBuscarCliente) {
-      inputBuscarCliente.addEventListener("input", () => {
-        cargarClientes(inputBuscarCliente.value.trim());
-      });
-    }
-
-    if (selectorCliente) {
-      selectorCliente.addEventListener("change", seleccionarCliente);
-    }
-
-    [
-      fechaEntrada,
-      horaEntrada,
-      fechaSalida,
-      horaSalida,
-      filtroTipoReserva,
-      filtroPisoReserva,
-    ].forEach((campo) => {
-      campo?.addEventListener("change", cargarHabitacionesDisponibles);
-      campo?.addEventListener("input", cargarHabitacionesDisponibles);
+    estado.elementos.inputBuscarCliente?.addEventListener("input", () => {
+      cargarClientes(estado.elementos.inputBuscarCliente.value.trim());
     });
 
-    if (cerrar) {
-      cerrar.addEventListener("click", () => {
-        if (modal) modal.style.display = "none";
-        if (contenedor) contenedor.style.display = "none";
-      });
-    }
+    estado.elementos.selectorCliente?.addEventListener(
+      "change",
+      seleccionarCliente,
+    );
 
-    if (btnContinuarPago) {
-      btnContinuarPago.addEventListener("click", (e) => {
-        e.preventDefault();
-        continuarPago();
-      });
-    }
+    estado.elementos.fechaEntrada?.addEventListener("change", () => {
+      actualizarMinimosFecha();
+      limpiarSeleccionHabitaciones();
+      cargarHabitacionesDisponibles();
+    });
 
-    if (form) {
-      form.addEventListener("submit", (e) => {
-        e.preventDefault();
-        continuarPago();
-      });
-    }
+    estado.elementos.horaEntrada?.addEventListener("change", () => {
+      actualizarHoraMinimaEntrada();
+      cargarHabitacionesDisponibles();
+    });
+
+    estado.elementos.fechaSalida?.addEventListener("change", () => {
+      actualizarMinimosFecha();
+      cargarHabitacionesDisponibles();
+    });
+
+    estado.elementos.horaSalida?.addEventListener(
+      "change",
+      cargarHabitacionesDisponibles,
+    );
+    estado.elementos.filtroTipoReserva?.addEventListener(
+      "change",
+      cargarHabitacionesDisponibles,
+    );
+    estado.elementos.filtroPisoReserva?.addEventListener(
+      "change",
+      cargarHabitacionesDisponibles,
+    );
+
+    estado.elementos.listaHabitacionesDisponibles?.addEventListener(
+      "click",
+      (evento) => {
+        const boton = evento.target.closest(".boton-habitacion.agregar");
+        if (!boton) return;
+        agregarHabitacionSeleccionada(boton.dataset.id);
+      },
+    );
+
+    estado.elementos.listaHabitacionesSeleccionadas?.addEventListener(
+      "click",
+      (evento) => {
+        const boton = evento.target.closest(".boton-habitacion.quitar");
+        if (!boton) return;
+        quitarHabitacionSeleccionada(boton.dataset.id);
+      },
+    );
+
+    estado.elementos.cerrar?.addEventListener("click", () => {
+      if (modal) modal.style.display = "none";
+      if (contenedor) contenedor.style.display = "none";
+    });
+
+    estado.elementos.btnContinuarPago?.addEventListener("click", (e) => {
+      e.preventDefault();
+      validarYContinuarPago();
+    });
+
+    estado.elementos.form?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      validarYContinuarPago();
+    });
 
     const btnNuevoCliente = document.getElementById(
       "btn-registrar-cliente-manual",
@@ -378,12 +683,4 @@ window.configurarBtnNuevaReserva = () => {
   btn.addEventListener("click", () => {
     window.abrirModalReserva("nuevo");
   });
-};
-
-const abrirModalPagoConDatos = (datosReserva) => {
-  if (typeof window.abrirModalPago !== "function") {
-    alert("No se pudo abrir el modulo de pago");
-    return;
-  }
-  window.abrirModalPago(datosReserva);
 };

@@ -3,6 +3,7 @@ namespace Models;
 use Illuminate\Database\Capsule\Manager as DB;
 use Libraries\Core\Model;
 use Models\Entities\Habitacion;
+use Models\HabitacionModel;
 use Models\Entities\Pago;
 use Models\Entities\Reserva;
 use Models\Entities\ReservaHabitacion;
@@ -16,6 +17,38 @@ class ReservaModel extends Model
     public function __construct()
     {
         parent::__construct();
+    }
+
+    private function obtenerDiasEstadia($checkIn, $checkOut)
+    {
+        if (!$checkIn || !$checkOut) {
+            return 0;
+        }
+
+        $inicio = strtotime((string) $checkIn);
+        $fin = strtotime((string) $checkOut);
+
+        if ($inicio === false || $fin === false || $fin <= $inicio) {
+            return 0;
+        }
+
+        return max(1, (int) ceil(($fin - $inicio) / 86400));
+    }
+
+    private function combinarFechaHora($fecha, $hora = null)
+    {
+        $fecha = trim((string) $fecha);
+        $hora = trim((string) $hora);
+
+        if ($fecha === '') {
+            return null;
+        }
+
+        if ($hora === '') {
+            return $fecha;
+        }
+
+        return $fecha . ' ' . $hora . ':00';
     }
 
     public function obtenerReservas()
@@ -45,53 +78,133 @@ class ReservaModel extends Model
     {
         try {
             $habitacionModel = new HabitacionModel();
-            $disponibilidad = $habitacionModel->validarDisponibilidadHabitacion(
-                $reserva['habitacion'] ?? null,
-                $reserva['checkIn'] ?? null,
-                $reserva['checkOut'] ?? null
-            );
+            $checkIn = $this->combinarFechaHora($reserva['checkIn'] ?? null, $reserva['horaEntrada'] ?? null);
+            $checkOut = $this->combinarFechaHora($reserva['checkOut'] ?? null, $reserva['horaSalida'] ?? null);
 
-            if (!$disponibilidad['disponible']) {
-                return ['exito' => false, 'mensaje' => $disponibilidad['mensaje']];
+            $habitacionesIngresadas = $reserva['habitaciones'] ?? [];
+            if (is_string($habitacionesIngresadas)) {
+                $decoded = json_decode($habitacionesIngresadas, true);
+                $habitacionesIngresadas = is_array($decoded) ? $decoded : [];
+            }
+
+            if (empty($habitacionesIngresadas) && !empty($reserva['habitacion'])) {
+                $habitacionesIngresadas = [$reserva['habitacion']];
+            }
+
+            $habitacionesNormalizadas = [];
+            $totalCalculado = 0;
+            $dias = $this->obtenerDiasEstadia($checkIn, $checkOut);
+
+            if ($dias <= 0) {
+                return ['exito' => false, 'mensaje' => 'Rango de fechas inválido.'];
+            }
+
+            foreach ($habitacionesIngresadas as $habitacionIngresada) {
+                $idHabitacion = is_array($habitacionIngresada)
+                    ? (int) ($habitacionIngresada['id'] ?? $habitacionIngresada['id_habitacion'] ?? 0)
+                    : (int) $habitacionIngresada;
+
+                if ($idHabitacion <= 0) {
+                    continue;
+                }
+
+                $disponibilidad = $habitacionModel->validarDisponibilidadHabitacion(
+                    $idHabitacion,
+                    $checkIn,
+                    $checkOut
+                );
+
+                if (!$disponibilidad['disponible']) {
+                    return ['exito' => false, 'mensaje' => $disponibilidad['mensaje']];
+                }
+
+                $habitacionActual = $habitacionModel->obtenerPorId($idHabitacion);
+                if (!$habitacionActual) {
+                    return ['exito' => false, 'mensaje' => 'No se encontró una de las habitaciones seleccionadas.'];
+                }
+
+                $precioHabitacion = (float) ($habitacionActual['precio'] ?? 0);
+                $habitacionesNormalizadas[] = [
+                    'id' => $idHabitacion,
+                    'habitacion' => $habitacionActual,
+                    'precio' => $precioHabitacion,
+                ];
+
+                $totalCalculado += $precioHabitacion * $dias;
+            }
+
+            if (empty($habitacionesNormalizadas)) {
+                return ['exito' => false, 'mensaje' => 'Debe seleccionar al menos una habitación válida.'];
+            }
+
+            $pagoInicial = $reserva['pago'] ?? null;
+            $montoPagoInicial = is_array($pagoInicial)
+                ? (float) ($pagoInicial['monto'] ?? 0)
+                : 0;
+
+            if ($montoPagoInicial <= 0) {
+                return ['exito' => false, 'mensaje' => 'Debe registrar un pago inicial para realizar la reserva.'];
+            }
+
+            $montoMinimoInicial = round($totalCalculado * 0.5, 2);
+            if ($montoPagoInicial < $montoMinimoInicial) {
+                return [
+                    'exito' => false,
+                    'mensaje' => 'El pago inicial debe ser al menos el 50% del total de la reserva. Monto mínimo: S/ ' . number_format($montoMinimoInicial, 2)
+                ];
             }
 
             DB::connection()->beginTransaction();
 
+            $totalFinal = $totalCalculado;
+
+            // La fecha de check-in/check-out se guarda por habitación en `reserva_habitacion`.
             $reservaCreada = Reserva::create([
                 'id_cliente'      => $reserva['cliente'] ?? null,
-                'id_habitacion'   => $reserva['habitacion'] ?? null,
-                'check_in'        => $reserva['checkIn'] ?? null,
-                'check_out'       => $reserva['checkOut'] ?? null,
-                'total'           => $reserva['total'] ?? null,
-                'estado'          => $reserva['estado'] ?: 'confirmada',
-                'codigo_reserva'  => $reserva['codigoReserva'] ?? null,
-                'id_usuario'      => $reserva['usuario'] ?: 1,
-                'observaciones'   => $reserva['observaciones'] ?: null,
+                'total'           => $totalFinal,
+                'estado'          => $reserva['estado'] ?? 'confirmada',
+                'codigo_reserva'  => $reserva['codigoReserva'] ?? $this->generarCodigoReserva(),
+                'id_usuario'      => $reserva['usuario'] ?? 1,
+                'observaciones'   => $reserva['observaciones'] ?? null,
             ]);
 
             $ok = (bool) $reservaCreada;
             $idReserva = (int) $reservaCreada->id;
 
-            ReservaHabitacion::create([
-                'id_reserva'   => $idReserva,
-                'id_habitacion'=> $reserva['habitacion'] ?? null,
-                'check_in'     => $reserva['checkIn'] ?? null,
-                'check_out'    => $reserva['checkOut'] ?? null,
-                'activo'       => 1,
-            ]);
+            foreach ($habitacionesNormalizadas as $habitacionNormalizada) {
+                ReservaHabitacion::create([
+                    'id_reserva'   => $idReserva,
+                    'id_habitacion'=> $habitacionNormalizada['id'],
+                    'check_in'     => $checkIn,
+                    'check_out'    => $checkOut,
+                    'activo'       => 1,
+                ]);
 
-            $habitacionActual = $habitacionModel->obtenerPorId((int) ($reserva['habitacion'] ?? 0));
-            $habitacionModel->registrarHistorial(
-                (int) ($reserva['habitacion'] ?? 0),
-                $idReserva,
-                $habitacionActual['estado_operativo'] ?? 'disponible',
-                $habitacionActual['estado_operativo'] ?? 'disponible',
-                $habitacionActual['estado_limpieza'] ?? 'limpia',
-                $habitacionActual['estado_limpieza'] ?? 'limpia',
-                'crear_reserva',
-                'Reserva creada',
-                $reserva['usuario'] ?: null
-            );
+                $habitacionActual = $habitacionNormalizada['habitacion'];
+                $habitacionModel->registrarHistorial(
+                    $habitacionNormalizada['id'],
+                    $idReserva,
+                    $habitacionActual['estado_operativo'] ?? 'disponible',
+                    $habitacionActual['estado_operativo'] ?? 'disponible',
+                    $habitacionActual['estado_limpieza'] ?? 'limpia',
+                    $habitacionActual['estado_limpieza'] ?? 'limpia',
+                    'crear_reserva',
+                    'Reserva creada',
+                    $reserva['usuario'] ?? null
+                );
+            }
+
+            if (is_array($pagoInicial)) {
+                if ($montoPagoInicial > 0) {
+                    Pago::create([
+                        'id_reserva'     => $idReserva,
+                        'monto'          => $montoPagoInicial,
+                        'descripcion'    => $pagoInicial['descripcion'] ?? 'Pago inicial',
+                        'fecha_pago'     => $pagoInicial['fecha_pago'] ?? date('Y-m-d H:i:s'),
+                        'id_metodo_pago' => (int) ($pagoInicial['id_metodo_pago'] ?? 0),
+                    ]);
+                }
+            }
 
             DB::connection()->commit();
             return ['exito' => $ok, 'mensaje' => 'Reserva registrada correctamente.', 'id_reserva' => $idReserva];
@@ -132,6 +245,25 @@ class ReservaModel extends Model
         }
     }
 
+    public function generarCodigoReserva(): string
+    {
+        $anio = date('Y');
+        $prefijo = 'TER-' . $anio . '-';
+
+        $ultimaReserva = Reserva::where('codigo_reserva', 'like', $prefijo . '%')
+            ->orderBy('id', 'desc')
+            ->first();
+
+        $numero = 1;
+
+        if ($ultimaReserva && !empty($ultimaReserva->codigo_reserva)) {
+            $partes = explode('-', $ultimaReserva->codigo_reserva);
+            $numero = ((int) end($partes)) + 1;
+        }
+
+        return $prefijo . str_pad((string) $numero, 6, '0', STR_PAD_LEFT);
+    }
+
     private function formatearReserva($reserva)
     {
 
@@ -140,10 +272,32 @@ class ReservaModel extends Model
         $cliente = $reserva->cliente;
         
         $reservaHabitacion = $reserva->reservaHabitacion;
-        $habitacion = $reservaHabitacion->habitacion ?? null;
+        $habitacionesRelacionadas = is_iterable($reservaHabitacion) ? $reservaHabitacion : [$reservaHabitacion];
+        $habitaciones = [];
+        foreach ($habitacionesRelacionadas as $itemHabitacion) {
+            if (!$itemHabitacion) {
+                continue;
+            }
+
+            $habitacion = $itemHabitacion->habitacion ?? null;
+            if ($habitacion) {
+                $habitacionModel = new HabitacionModel();
+                $info = $habitacionModel->obtenerPorId($habitacion->id) ?? [];
+                $precioHabit = (float) ($info['precio'] ?? 0);
+                $habitaciones[] = [
+                    'id' => $habitacion->id,
+                    'numero_habitacion' => $habitacion->numero_habitacion,
+                    'piso' => $habitacion->piso,
+                    'tipo_nombre' => $habitacion->tipo_nombre ?? '',
+                    'precio' => $precioHabit,
+                ];
+            }
+        }
+
+        $habitacionPrincipal = $habitaciones[0] ?? null;
         $totalPagado = (float) ($reserva->pagos->sum('monto') ?? 0);
-        $checkIn = $reservaHabitacion->check_in ?? $reserva->check_in ?? null;
-        $checkOut = $reservaHabitacion->check_out ?? $reserva->check_out ?? null;
+        $checkIn = $reserva->check_in ?? ($habitacionesRelacionadas[0]->check_in ?? null);
+        $checkOut = $reserva->check_out ?? ($habitacionesRelacionadas[0]->check_out ?? null);
         $estado = $reserva->estado ?? '';
         $total = (float) ($reserva->total ?? 0);
         $cargoTarde = (float) ($reserva->cargo_checkout_tarde ?? 0);
@@ -165,10 +319,10 @@ class ReservaModel extends Model
             'id_cliente' => $reserva->id_cliente,
             'cliente' => $cliente->nombre_completo ?? '',
             'correo_electronico' => $cliente->correo_electronico ?? '',
-            'id_habitacion' => $reserva->id_habitacion,
-            'habitacion' => $habitacion ? 'Hab. ' . + $habitacion->numero_habitacion . ' - Piso ' . $habitacion->piso
-    : '',
-            'piso' => $habitacion->piso ?? null,
+            'id_habitacion' => $habitacionPrincipal['id'] ?? null,
+                'habitacion' => $habitacionPrincipal ? 'Hab. ' . $habitacionPrincipal['numero_habitacion'] . ' - Piso ' . $habitacionPrincipal['piso'] : '',
+                'habitaciones' => $habitaciones,
+                'piso' => $habitacionPrincipal['piso'] ?? null,
             'check_in' => $checkIn,
             'check_out' => $checkOut,
             'minutos_demora_checkout' => $reserva->minutos_demora_checkout ?? 0,

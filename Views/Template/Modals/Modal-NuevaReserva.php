@@ -90,7 +90,7 @@
           </div>
         </div>
 
-        <!-- HABITACIÓN -->
+        <!-- HABITACIONES -->
         <div class="form-row">
           <div class="form-group">
             <label for="filtroTipoReserva">TIPO DE HABITACIÓN:</label>
@@ -105,15 +105,36 @@
             </select>
           </div>
         </div>
-        <div class="form-group">
-          <label for="seleccioneHabitacion">SELECCIONE HABITACION:</label>
-          <select
-            id="seleccioneHabitacion"
-            name="seleccioneHabitacion"
-            required>
-            <option value="">Primero selecciona fechas y horas</option>
-          </select>
-          <small id="mensajeHabitacionesDisponibles">Solo se listan habitaciones disponibles, limpias y sin cruces de fechas.</small>
+
+        <div class="form-group habitaciones-reserva-bloque">
+          <div class="habitaciones-reserva-encabezado">
+            <label>SELECCIONA HABITACIONES:</label>
+            <small id="mensajeHabitacionesDisponibles">Solo se listan habitaciones disponibles, limpias y sin cruces de fechas.</small>
+          </div>
+
+          <div class="habitaciones-reserva-layout">
+            <div class="habitaciones-panel">
+              <div class="panel-titulo">
+                <h3>Disponibles</h3>
+                <span class="panel-subtitulo">Haz clic en agregar</span>
+              </div>
+              <div id="listaHabitacionesDisponibles" class="lista-habitaciones"></div>
+            </div>
+
+            <div class="habitaciones-panel panel-seleccionadas">
+              <div class="panel-titulo">
+                <h3>Seleccionadas</h3>
+                <span id="contadorHabitacionesSeleccionadas" class="panel-subtitulo">0 habitaciones</span>
+              </div>
+              <div id="listaHabitacionesSeleccionadas" class="lista-habitaciones lista-habitaciones-seleccionadas"></div>
+              <div class="resumen-total-habitaciones">
+                <strong>Total estimado:</strong>
+                <span id="totalHabitacionesReserva">S/ 0.00</span>
+              </div>
+            </div>
+          </div>
+
+          <input type="hidden" id="habitacionesReserva" name="habitacionesReserva" />
         </div>
 
 

@@ -138,3 +138,137 @@
   margin-bottom: 23px;
   height: 17px;
 }
+
+.habitaciones-reserva-bloque {
+  margin-top: 6px;
+}
+
+.habitaciones-reserva-encabezado {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.habitaciones-reserva-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.habitaciones-panel {
+  background: #fff;
+  border: 1px solid #d9d4b7;
+  border-radius: 12px;
+  padding: 12px;
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.panel-titulo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.panel-titulo h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.panel-subtitulo {
+  color: #6b6b6b;
+  font-size: 12px;
+}
+
+.lista-habitaciones {
+  display: grid;
+  gap: 10px;
+  flex: 1;
+  overflow-y: auto;
+  max-height: 360px;
+  padding-right: 4px;
+}
+
+.habitacion-card {
+  border: 1px solid #d7d1b4;
+  border-radius: 12px;
+  padding: 12px;
+  background: #faf8ef;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.habitacion-card.seleccionada {
+  border-color: #185025;
+  background: #edf7e8;
+}
+
+.habitacion-card-info {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.habitacion-card-info strong {
+  font-size: 14px;
+}
+
+.habitacion-card-acciones {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.boton-habitacion {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.boton-habitacion.agregar {
+  background: #185025;
+  color: #fff;
+}
+
+.boton-habitacion.quitar {
+  background: #8f2f2f;
+  color: #fff;
+}
+
+.boton-habitacion:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.resumen-total-habitaciones {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 10px;
+  border-top: 1px solid #e2dcc2;
+  font-size: 14px;
+}
+
+.panel-seleccionadas {
+  background: linear-gradient(180deg, #ffffff 0%, #f4f7ef 100%);
+}
+
+.vacío-habitaciones {
+  color: #777;
+  font-size: 13px;
+  padding: 8px;
+}
+
+@media (max-width: 900px) {
+  .habitaciones-reserva-layout {
+    grid-template-columns: 1fr;
+  }
+}

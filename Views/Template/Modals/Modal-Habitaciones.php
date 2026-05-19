@@ -36,20 +36,21 @@
 
         <div class="fila-formulario">
           <div class="grupo-formulario">
-            <label for="precioHabitacion">PRECIO POR NOCHE (S/)</label>
-            <input
-              type="text"
-              id="precioHabitacion"
-              name="precio"
-              placeholder="0.00"
-              required />
-          </div>
-          <div class="grupo-formulario">
             <label for="pisoHabitacion">PISO</label>
             <input
               type="number"
               id="pisoHabitacion"
               name="piso"
+              min="1"
+              value="1"
+              required />
+          </div>
+          <div class="grupo-formulario">
+            <label for="capacidadHabitacion">CAPACIDAD</label>
+            <input
+              type="number"
+              id="capacidadHabitacion"
+              name="capacidad"
               min="1"
               value="1"
               required />
