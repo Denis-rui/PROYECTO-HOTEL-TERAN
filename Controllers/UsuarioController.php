@@ -49,7 +49,7 @@ class UsuarioController extends Controller
             echo json_encode(['error' => 'No hay sesión activa']);
             exit;
         }
-        $ok = $this->model->update($nombreUsuario, $datos);
+        $ok = $this->model->updateByNombreUsuario($nombreUsuario, $datos);
         if ($ok && isset($datos['nombre_usuario'])) {
             $_SESSION['nombreUsuario'] = $datos['nombre_usuario'];
         }
