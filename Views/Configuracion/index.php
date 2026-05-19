@@ -42,6 +42,31 @@ $tipos = $data['tipos_habitacion'] ?? [];
         <label for="web-redes" class="form-label">WEB / REDES</label>
         <input id="web-redes" type="text" name="web-redes" class="form-input" value="<?= htmlspecialchars($hotel['web'] ?? '') ?>" />
       </div>
+
+      <div class="form-campo">
+        <label for="ciudad" class="form-label">CIUDAD</label>
+        <input type="text" id="ciudad" name="ciudad" class="form-input" value = "<?= htmlspecialchars($hotel['ciudad_region'] ?? '') ?>" />
+      </div>
+
+      <div class="form-campo">
+        <label for="ubicacion" class="form-label">UBICACIÓN</label>
+        <input type="text" id="ubicacion" name="ubicacion" class="form-input" value="<?= htmlspecialchars($hotel['direccion'] ?? '') ?>" />
+      </div>
+
+      <div class="form-campo">
+        <label for="checkin" class="form-label">CHECK-IN</label>
+        <input type="time" id="check-in" name="check-in" class="form-input" value="<?= htmlspecialchars($hotel['check_in'] ?? '') ?>" />
+      </div>
+
+      <div class="form-campo">
+        <label for="checkout" class="form-label">CHECK-OUT</label>
+        <input type="time" id="checkout" name="check-out" class="form-input" value="<?= htmlspecialchars($hotel['check_out'] ?? '') ?>" />
+      </div>
+
+      <div class="form-campo form-campo--full" >
+        <label for="descripcion" class="form-label">DESCRIPCIÓN / SLOGAN</label>
+        <textarea id="descripcion" name="descripcion" class="form-textarea"><?= htmlspecialchars($hotel['descripcion'] ?? '') ?></textarea>
+      </div>
     </div>
 
     <br>
