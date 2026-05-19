@@ -1,4 +1,8 @@
 <?php
+namespace App\Controllers;
+
+use App\Core\Controller;
+use App\Models\ReservaModel;
 
 class DashboardController extends Controller
 {
@@ -9,7 +13,6 @@ class DashboardController extends Controller
             exit();
         }
 
-        require_once("Models/ReservaModel.php");
         $reservaModel = new ReservaModel();
         
         $data['page_title'] = "Dashboard";

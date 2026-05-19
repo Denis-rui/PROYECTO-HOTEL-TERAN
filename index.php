@@ -21,5 +21,4 @@ if (!empty($arrUrl[2])) {
 require_once 'Config/Config.php';
 require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/Config/eloquent.php';
-require_once 'Libraries/Core/Autoload.php';
 require_once 'Libraries/Core/Load.php';

@@ -1,4 +1,8 @@
 <?php
+namespace App\Controllers;
+
+use App\Core\Controller;
+use PDO;
 
 class ConfiguracionController extends Controller
 {

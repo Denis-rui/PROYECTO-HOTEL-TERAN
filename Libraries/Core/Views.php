@@ -1,10 +1,12 @@
 <?php
+namespace App\Core;
 
 class Views
 {
     public function render($controller, $view, $data = [])
     {
-        $controllerName = str_replace('Controller', '', get_class($controller));
+        $short = (new \ReflectionClass($controller))->getShortName();
+        $controllerName = str_replace('Controller', '', $short);
         $viewPath       = "Views/{$controllerName}/{$view}.php";
 
         if (file_exists($viewPath)) {
