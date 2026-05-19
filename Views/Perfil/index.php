@@ -7,7 +7,10 @@
 
   <!--Formularios --->
   <div class="contenido">
-    <form action="#" class="form" id="formPerfilPersonal">
+
+    <div id="alerta"></div>
+    
+    <form class="form" id="formPerfilPersonal">
       <h2>👤 Información Personal</h2>
       <div>
         <div class="form-campo">
@@ -19,31 +22,32 @@
             id="nombre_completo"
             name="nombre_completo"
             class="form-input"
+            value="<?= htmlspecialchars($perfil['nombre_completo'] ?? '') ?>"
           />
         </div>
 
         <div class="form-campo">
           <label for="usuario" class="form-label">USUARIO (LOGIN)</label>
-          <input type="text" id="usuario" name="usuario" class="form-input" />
+          <input type="text" id="usuario" name="usuario" class="form-input" value="<?= htmlspecialchars($perfil['nombre_usuario'] ?? '') ?>">
         </div>
 
         <div class="form-campo">
           <label for="rol" class="form-label">CARGO (ROL)</label>
-          <input type="text" id="rol" name="rol" class="form-input" readonly />
+          <input type="text" id="rol" name="rol" class="form-input" readonly value="<?= htmlspecialchars($perfil['rol'] ?? '') ?>">
         </div>
 
         <div class="form-campo">
           <label for="email" class="form-label">EMAIL</label>
-          <input type="email" id="email" name="email" class="form-input" />
+          <input type="email" id="email" name="email" class="form-input" value="<?= htmlspecialchars($perfil['correo'] ?? '') ?>">
         </div>
 
         <div class="form-campo">
           <label for="telefono" class="form-label">TELEFONO</label>
-          <input type="tel" id="telefono" name="telefono" class="form-input" />
+          <input type="tel" id="telefono" name="telefono" class="form-input" value = "<?= htmlspecialchars($perfil['telefono'] ?? '') ?>" />
         </div>
       </div>
 
-      <button type="submit" class="form-buttom">Guardar Perfil</button>
+      <button type="button" class="form-buttom" id ="btnGuardarPerfil">Guardar Perfil</button>
     </form>
 
     <form action="#" class="form" id="formCambiarClave">
@@ -82,7 +86,7 @@
         </div>
       </div>
 
-      <button type="submit" class="form-buttom">Actualizar Contraseña</button>
+      <button type="button" class="form-buttom" id="btnCambiarClave">Actualizar Contraseña</button>
     </form>
   </div>
 </section>

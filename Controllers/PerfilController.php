@@ -2,17 +2,103 @@
 namespace Controllers;
 
 use Libraries\Core\Controller;
+use Models\UsuarioModel;
 
 class PerfilController extends Controller
 {
+    private $usuarioModel;
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->usuarioModel = new UsuarioModel();
+    }
+
     public function index($params = '')
     {
-        if (!isset($_SESSION['usuario'])) {
+        if(!isset($_SESSION['usuario'])){
             header('Location: ' . BASE_URL . '?url=Login/index');
             exit();
         }
+
+        $perfil = $this->usuarioModel->read($_SESSION['usuario']);
+
+        if (!$perfil){
+            header('Location: ' . BASE_URL . '?url=Login/index');
+            exit();
+        }
+
         $data['page_title'] = "Mi Perfil";
-        $data['page_js'] = [];
+        $data['page_js']    = ['Perfil.js'];
+        $data['perfil']     = $perfil;
+
         $this->views->render($this, 'index', $data);
+    }
+
+    public function actualizarPerfil($params = ''){
+        if (!isset($_SESSION['usuario'])) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'No autenticado']);
+            exit();
+        }
+
+        $datos = [
+            'nombre_completo' => trim($_POST['nombre_completo'] ?? ''),
+            'nombre_usuario'  => trim($_POST['usuario']         ?? ''),
+            'correo'          => trim($_POST['email']           ?? ''),
+            'telefono'        => trim($_POST['telefono']        ?? ''),
+        ];
+
+
+        $ok = $this->usuarioModel->updateByNombreUsuario($_SESSION['usuario'], $datos);
+
+        if ($ok && !empty($datos['nombre_usuario'])) {
+            $_SESSION['usuario'] = $datos['nombre_usuario'];
+        }
+
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => (bool) $ok,
+            'message' => $ok ? 'Perfil actualizado correctamente' : 'Error al actualizar el perfil',
+        ]);
+        exit();
+    }
+
+     public function cambiarClave($params = '')
+    {
+        if (!isset($_SESSION['usuario'])) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'No autenticado']);
+            exit();
+        }
+
+        $claveActual = $_POST['clave_actual']    ?? '';
+        $claveNueva  = $_POST['clave_nueva']     ?? '';
+        $confirmar   = $_POST['confirmar_clave'] ?? '';
+
+        if ($claveNueva !== $confirmar) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Las contraseñas no coinciden']);
+            exit();
+        }
+
+        $userRaw = $this->usuarioModel->obtenerUsuarios($_SESSION['usuario']);
+
+        if (!$userRaw || md5($claveActual) !== $userRaw['contrasenia']) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'La contraseña actual es incorrecta']);
+            exit();
+        }
+
+        $ok = $this->usuarioModel->updateByNombreUsuario($_SESSION['usuario'], [
+            'contrasenia' => md5($claveNueva),
+        ]);
+
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => (bool) $ok,
+            'message' => $ok ? 'Contraseña actualizada correctamente' : 'Error al actualizar la contraseña',
+        ]);
+        exit();
     }
 }
