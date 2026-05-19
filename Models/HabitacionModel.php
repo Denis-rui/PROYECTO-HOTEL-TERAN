@@ -14,7 +14,7 @@ class HabitacionModel extends Eloquent
     protected $primaryKey = 'id';
     public $timestamps    = false;
     protected $fillable   = [
-        'numero_habitacion', 'piso', 'id_tipo_habitacion', 'precio',
+        'numero_habitacion', 'piso', 'id_tipo_habitacion',
         'estado', 'descripcion_habitacion', 'capacidad', 'activo'
     ];
 
@@ -29,7 +29,6 @@ class HabitacionModel extends Eloquent
                 'numero_habitacion'      => $datos['numero_habitacion'] ?? '',
                 'piso'                   => (int) ($datos['piso'] ?? 1),
                 'id_tipo_habitacion'     => $datos['id_tipo_habitacion'] ?? null,
-                'precio'                 => $datos['precio'] ?? 0,
                 'estado'                 => $estado,
                 'descripcion_habitacion' => $datos['descripcion'] ?? '',
                 'capacidad'              => (int) ($datos['capacidad'] ?? 1),
@@ -69,7 +68,7 @@ class HabitacionModel extends Eloquent
                     'h.id_tipo_habitacion',
                     't.tipo as tipo_nombre',
                     DB::raw("COALESCE(NULLIF(h.descripcion_habitacion, ''), '') as descripcion"),
-                    'h.precio',
+                    DB::raw('t.precio_base as precio'),
                     'h.estado',
                     'h.capacidad',
                     'h.activo',
@@ -165,8 +164,24 @@ class HabitacionModel extends Eloquent
 
     public function obtenerPorId($id)
     {
-        $habitacion = self::find($id);
-        return $habitacion ? $habitacion->toArray() : null;
+        $item = DB::table('habitacion as h')
+            ->join('tipo_habitacion as t', 't.id', '=', 'h.id_tipo_habitacion')
+            ->where('h.id', (int) $id)
+            ->select([
+                'h.id',
+                'h.numero_habitacion',
+                'h.piso',
+                'h.id_tipo_habitacion',
+                't.tipo as tipo_nombre',
+                DB::raw('t.precio_base as precio'),
+                'h.estado',
+                'h.capacidad',
+                'h.descripcion_habitacion',
+                'h.activo'
+            ])
+            ->first();
+
+        return $item ? (array) $item : null;
     }
 
     // Se agrego 4 métodos nuevos para evitar conflictos
@@ -174,11 +189,14 @@ class HabitacionModel extends Eloquent
     public function disponiblesPorRango($checkIn, $checkOut, $tipo = null, $piso = null)
     {
         try {
-            $habitacionesOcupadas = DB::table('reserva')
-                ->whereIn('estado', ['pendiente', 'confirmada', 'checkin_realizado', 'en_estadia', 'checkout_pendiente'])
-                ->where('check_in', '<', $checkOut)
-                ->where('check_out', '>', $checkIn)
-                ->pluck('id_habitacion')
+            $habitacionesOcupadas = DB::table('reserva_habitacion as rh')
+                ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
+                ->where('rh.activo', 1)
+                ->whereIn('r.estado', ['pendiente', 'confirmada', 'checkin_realizado', 'en_estadia', 'checkout_pendiente'])
+                ->where('rh.check_in', '<', $checkOut)
+                ->where('rh.check_out', '>', $checkIn)
+                ->distinct()
+                ->pluck('rh.id_habitacion')
                 ->toArray();
 
             $query = DB::table('habitacion as h')
@@ -190,7 +208,7 @@ class HabitacionModel extends Eloquent
                     'h.id',
                     'h.numero_habitacion',
                     'h.piso',
-                    'h.precio',
+                    DB::raw('t.precio_base as precio'),
                     'h.capacidad',
                     't.tipo as tipo_nombre'
                 ]);
@@ -228,11 +246,13 @@ class HabitacionModel extends Eloquent
                 return ['disponible' => false, 'mensaje' => 'La habitación se encuentra en mantenimiento.'];
             }
 
-            $cruce = DB::table('reserva')
-                ->where('id_habitacion', $idHabitacion)
-                ->whereIn('estado', ['pendiente', 'confirmada', 'checkin_realizado', 'en_estadia', 'checkout_pendiente'])
-                ->where('check_in', '<', $checkOut)
-                ->where('check_out', '>', $checkIn)
+            $cruce = DB::table('reserva_habitacion as rh')
+                ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
+                ->where('rh.id_habitacion', $idHabitacion)
+                ->where('rh.activo', 1)
+                ->whereIn('r.estado', ['pendiente', 'confirmada', 'checkin_realizado', 'en_estadia', 'checkout_pendiente'])
+                ->where('rh.check_in', '<', $checkOut)
+                ->where('rh.check_out', '>', $checkIn)
                 ->exists();
 
             if ($cruce) {
@@ -243,6 +263,11 @@ class HabitacionModel extends Eloquent
         } catch (\Throwable $e) {
             return ['disponible' => false, 'mensaje' => 'Error al validar disponibilidad: ' . $e->getMessage()];
         }
+    }
+
+    public function validarDisponibilidadHabitacion($idHabitacion, $checkIn, $checkOut)
+    {
+        return $this->validarDisp_habitacion($idHabitacion, $checkIn, $checkOut);
     }
 
     public function registrarHistorial($idHabitacion, $idReserva, $estadoAnterior, $estadoNuevo, $limpiezaAnterior = null, $limpiezaNueva = null, $accion = '', $comentario = '', $idUsuario = null)
@@ -283,7 +308,7 @@ class HabitacionModel extends Eloquent
 
     public function calcularTotalReserva($idHabitacion, $checkIn, $checkOut)
     {
-        $stmt = $this->conectar()->prepare("SELECT COALESCE(NULLIF(h.precio, 0), t.precio_base) AS precio
+        $stmt = $this->conectar()->prepare("SELECT t.precio_base AS precio
             FROM habitacion h
             JOIN tipo_habitacion t ON t.id = h.id_tipo_habitacion
             WHERE h.id = ?");

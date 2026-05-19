@@ -1,6 +1,7 @@
 <?php
 namespace Models;
 
+use Models\Entities\Cliente;
 use Libraries\Core\Model;
 use PDO;
 
@@ -34,19 +35,15 @@ class ClienteModel extends Model
     {
         return $this->listar();
     }
-
+// va a servir para llamr a los clientes desde la reserva, para mostrar un listado de clientes y poder seleccionar uno
     public function obtenerClientesParaReserva($textoBusqueda = '')
     {
-        $criterioBusqueda = '%' . trim((string) $textoBusqueda) . '%';
-        $sql = "SELECT id, nombre_completo AS nombre, correo_electronico AS correo
-                FROM cliente
-                WHERE nombre_completo LIKE :criterio
-                ORDER BY nombre_completo ASC
-                LIMIT 50";
-        $stmt = $this->conectar()->prepare($sql);
-        $stmt->bindValue(':criterio', $criterioBusqueda, PDO::PARAM_STR);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $textoBusqueda = trim((string) $textoBusqueda);
+
+        if ($textoBusqueda === '') {
+            return [];
+        }
+        return Cliente::query()->select(['id', 'nombre_completo as nombre', 'correo_electronico as correo',])->where('nombre_completo', 'like', '%' . $textoBusqueda . '%')->orderBy('nombre_completo', 'asc')->limit(50)->get()->toArray();
     }
 
     public function crearCliente($data)

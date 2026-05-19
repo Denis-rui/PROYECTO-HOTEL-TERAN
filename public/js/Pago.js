@@ -29,6 +29,7 @@ const poblarCamposOcultosReserva = (datos = {}) => {
     pagoCheckOut: datos.checkOut || "",
     pagoHoraSalida: datos.horaSalida || "",
     pagoHabitacion: datos.habitacion || "",
+    pagoHabitaciones: JSON.stringify(datos.habitaciones || []),
     pagoTotalReserva: datos.totalReserva || "",
   };
 
@@ -47,9 +48,7 @@ const poblarCamposOcultosReserva = (datos = {}) => {
   if (infoCliente)
     infoCliente.textContent = datos.clienteTexto || datos.nombre || "---";
   if (infoHabitacion) {
-    infoHabitacion.textContent = datos.habitacion
-      ? `Habitacion ${datos.habitacion}`
-      : "---";
+    infoHabitacion.textContent = datos.habitacion || "---";
   }
   if (infoCheckin) {
     infoCheckin.textContent = datos.checkIn
@@ -186,6 +185,7 @@ const configurarEventosPago = () => {
               checkOut: document.getElementById("pagoCheckOut")?.value.trim() || "",
               horaSalida: document.getElementById("pagoHoraSalida")?.value.trim() || "",
               habitacion: document.getElementById("pagoHabitacion")?.value.trim() || "",
+              habitaciones: JSON.parse(document.getElementById("pagoHabitaciones")?.value || "[]"),
               totalReserva: document.getElementById("pagoTotalReserva")?.value.trim() || "",
               pago: {
                 monto: montoPago,
@@ -243,10 +243,21 @@ window.abrirModalPago = async (datosReserva = {}) => {
       );
       const respuesta = await res.json();
       if (respuesta.reserva) {
+        const habitacionesResumen = Array.isArray(respuesta.reserva.habitaciones)
+          ? respuesta.reserva.habitaciones
+              .map((habitacion) => {
+                if (!habitacion) return "";
+                return `Hab. ${habitacion.numero_habitacion} - Piso ${habitacion.piso}`;
+              })
+              .filter(Boolean)
+              .join(" | ")
+          : respuesta.reserva.habitacion;
+
         datosReserva = {
           ...datosReserva,
           clienteTexto: respuesta.reserva.cliente,
-          habitacion: respuesta.reserva.numero_habitacion,
+          habitacion: habitacionesResumen,
+          habitaciones: respuesta.reserva.habitaciones || [],
           checkIn: respuesta.reserva.check_in,
           checkOut: respuesta.reserva.check_out,
           totalReserva: respuesta.reserva.total,
