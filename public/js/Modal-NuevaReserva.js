@@ -24,8 +24,12 @@ window.abrirModalReserva = (modo = "nuevo", datos = null) => {
   const selectorHabitacion = document.getElementById("seleccioneHabitacion");
   const filtroTipoReserva = document.getElementById("filtroTipoReserva");
   const filtroPisoReserva = document.getElementById("filtroPisoReserva");
-  const mensajeHabitaciones = document.getElementById("mensajeHabitacionesDisponibles");
-  const mensajeBusquedaCliente = document.getElementById("mensajeBusquedaCliente");
+  const mensajeHabitaciones = document.getElementById(
+    "mensajeHabitacionesDisponibles",
+  );
+  const mensajeBusquedaCliente = document.getElementById(
+    "mensajeBusquedaCliente",
+  );
 
   let clientes = [];
   let habitacionesDisponibles = [];
@@ -34,7 +38,8 @@ window.abrirModalReserva = (modo = "nuevo", datos = null) => {
     selectorCliente.innerHTML = '<option value="">Seleccionar cliente</option>';
 
     if (clientes.length === 0) {
-      selectorCliente.innerHTML += '<option value="" disabled>Sin resultados</option>';
+      selectorCliente.innerHTML +=
+        '<option value="" disabled>Sin resultados</option>';
       return;
     }
 
@@ -58,11 +63,13 @@ window.abrirModalReserva = (modo = "nuevo", datos = null) => {
         if (texto !== "" && clientes.length === 0) {
           mensajeBusquedaCliente.textContent = "No se encontraron clientes.";
         } else {
-          mensajeBusquedaCliente.textContent = "Selecciona un cliente de la lista.";
+          mensajeBusquedaCliente.textContent =
+            "Selecciona un cliente de la lista.";
         }
       })
       .catch(() => {
-        mensajeBusquedaCliente.textContent = "No se pudieron cargar los clientes.";
+        mensajeBusquedaCliente.textContent =
+          "No se pudieron cargar los clientes.";
       });
   };
 
@@ -102,7 +109,11 @@ window.abrirModalReserva = (modo = "nuevo", datos = null) => {
 
     const inicio = new Date(`${fechaEntrada.value}T${horaEntrada.value}`);
     const fin = new Date(`${fechaSalida.value}T${horaSalida.value}`);
-    if (Number.isNaN(inicio.getTime()) || Number.isNaN(fin.getTime()) || fin <= inicio) {
+    if (
+      Number.isNaN(inicio.getTime()) ||
+      Number.isNaN(fin.getTime()) ||
+      fin <= inicio
+    ) {
       return 0;
     }
 
@@ -111,7 +122,8 @@ window.abrirModalReserva = (modo = "nuevo", datos = null) => {
   };
 
   const mostrarHabitacionesDisponibles = () => {
-    selectorHabitacion.innerHTML = '<option value="">Seleccionar habitacion</option>';
+    selectorHabitacion.innerHTML =
+      '<option value="">Seleccionar habitacion</option>';
 
     if (habitacionesDisponibles.length === 0) {
       selectorHabitacion.innerHTML =
@@ -135,12 +147,17 @@ window.abrirModalReserva = (modo = "nuevo", datos = null) => {
     mostrarHabitacionesDisponibles();
 
     if (!checkIn || !checkOut) {
-      mensajeHabitaciones.textContent = "Primero selecciona check-in y check-out.";
+      mensajeHabitaciones.textContent =
+        "Primero selecciona check-in y check-out.";
       return;
     }
 
-    if (new Date(checkOut.replace(" ", "T")) <= new Date(checkIn.replace(" ", "T"))) {
-      mensajeHabitaciones.textContent = "El check-out debe ser posterior al check-in.";
+    if (
+      new Date(checkOut.replace(" ", "T")) <=
+      new Date(checkIn.replace(" ", "T"))
+    ) {
+      mensajeHabitaciones.textContent =
+        "El check-out debe ser posterior al check-in.";
       return;
     }
 
@@ -149,8 +166,10 @@ window.abrirModalReserva = (modo = "nuevo", datos = null) => {
       check_out: checkOut,
     });
 
-    if (filtroTipoReserva && filtroTipoReserva.value) params.append("tipo", filtroTipoReserva.value);
-    if (filtroPisoReserva && filtroPisoReserva.value) params.append("piso", filtroPisoReserva.value);
+    if (filtroTipoReserva && filtroTipoReserva.value)
+      params.append("tipo", filtroTipoReserva.value);
+    if (filtroPisoReserva && filtroPisoReserva.value)
+      params.append("piso", filtroPisoReserva.value);
 
     fetch(BASE_URL + `?url=Habitacion/disponiblesPorRango&${params.toString()}`)
       .then((res) => res.json())
@@ -162,7 +181,8 @@ window.abrirModalReserva = (modo = "nuevo", datos = null) => {
           : "No hay habitaciones limpias y disponibles para esas fechas.";
       })
       .catch(() => {
-        mensajeHabitaciones.textContent = "No se pudieron cargar habitaciones disponibles.";
+        mensajeHabitaciones.textContent =
+          "No se pudieron cargar habitaciones disponibles.";
       });
   };
 
@@ -171,15 +191,17 @@ window.abrirModalReserva = (modo = "nuevo", datos = null) => {
       .then((res) => res.json())
       .then((data) => {
         if (filtroTipoReserva && data.tipos) {
-          filtroTipoReserva.innerHTML = '<option value="">Todos los tipos</option>';
-          data.tipos.forEach(tipo => {
-             filtroTipoReserva.innerHTML += `<option value="${tipo.id}">${tipo.tipo}</option>`;
+          filtroTipoReserva.innerHTML =
+            '<option value="">Todos los tipos</option>';
+          data.tipos.forEach((tipo) => {
+            filtroTipoReserva.innerHTML += `<option value="${tipo.id}">${tipo.tipo}</option>`;
           });
         }
         if (filtroPisoReserva && data.pisos) {
-          filtroPisoReserva.innerHTML = '<option value="">Todos los pisos</option>';
-          data.pisos.forEach(piso => {
-             filtroPisoReserva.innerHTML += `<option value="${piso}">Piso ${piso}</option>`;
+          filtroPisoReserva.innerHTML =
+            '<option value="">Todos los pisos</option>';
+          data.pisos.forEach((piso) => {
+            filtroPisoReserva.innerHTML += `<option value="${piso}">Piso ${piso}</option>`;
           });
         }
       })
@@ -217,7 +239,8 @@ window.abrirModalReserva = (modo = "nuevo", datos = null) => {
       return;
     }
 
-    const textoClienteSeleccionado = selectorCliente.options[selectorCliente.selectedIndex].text;
+    const textoClienteSeleccionado =
+      selectorCliente.options[selectorCliente.selectedIndex].text;
 
     abrirModalPagoConDatos({
       cliente: cliente,
@@ -239,12 +262,12 @@ window.abrirModalReserva = (modo = "nuevo", datos = null) => {
   if (modo === "nuevo") {
     if (form) form.reset();
     const tit = document.querySelector(".titulo-modal");
-    if(tit) tit.textContent = "Nueva Reserva";
+    if (tit) tit.textContent = "Nueva Reserva";
   }
 
   if (modo === "editar" && datos) {
     const tit = document.querySelector(".titulo-modal");
-    if(tit) tit.textContent = "Editar Reserva";
+    if (tit) tit.textContent = "Editar Reserva";
     if (btnContinuarPago) btnContinuarPago.textContent = "Actualizar";
     if (campoNombre) campoNombre.value = datos.cliente || "";
     if (campoEmail) campoEmail.value = datos.email || "";
@@ -264,7 +287,14 @@ window.abrirModalReserva = (modo = "nuevo", datos = null) => {
       selectorCliente.addEventListener("change", seleccionarCliente);
     }
 
-    [fechaEntrada, horaEntrada, fechaSalida, horaSalida, filtroTipoReserva, filtroPisoReserva].forEach((campo) => {
+    [
+      fechaEntrada,
+      horaEntrada,
+      fechaSalida,
+      horaSalida,
+      filtroTipoReserva,
+      filtroPisoReserva,
+    ].forEach((campo) => {
       campo?.addEventListener("change", cargarHabitacionesDisponibles);
       campo?.addEventListener("input", cargarHabitacionesDisponibles);
     });
@@ -290,10 +320,12 @@ window.abrirModalReserva = (modo = "nuevo", datos = null) => {
       });
     }
 
-    const btnNuevoCliente = document.getElementById("btn-registrar-cliente-manual");
+    const btnNuevoCliente = document.getElementById(
+      "btn-registrar-cliente-manual",
+    );
     if (btnNuevoCliente) {
       btnNuevoCliente.addEventListener("click", () => {
-        if (typeof window.abrirModalCliente === 'function') {
+        if (typeof window.abrirModalCliente === "function") {
           window.abrirModalCliente("nuevo");
         }
       });
