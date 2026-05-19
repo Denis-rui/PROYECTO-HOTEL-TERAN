@@ -15,7 +15,7 @@ class DashboardController extends Controller
         $data['page_title'] = "Dashboard";
         $data['stats'] = $reservaModel->obtenerEstadisticasDashboard();
         $data['notificaciones'] = $reservaModel->obtenerNotificacionesCheckout();
-        $data['page_js'] = ['Clientes.js', 'Modal-Clientes.js', 'Modal-Dashboard.js', 'Dashboard.js'];
+        $data['page_js'] = ['Clientes.js', 'Modal-Clientes.js', 'Modal-NuevaReserva.js', 'Dashboard.js'];
 
         $this->views->render($this, 'index', $data);
     }

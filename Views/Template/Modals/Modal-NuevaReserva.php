@@ -1,6 +1,4 @@
 <?php
-
-
 ?>
 
 <section id="contenedor-modal-reserva" style="display: none;">

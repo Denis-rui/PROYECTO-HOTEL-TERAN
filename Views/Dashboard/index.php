@@ -141,6 +141,6 @@ $notificaciones = $data['notificaciones'] ?? [];
   </div>
 
   <!-- INCLUSIÓN DEL MODAL -->
-  <?php require_once("Views/Template/Modals/Modal-Dashboard.php"); ?>
+   <?php require_once("Views/Template/Modals/Modal-NuevaReserva.php"); ?>
   <?php require_once("Views/Template/Modals/Modal-Clientes.php"); ?>
 </section>

@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Modal-Usuarios.css" />
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Configuraciones.css" />
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Dashboard.css" />
-    <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Modal-Dashboard.css" />
+    <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Modal-NuevaReserva.css" />
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Reservas.css" />
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Perfil.css" />
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Habitaciones.css" />
@@ -31,3 +31,5 @@
         <?php require_once("Views/Template/nav.php"); ?>
     </div>
     <div id="app">
+
+    

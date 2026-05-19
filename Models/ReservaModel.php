@@ -25,7 +25,7 @@ class ReservaModel extends Model
         try {
             $sql = "SELECT r.id, r.codigo_reserva, c.id AS id_cliente, c.nombre_completo AS cliente, c.correo_electronico AS correo_electronico,
                            h.id AS id_habitacion, h.numero_habitacion AS habitacion, h.piso,
-                           r.check_in, r.check_out, r.check_in_real, r.check_out_real,
+                           r.check_in, r.check_out,
                            r.minutos_demora_checkout, r.cargo_checkout_tarde,
                            r.total, r.estado, r.observaciones,
                            IFNULL(p.total_pagado, 0) AS total_pagado,
