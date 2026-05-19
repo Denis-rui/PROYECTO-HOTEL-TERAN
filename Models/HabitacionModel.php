@@ -1,7 +1,7 @@
 <?php
-namespace App\Models;
+namespace Models;
 
-use App\Core\Model;
+use Libraries\Core\Model;
 use PDO;
 
 class HabitacionModel extends Model

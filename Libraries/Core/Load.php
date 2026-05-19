@@ -1,15 +1,15 @@
 <?php
 
 // Cargar configuración primero
-// Instanciar el controlador correcto según la URL usando PSR-4 App\Controllers
-$controllerClass = "App\\Controllers\\{$controller}Controller";
+// Instanciar el controlador correcto según la URL usando PSR-4 por carpeta
+$controllerClass = "Controllers\\{$controller}Controller";
 
 if (class_exists($controllerClass)) {
     $controllerObject = new $controllerClass();
     if (method_exists($controllerObject, $method)) {
         $controllerObject->$method($params);
     } else {
-        $errorClass = 'App\\Controllers\\ErrorController';
+        $errorClass = 'Controllers\\ErrorController';
         if (class_exists($errorClass)) {
             $err = new $errorClass();
             $err->index();
@@ -18,7 +18,7 @@ if (class_exists($controllerClass)) {
         }
     }
 } else {
-    $errorClass = 'App\\Controllers\\ErrorController';
+    $errorClass = 'Controllers\\ErrorController';
     if (class_exists($errorClass)) {
         $err = new $errorClass();
         $err->index();

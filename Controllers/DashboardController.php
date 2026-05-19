@@ -1,8 +1,8 @@
 <?php
-namespace App\Controllers;
+namespace Controllers;
 
-use App\Core\Controller;
-use App\Models\ReservaModel;
+use Libraries\Core\Controller;
+use Models\ReservaModel;
 
 class DashboardController extends Controller
 {

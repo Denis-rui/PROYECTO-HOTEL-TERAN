@@ -1,7 +1,7 @@
 <?php
-namespace App\Controllers;
+namespace Controllers;
 
-use App\Core\Controller;
+use Libraries\Core\Controller;
 
 class HabitacionController extends Controller
 {
