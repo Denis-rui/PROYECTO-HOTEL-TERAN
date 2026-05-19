@@ -1,5 +1,4 @@
 <?php
-
 const BASE_URL  = "http://localhost/DAW-II/Proyecto-Hotel_TERAN/";
 const DB_HOST   = "localhost";
 const DB_PORT   = "3306";
