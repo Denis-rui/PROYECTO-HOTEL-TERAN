@@ -1,5 +1,5 @@
 <?php
-namespace App\Models;
+namespace Models;
 
 class LoginModel extends UsuarioModel
 {

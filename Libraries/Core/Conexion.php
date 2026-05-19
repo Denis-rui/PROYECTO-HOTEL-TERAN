@@ -1,5 +1,5 @@
 <?php
-namespace App\Core;
+namespace Libraries\Core;
 
 class Conexion
 {

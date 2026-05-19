@@ -1,7 +1,6 @@
 <?php
-namespace App\Models;
-
-use App\Core\Model;
+namespace Models;
+use Libraries\Core\Model;
 use PDO;
 
 class ReservaModel extends Model

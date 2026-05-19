@@ -1,5 +1,5 @@
 <?php
-namespace App\Models;
+namespace Models;
 
 use Illuminate\Database\Eloquent\Model as Eloquent;
 use Illuminate\Database\Capsule\Manager as DB;
