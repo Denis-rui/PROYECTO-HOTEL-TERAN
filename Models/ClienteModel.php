@@ -1,4 +1,8 @@
 <?php
+namespace Models;
+
+use Libraries\Core\Model;
+use PDO;
 
 class ClienteModel extends Model
 {

@@ -1,4 +1,12 @@
 <?php
+namespace Models;
+use Illuminate\Database\Capsule\Manager as DB;
+use Libraries\Core\Model;
+use Models\Entities\Habitacion;
+use Models\Entities\Pago;
+use Models\Entities\Reserva;
+use Models\Entities\ReservaHabitacion;
+use PDO;
 
 class ReservaModel extends Model
 {
@@ -10,67 +18,27 @@ class ReservaModel extends Model
         parent::__construct();
     }
 
-    public function listarReservas()
-    {
-        return $this->obtenerReservas();
-    }
-
-    public function obtenerReserva($id)
-    {
-        return $this->obtenerReservaPorId($id);
-    }
-
     public function obtenerReservas()
     {
         try {
-            $sql = "SELECT r.id, r.codigo_reserva, c.id AS id_cliente, c.nombre_completo AS cliente, c.correo_electronico AS correo_electronico,
-                           h.id AS id_habitacion, h.numero_habitacion AS habitacion, h.piso,
-                           rh.check_in, rh.check_out,
-                           r.minutos_demora_checkout, r.cargo_checkout_tarde,
-                           r.total, r.estado, r.observaciones,
-                           IFNULL(p.total_pagado, 0) AS total_pagado,
-                           (r.total + r.cargo_checkout_tarde - IFNULL(p.total_pagado, 0)) AS saldo_pendiente,
-                           CASE
-                              WHEN r.total + r.cargo_checkout_tarde = 0 THEN 0
-                              ELSE ROUND((IFNULL(p.total_pagado, 0) / (r.total + r.cargo_checkout_tarde)) * 100, 0)
-                           END AS porcentaje_pago,
-                           CASE
-                              WHEN r.estado IN ('en_estadia', 'checkout_pendiente') AND NOW() > rh.check_out AND r.check_out_real IS NULL
-                              THEN TIMESTAMPDIFF(MINUTE, rh.check_out, NOW())
-                              ELSE 0
-                           END AS minutos_checkout_vencido
-                    FROM reserva r
-                    JOIN cliente c ON r.id_cliente = c.id
-                    JOIN reserva_habitacion rh ON r.id = rh.id_reserva
-                    JOIN habitacion h ON rh.id_habitacion = h.id
-                    LEFT JOIN (
-                        SELECT id_reserva, SUM(monto) AS total_pagado
-                        FROM pago
-                        GROUP BY id_reserva
-                    ) p ON p.id_reserva = r.id
-                    ORDER BY rh.check_in DESC";
-
-            $statement = $this->conectar()->prepare($sql);
-            $statement->execute();
-            return $statement->fetchAll(PDO::FETCH_ASSOC);
-        } catch (\PDOException $e) {
+            return Reserva::with(['cliente', 'habitacion', 'pagos', 'reservaHabitacion'])
+                ->orderByDesc('id')
+                ->get()
+                ->map(fn ($reserva) => $this->formatearReserva($reserva))
+                ->sortByDesc('check_in')
+                ->values()
+                ->all();
+        } catch (\Throwable $e) {
             throw new \Exception("Error al obtener reservas: " . $e->getMessage());
         }
     }
 
     public function obtenerReservaPorId($idReserva)
     {
-        $stmt = $this->conectar()->prepare("SELECT r.*, c.nombre_completo AS cliente, c.correo_electronico AS correo_electronico,
-                h.numero_habitacion,
-                IFNULL(p.total_pagado, 0) AS total_pagado,
-                (r.total + r.cargo_checkout_tarde - IFNULL(p.total_pagado, 0)) AS saldo_pendiente
-            FROM reserva r
-            JOIN cliente c ON c.id = r.id_cliente
-            JOIN habitacion h ON h.id = r.id_habitacion
-            LEFT JOIN (SELECT id_reserva, SUM(monto) AS total_pagado FROM pago GROUP BY id_reserva) p ON p.id_reserva = r.id
-            WHERE r.id = ?");
-        $stmt->execute([(int) $idReserva]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        $reserva = Reserva::with(['cliente', 'habitacion', 'pagos', 'reservaHabitacion'])
+            ->find((int) $idReserva);
+
+        return $reserva ? $this->formatearReserva($reserva) : null;
     }
 
     public function registrarReserva($reserva)
@@ -87,26 +55,30 @@ class ReservaModel extends Model
                 return ['exito' => false, 'mensaje' => $disponibilidad['mensaje']];
             }
 
-            $con = $this->conectar();
-            $con->beginTransaction();
+            DB::connection()->beginTransaction();
 
-            $sql = "INSERT INTO reserva
-                    (id_cliente, id_habitacion, check_in, check_out, total, estado, codigo_reserva, id_usuario, observaciones)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            $statement = $con->prepare($sql);
-            $ok = $statement->execute([
-                $reserva['cliente'] ?? null,
-                $reserva['habitacion'] ?? null,
-                $reserva['checkIn'] ?? null,
-                $reserva['checkOut'] ?? null,
-                $reserva['total'] ?? null,
-                $reserva['estado'] ?: 'confirmada',
-                $reserva['codigoReserva'] ?? null,
-                $reserva['usuario'] ?: 1,
-                $reserva['observaciones'] ?: null,
+            $reservaCreada = Reserva::create([
+                'id_cliente'      => $reserva['cliente'] ?? null,
+                'id_habitacion'   => $reserva['habitacion'] ?? null,
+                'check_in'        => $reserva['checkIn'] ?? null,
+                'check_out'       => $reserva['checkOut'] ?? null,
+                'total'           => $reserva['total'] ?? null,
+                'estado'          => $reserva['estado'] ?: 'confirmada',
+                'codigo_reserva'  => $reserva['codigoReserva'] ?? null,
+                'id_usuario'      => $reserva['usuario'] ?: 1,
+                'observaciones'   => $reserva['observaciones'] ?: null,
             ]);
 
-            $idReserva = (int) $con->lastInsertId();
+            $ok = (bool) $reservaCreada;
+            $idReserva = (int) $reservaCreada->id;
+
+            ReservaHabitacion::create([
+                'id_reserva'   => $idReserva,
+                'id_habitacion'=> $reserva['habitacion'] ?? null,
+                'check_in'     => $reserva['checkIn'] ?? null,
+                'check_out'    => $reserva['checkOut'] ?? null,
+                'activo'       => 1,
+            ]);
 
             $habitacionActual = $habitacionModel->obtenerPorId((int) ($reserva['habitacion'] ?? 0));
             $habitacionModel->registrarHistorial(
@@ -121,12 +93,12 @@ class ReservaModel extends Model
                 $reserva['usuario'] ?: null
             );
 
-            $con->commit();
+            DB::connection()->commit();
             return ['exito' => $ok, 'mensaje' => 'Reserva registrada correctamente.', 'id_reserva' => $idReserva];
         } catch (\Exception $e) {
-            $con = $this->conectar();
-            if ($con->inTransaction()) {
-                $con->rollBack();
+            $conexion = DB::connection();
+            if ($conexion->getPdo()->inTransaction()) {
+                $conexion->rollBack();
             }
             return ['exito' => false, 'mensaje' => 'Error al registrar reserva: ' . $e->getMessage()];
         }
@@ -145,14 +117,65 @@ class ReservaModel extends Model
             }
 
             $fecha = $fechaPago ? $fechaPago . ' ' . date('H:i:s') : date('Y-m-d H:i:s');
-            $stmt = $this->conectar()->prepare("INSERT INTO pago (id_reserva, monto, descripcion, fecha_pago, id_metodo_pago)
-                VALUES (?, ?, ?, ?, ?)");
-            $ok = $stmt->execute([(int) $idReserva, $monto, $descripcion, $fecha, (int) $idMetodoPago]);
+            $pago = Pago::create([
+                'id_reserva'      => (int) $idReserva,
+                'monto'           => $monto,
+                'descripcion'     => $descripcion,
+                'fecha_pago'      => $fecha,
+                'id_metodo_pago'  => (int) $idMetodoPago,
+            ]);
+            $ok = (bool) $pago;
 
             return ['exito' => $ok, 'mensaje' => $ok ? 'Pago registrado correctamente.' : 'No se pudo registrar el pago.'];
-        } catch (\PDOException $e) {
+        } catch (\Throwable $e) {
             return ['exito' => false, 'mensaje' => 'Error al registrar pago: ' . $e->getMessage()];
         }
+    }
+
+    private function formatearReserva($reserva)
+    {
+        $cliente = $reserva->cliente;
+        $habitacion = $reserva->habitacion;
+        $reservaHabitacion = $reserva->reservaHabitacion;
+        $totalPagado = (float) ($reserva->pagos->sum('monto') ?? 0);
+        $checkIn = $reservaHabitacion->check_in ?? $reserva->check_in ?? null;
+        $checkOut = $reservaHabitacion->check_out ?? $reserva->check_out ?? null;
+        $estado = $reserva->estado ?? '';
+        $total = (float) ($reserva->total ?? 0);
+        $cargoTarde = (float) ($reserva->cargo_checkout_tarde ?? 0);
+        $saldoPendiente = $total + $cargoTarde - $totalPagado;
+
+        $minutosCheckoutVencido = 0;
+        if (
+            in_array($estado, ['en_estadia', 'checkout_pendiente'], true)
+            && $checkOut
+            && strtotime((string) $checkOut) < time()
+            && empty($reserva->check_out_real)
+        ) {
+            $minutosCheckoutVencido = (int) floor((time() - strtotime((string) $checkOut)) / 60);
+        }
+
+        return [
+            'id' => $reserva->id,
+            'codigo_reserva' => $reserva->codigo_reserva,
+            'id_cliente' => $reserva->id_cliente,
+            'cliente' => $cliente->nombre_completo ?? '',
+            'correo_electronico' => $cliente->correo_electronico ?? '',
+            'id_habitacion' => $reserva->id_habitacion,
+            'habitacion' => $habitacion->numero_habitacion ?? '',
+            'piso' => $habitacion->piso ?? null,
+            'check_in' => $checkIn,
+            'check_out' => $checkOut,
+            'minutos_demora_checkout' => $reserva->minutos_demora_checkout ?? 0,
+            'cargo_checkout_tarde' => $cargoTarde,
+            'total' => $total,
+            'estado' => $estado,
+            'observaciones' => $reserva->observaciones ?? '',
+            'total_pagado' => $totalPagado,
+            'saldo_pendiente' => $saldoPendiente,
+            'porcentaje_pago' => $total + $cargoTarde > 0 ? round(($totalPagado / ($total + $cargoTarde)) * 100, 0) : 0,
+            'minutos_checkout_vencido' => $minutosCheckoutVencido,
+        ];
     }
 
     public function actualizarEstadoReserva($idReserva, $nuevoEstado)
@@ -328,7 +351,8 @@ class ReservaModel extends Model
 
             $habitacionModel = new HabitacionModel();
 
-            $nuevoTotal = $this->calcularTotalReserva((int) $reserva['id_habitacion'], $reserva['check_in'], $nuevoCheckOut);
+            $habitacionModel = new HabitacionModel();
+            $nuevoTotal = $habitacionModel->calcularTotalReserva((int) $reserva['id_habitacion'], $reserva['check_in'], $nuevoCheckOut);
             $stmt = $this->conectar()->prepare("UPDATE reserva SET check_out = ?, total = ?, estado = 'en_estadia' WHERE id = ?");
             $ok = $stmt->execute([$nuevoCheckOut, $nuevoTotal, (int) $idReserva]);
 
@@ -341,8 +365,6 @@ class ReservaModel extends Model
             return ['exito' => false, 'mensaje' => 'Error al extender estadía: ' . $e->getMessage()];
         }
     }
-
-
 
     public function cambiarHabitacion($idReserva, $idHabitacionNueva, $motivo, $idUsuario = null)
     {
@@ -432,55 +454,6 @@ class ReservaModel extends Model
             'vencidos' => array_values(array_filter($reservas, fn($r) => (int) $r['minutos_excedidos'] > 0)),
             'notificaciones' => $notificaciones,
         ];
-    }
-
-    public function obtenerEstadisticasDashboard()
-    {
-        $stats = [];
-        $con = $this->conectar();
-        $stats['habitaciones_disponibles'] = (int) $con->query("SELECT COUNT(*) FROM habitacion WHERE activo = 1 AND estado = 'Disponible'")->fetchColumn();
-        $stats['habitaciones_ocupadas'] = (int) $con->query("SELECT COUNT(*) FROM habitacion WHERE activo = 1 AND estado = 'Ocupada'")->fetchColumn();
-        $stats['habitaciones_reservadas'] = (int) $con->query("SELECT COUNT(*) FROM habitacion WHERE activo = 1 AND estado = 'Reservada'")->fetchColumn();
-        $stats['habitaciones_mantenimiento'] = (int) $con->query("SELECT COUNT(*) FROM habitacion WHERE activo = 1 AND estado = 'Mantenimiento'")->fetchColumn();
-        $stats['reservas_activas'] = (int) $con->query("SELECT COUNT(*) FROM reserva WHERE estado IN ('pendiente','confirmada','checkin_realizado','en_estadia','checkout_pendiente')")->fetchColumn();
-        $stats['checkins_hoy'] = (int) $con->query("SELECT COUNT(*) FROM reserva_habitacion rh JOIN reserva r ON r.id = rh.id_reserva WHERE DATE(rh.check_in) = CURDATE() AND r.estado IN ('confirmada','en_estadia')
-        ")->fetchColumn();
-        $stats['checkouts_hoy'] = (int) $con->query("SELECT COUNT(*) FROM reserva_habitacion rh JOIN reserva r ON r.id = rh.id_reserva WHERE DATE(rh.check_out) = CURDATE() AND r.estado IN ('en_estadia','checkout_pendiente','checkout_realizado')
-        ")->fetchColumn();
-$stats['checkouts_vencidos'] = (int) $con->query("SELECT COUNT(*) FROM reserva_habitacion rh JOIN reserva r ON r.id = rh.id_reserva WHERE r.estado IN ('en_estadia','checkout_pendiente') AND rh.check_out IS NOT NULL AND NOW() > rh.check_out AND rh.activo = 1
-")->fetchColumn();
-        $stats['ingreso_dia'] = (float) $con->query("SELECT IFNULL(SUM(monto),0) FROM pago WHERE DATE(fecha_pago) = CURDATE()")->fetchColumn();
-        
-        // NUEVOS INDICADORES SOLICITADOS
-        $stats['total_procedencias'] = (int) $con->query("SELECT COUNT(DISTINCT procedencia) FROM cliente WHERE procedencia IS NOT NULL AND procedencia != ''")->fetchColumn();
-        
-    $stats['estancia_minima'] = (int) $con->query("SELECT IFNULL( MIN(DATEDIFF(rh.check_out, rh.check_in)), 0) FROM reserva_habitacion rh
-        JOIN reserva r ON r.id = rh.id_reserva WHERE r.estado NOT IN ('cancelada', 'no_show') AND rh.check_out IS NOT NULL
-    ")->fetchColumn();
-
-        $totalHabitaciones = max(1, (int) $con->query("SELECT COUNT(*) FROM habitacion WHERE activo = 1")->fetchColumn());
-        $stats['ocupacion_porcentual'] = round(($stats['habitaciones_ocupadas'] / $totalHabitaciones) * 100, 1);
-
-        // DETALLES DE MANTENIMIENTO (Usando descripcion_habitacion como motivo)
-        $sqlMante = "SELECT numero_habitacion, COALESCE(descripcion_habitacion, 'Sin motivo especificado') as motivo 
-                     FROM habitacion 
-                     WHERE estado = 'Mantenimiento' AND activo = 1";
-        $stats['detalles_mantenimiento'] = $con->query($sqlMante)->fetchAll(PDO::FETCH_ASSOC);
-
-        return $stats;
-    }
-
-    public function calcularTotalReserva($idHabitacion, $checkIn, $checkOut)
-    {
-        $stmt = $this->conectar()->prepare("SELECT COALESCE(NULLIF(h.precio, 0), t.precio_base) AS precio
-            FROM habitacion h
-            JOIN tipo_habitacion t ON t.id = h.id_tipo_habitacion
-            WHERE h.id = ?");
-        $stmt->execute([(int) $idHabitacion]);
-        $precio = (float) $stmt->fetchColumn();
-        $segundos = max(1, strtotime($checkOut) - strtotime($checkIn));
-        $dias = max(1, (int) ceil($segundos / 86400));
-        return $dias * $precio;
     }
 
     private function calcularCargoCheckoutTarde($minutosDemora, $totalReserva)

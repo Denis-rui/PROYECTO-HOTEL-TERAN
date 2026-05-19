@@ -1,4 +1,8 @@
 <?php
+namespace Models;
+
+use Libraries\Core\Model;
+use PDO;
 
 class HotelModel extends Model
 {
@@ -7,18 +11,6 @@ class HotelModel extends Model
     public function __construct()
     {
         parent::__construct();
-    }
-
-    public function read()
-    {
-        try {
-            $sql = "SELECT * FROM hotel LIMIT 1";
-            $statement = $this->conectar()->prepare($sql);
-            $statement->execute();
-            return $statement->fetch(PDO::FETCH_ASSOC);
-        } catch (\PDOException $e) {
-            throw new \Exception("Error al leer hotel: " . $e->getMessage());
-        }
     }
 
     public function actualizarHotel($datos)

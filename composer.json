@@ -1,5 +1,16 @@
 {
+    "name": "denis-rui/proyecto-hotel-teran",
+    "description": "Proyecto Hotel TERAN con arquitectura MVC y autoload PSR-4.",
+    "license": "proprietary",
     "require": {
         "illuminate/database": "^12.59"
+    },
+    "autoload": {
+        "psr-4": {
+            "Libraries\\Core\\": "Libraries/Core/",
+            "Controllers\\": "Controllers/",
+            "Models\\": "Models/"
+        }
     }
 }
+

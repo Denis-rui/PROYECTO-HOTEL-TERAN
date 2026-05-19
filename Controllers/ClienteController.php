@@ -1,4 +1,7 @@
 <?php
+namespace Controllers;
+
+use Libraries\Core\Controller;
 
 class ClienteController extends Controller
 {

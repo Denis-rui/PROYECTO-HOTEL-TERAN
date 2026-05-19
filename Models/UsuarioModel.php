@@ -1,36 +1,28 @@
 <?php
+namespace Models;
 
-// use Illuminate\\Database\\Eloquent\\Model as Eloquent;
-// use Illuminate\\Database\\Capsule\\Manager as DB;
-use Illuminate\Database\Eloquent\Model as Eloquent;
-use Illuminate\Database\Capsule\Manager as DB;
+use Models\Entities\Rol;
+use Models\Entities\Usuario;
 
-class UsuarioModel extends Eloquent
+class UsuarioModel
 {
-    protected $table      = 'usuario';
-    protected $primaryKey = 'id';
-    public $timestamps    = false;
-    protected $fillable   = [
-        'nombre_completo', 'nombre_usuario', 'correo', 'telefono', 'dni',
-        'fecha_nacimiento', 'contrasenia', 'estado', 'id_rol'
-    ];
-
     // Obtener usuario para login (con rol)
     public function obtenerUsuarios($usuario)
     {
         try {
-            $user = self::where('nombre_usuario', $usuario)->where('estado', 1)->first();
+            $user = Usuario::with('rol')
+                ->where('nombre_usuario', $usuario)
+                ->where('estado', 1)
+                ->first();
 
             if (!$user) {
                 return [];
             }
 
-            $rol = DB::table('rol')->where('id', $user->id_rol)->value('rol');
-
             return [
                 'id' => $user->id,
                 'nombre_usuario' => $user->nombre_usuario,
-                'rol' => $rol ?: '',
+                'rol' => $user->rol->rol ?? '',
                 'contrasenia' => $user->contrasenia,
             ];
         } catch (\Throwable $e) {
@@ -42,7 +34,22 @@ class UsuarioModel extends Eloquent
     // Leer perfil de un usuario por nombre
     public function read(string $nombreUsuario)
     {
-        return DB::table('usuario as u')->join('rol as r', 'u.id_rol', '=', 'r.id')->where('u.nombre_usuario', $nombreUsuario)->select('u.nombre_completo', 'u.nombre_usuario', 'u.correo', 'u.telefono', 'r.rol')->first();
+        $user = Usuario::with('rol')
+            ->where('nombre_usuario', $nombreUsuario)
+            ->where('estado', 1)
+            ->first();
+
+        if (!$user) {
+            return null;
+        }
+
+        return [
+            'nombre_completo' => $user->nombre_completo,
+            'nombre_usuario'  => $user->nombre_usuario,
+            'correo'          => $user->correo,
+            'telefono'        => $user->telefono,
+            'rol'             => $user->rol->rol ?? '',
+        ];
     }
 
     // Listar todos los usuarios activos
@@ -53,13 +60,29 @@ class UsuarioModel extends Eloquent
 
     public function readAll()
     {
-        return DB::table('usuario as u')->join('rol as r', 'u.id_rol', '=', 'r.id')->where('u.estado', 1)->select('u.id', 'u.nombre_completo', 'u.nombre_usuario', 'u.correo', 'u.telefono', 'u.dni', 'r.rol')->orderBy('u.id', 'asc')->get()->toArray();
+        return Usuario::with('rol')
+            ->where('estado', 1)
+            ->orderBy('id', 'asc')
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'id'              => $user->id,
+                    'nombre_completo' => $user->nombre_completo,
+                    'nombre_usuario'  => $user->nombre_usuario,
+                    'correo'          => $user->correo,
+                    'telefono'        => $user->telefono,
+                    'dni'             => $user->dni,
+                    'rol'             => $user->rol->rol ?? '',
+                    'estado'          => $user->estado ? 'activo' : 'inactivo',
+                ];
+            })
+            ->all();
     }
 
     // Crear usuario
-    public function create($datos)
+    public function crearUsuario($datos)
     {
-        $rolId = DB::table('rol')->where('rol', $datos['rol'] ?? '')->value('id');
+        $rolId = Rol::where('rol', $datos['rol'] ?? '')->value('id');
 
         if (!$rolId) {
             throw new \Exception('Rol no encontrado');
@@ -77,18 +100,24 @@ class UsuarioModel extends Eloquent
             'id_rol'           => $rolId,
         ];
 
-        return self::insert($userData);
+        return Usuario::query()->create($userData);
     }
 
     // Actualizar perfil propio por nombre de usuario
     public function updateByNombreUsuario($nombreUsuario, $datos)
     {
-        return DB::table('usuario')->where('nombre_usuario', $nombreUsuario)->update([
-                'nombre_completo' => $datos['nombre_completo'] ?? '',
-                'nombre_usuario'  => $datos['nombre_usuario']  ?? '',
-                'correo'          => $datos['correo']          ?? '',
-                'telefono'        => $datos['telefono']        ?? '',
-            ]);
+        $user = Usuario::where('nombre_usuario', $nombreUsuario)->first();
+
+        if (!$user) {
+            return false;
+        }
+
+        $user->nombre_completo = $datos['nombre_completo'] ?? $user->nombre_completo;
+        $user->nombre_usuario  = $datos['nombre_usuario']  ?? $user->nombre_usuario;
+        $user->correo          = $datos['correo']          ?? $user->correo;
+        $user->telefono        = $datos['telefono']        ?? $user->telefono;
+
+        return $user->save();
     }
 
     // Nota: no definir `update` para no sobrescribir el método de Eloquent
@@ -96,25 +125,39 @@ class UsuarioModel extends Eloquent
     // Actualizar usuario por ID (admin)
     public function updateById(int $id, $datos)
     {
-        $rolId = DB::table('rol')->where('rol', $datos['rol'] ?? '')->value('id');
+        $rolId = Rol::where('rol', $datos['rol'] ?? '')->value('id');
 
         if (!$rolId) {
             throw new \Exception('Rol no encontrado');
         }
 
-        return DB::table('usuario')->where('id', $id)->update([
-                'nombre_completo' => $datos['nombre_completo'] ?? '',
-                'nombre_usuario'  => $datos['nombre_usuario']  ?? '',
-                'correo'          => $datos['correo']          ?? '',
-                'telefono'        => $datos['telefono']        ?? '',
-                'dni'             => $datos['dni']             ?? '',
-                'id_rol'          => $rolId,
-            ]);
+        $user = Usuario::find($id);
+
+        if (!$user) {
+            return false;
+        }
+
+        $user->nombre_completo = $datos['nombre_completo'] ?? $user->nombre_completo;
+        $user->nombre_usuario  = $datos['nombre_usuario']  ?? $user->nombre_usuario;
+        $user->correo          = $datos['correo']          ?? $user->correo;
+        $user->telefono        = $datos['telefono']        ?? $user->telefono;
+        $user->dni             = $datos['dni']             ?? $user->dni;
+        $user->id_rol          = $rolId;
+
+        return $user->save();
     }
 
     // Eliminar (desactivar) usuario
     public function deleteUsuario(int $id)
     {
-        return DB::table('usuario')->where('id', $id)->update(['estado' => 0]);
+        $user = Usuario::find($id);
+
+        if (!$user) {
+            return false;
+        }
+
+        $user->estado = 0;
+
+        return $user->save();
     }
 }

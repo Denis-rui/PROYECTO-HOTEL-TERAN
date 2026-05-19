@@ -1,4 +1,8 @@
 <?php
+namespace Models;
+
+use Libraries\Core\Model;
+use PDO;
 
 // Importamos la clase base de modelos y manejador de BD de Laravel
 use Illuminate\Database\Eloquent\Model as Eloquent;
@@ -275,6 +279,19 @@ class HabitacionModel extends Eloquent
             error_log("Error en obtener reserva por estadia: " . $e->getMessage());
             return null;
         }
+    }
+
+    public function calcularTotalReserva($idHabitacion, $checkIn, $checkOut)
+    {
+        $stmt = $this->conectar()->prepare("SELECT COALESCE(NULLIF(h.precio, 0), t.precio_base) AS precio
+            FROM habitacion h
+            JOIN tipo_habitacion t ON t.id = h.id_tipo_habitacion
+            WHERE h.id = ?");
+        $stmt->execute([(int) $idHabitacion]);
+        $precio = (float) $stmt->fetchColumn();
+        $segundos = max(1, strtotime($checkOut) - strtotime($checkIn));
+        $dias = max(1, (int) ceil($segundos / 86400));
+        return $dias * $precio;
     }
 
     private function normalizarEstado($estado)

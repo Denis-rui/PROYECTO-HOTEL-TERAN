@@ -1,4 +1,5 @@
 <?php
+namespace Libraries\Core;
 
 class Model extends Conexion
 {
@@ -15,23 +16,23 @@ class Model extends Conexion
         $sql  = "SELECT * FROM {$this->table}";
         $stmt = $this->conectar()->prepare($sql);
         $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 
     public function find($id)
     {
         $sql  = "SELECT * FROM {$this->table} WHERE {$this->primaryKey} = :id";
         $stmt = $this->conectar()->prepare($sql);
-        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->bindParam(':id', $id, \PDO::PARAM_INT);
         $stmt->execute();
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
 
     public function delete($id)
     {
         $sql  = "DELETE FROM {$this->table} WHERE {$this->primaryKey} = :id";
         $stmt = $this->conectar()->prepare($sql);
-        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->bindParam(':id', $id, \PDO::PARAM_INT);
         return $stmt->execute();
     }
 
@@ -59,7 +60,7 @@ class Model extends Conexion
         foreach ($data as $key => $value) {
             $stmt->bindValue(":{$key}", $value);
         }
-        $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        $stmt->bindValue(':id', $id, \PDO::PARAM_INT);
         return $stmt->execute();
     }
 
@@ -76,6 +77,6 @@ class Model extends Conexion
             $stmt->bindValue(":{$key}", $value);
         }
         $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 }
