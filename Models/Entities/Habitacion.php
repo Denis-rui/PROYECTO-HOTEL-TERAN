@@ -8,7 +8,7 @@ class Habitacion extends Eloquent
     protected $table = 'habitacion';
     public $timestamps = false;
     protected $fillable = [
-        'numero_habitacion', 'piso', 'id_tipo_habitacion', 'precio', 'estado',
+        'numero_habitacion', 'piso', 'id_tipo_habitacion', 'estado',
         'descripcion_habitacion', 'capacidad', 'activo', 'estado_operativo', 'estado_limpieza'
     ];
 

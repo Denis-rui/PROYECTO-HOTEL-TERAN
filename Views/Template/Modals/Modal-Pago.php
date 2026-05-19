@@ -13,7 +13,7 @@
                         <span id="infoPagoCliente" class="valor-info">---</span>
                     </div>
                     <div class="info-item">
-                        <label class="etiqueta-info">Habitación:</label>
+                        <label class="etiqueta-info">Habitaciones:</label>
                         <span id="infoPagoHabitacion" class="valor-info">---</span>
                     </div>
                     <div class="info-item">
@@ -107,6 +107,7 @@
                 <input type="hidden" id="pagoCheckOut" name="checkOut" />
                 <input type="hidden" id="pagoHoraSalida" name="horaSalida" />
                 <input type="hidden" id="pagoHabitacion" name="habitacion" />
+                <input type="hidden" id="pagoHabitaciones" name="habitaciones" />
                 <input type="hidden" id="pagoTotalReserva" name="totalReserva" />
 
                 <!-- BOTONES -->

@@ -28,7 +28,8 @@ class ClienteController extends Controller
     {
         header('Content-Type: application/json');
         $texto = $_GET['q'] ?? '';
-        echo json_encode($this->model->obtenerClientesParaReserva($texto));
+        $clientes = $this->model->obtenerClientesParaReserva($texto);
+        echo json_encode(['clientes' => $clientes]);
     }
 
     public function registrar($params = '')
