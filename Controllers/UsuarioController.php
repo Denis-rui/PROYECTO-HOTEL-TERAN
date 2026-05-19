@@ -39,7 +39,7 @@ class UsuarioController extends Controller
     {
         header('Content-Type: application/json');
         $datos = json_decode(file_get_contents('php://input'), true);
-        $ok    = $this->model->create($datos);
+        $ok    = $this->model->crearUsuario($datos);
         echo json_encode(['exito' => $ok]);
     }
 
