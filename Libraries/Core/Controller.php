@@ -1,4 +1,5 @@
 <?php
+namespace App\Core;
 
 class Controller
 {
@@ -13,14 +14,13 @@ class Controller
 
     public function loadModel()
     {
-        // Deduce el nombre del Model a partir del Controller:
-        // "LoginController" → "LoginModel"
-        $modelName = str_replace('Controller', 'Model', get_class($this));
-        $modelPath = "Models/{$modelName}.php";
+        // Deduce el nombre del Model a partir del Controller short name:
+        $shortName = (new \ReflectionClass($this))->getShortName();
+        $modelName = str_replace('Controller', 'Model', $shortName);
+        $modelClass = "App\\Models\\{$modelName}";
 
-        if (file_exists($modelPath)) {
-            require_once $modelPath;
-            $this->model = new $modelName();
+        if (class_exists($modelClass)) {
+            $this->model = new $modelClass();
         }
     }
 }

@@ -1,4 +1,7 @@
 <?php
+namespace App\Models;
+
+use App\Core\Model;
 
 class ClienteModel extends Model
 {

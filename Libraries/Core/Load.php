@@ -1,21 +1,28 @@
 <?php
 
 // Cargar configuración primero
-require_once 'Config/Config.php';
+// Instanciar el controlador correcto según la URL usando PSR-4 App\Controllers
+$controllerClass = "App\\Controllers\\{$controller}Controller";
 
-// Instanciar el controlador correcto según la URL
-$controllerFile  = "Controllers/{$controller}Controller.php";
-
-if (file_exists($controllerFile)) {
-    require_once $controllerFile;
-    $controllerClass  = "{$controller}Controller";
+if (class_exists($controllerClass)) {
     $controllerObject = new $controllerClass();
-
     if (method_exists($controllerObject, $method)) {
         $controllerObject->$method($params);
     } else {
-        require_once 'Controllers/ErrorController.php';
+        $errorClass = 'App\\Controllers\\ErrorController';
+        if (class_exists($errorClass)) {
+            $err = new $errorClass();
+            $err->index();
+        } else {
+            echo "Error: controlador o método no encontrado.";
+        }
     }
 } else {
-    require_once 'Controllers/ErrorController.php';
+    $errorClass = 'App\\Controllers\\ErrorController';
+    if (class_exists($errorClass)) {
+        $err = new $errorClass();
+        $err->index();
+    } else {
+        echo "Error: controlador no encontrado.";
+    }
 }
