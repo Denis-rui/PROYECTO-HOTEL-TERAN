@@ -117,6 +117,12 @@ class UsuarioModel
         $user->correo          = $datos['correo']          ?? $user->correo;
         $user->telefono        = $datos['telefono']        ?? $user->telefono;
 
+
+        // Para cambio de contraseña
+        if (!empty($datos['contrasenia'])) {
+            $user->contrasenia = $datos['contrasenia'];
+        }
+
         return $user->save();
     }
 
