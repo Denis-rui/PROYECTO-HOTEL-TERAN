@@ -86,6 +86,6 @@
   </div>
 
   <!-- INCLUSIÓN DE MODALES -->
-  <?php require_once("Views/Template/Modals/Modal-Dashboard.php"); ?>
+  <?php require_once("Views/Template/Modals/Modal-NuevaReserva.php"); ?>
   <?php require_once("Views/Template/Modals/Modal-Pago.php"); ?>
 </section>

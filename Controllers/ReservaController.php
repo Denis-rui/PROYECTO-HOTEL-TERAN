@@ -10,7 +10,7 @@ class ReservaController extends Controller
         }
         $data['page_title'] = "Gestión de Reservas";
         $data['reservas'] = $this->model->obtenerReservas();
-        $data['page_js'] = ['Clientes.js', 'Modal-Clientes.js', 'Modal-Dashboard.js', 'Pago.js', 'Reservas.js'];
+        $data['page_js'] = ['Clientes.js', 'Modal-Clientes.js', 'Modal-NuevaReserva.js', 'Pago.js', 'Reservas.js'];
         $this->views->render($this, 'index', $data);
     }
 
