@@ -19,5 +19,12 @@ if (!empty($arrUrl[2])) {
 }
 
 require_once 'Config/Config.php';
+// Cargar Composer y Eloquent antes de instanciar controladores
+if (file_exists(__DIR__ . '/vendor/autoload.php')) {
+    require_once __DIR__ . '/vendor/autoload.php';
+}
+if (file_exists(__DIR__ . '/Config/eloquent.php')) {
+    require_once __DIR__ . '/Config/eloquent.php';
+}
 require_once 'Libraries/Core/Autoload.php';
 require_once 'Libraries/Core/Load.php';
