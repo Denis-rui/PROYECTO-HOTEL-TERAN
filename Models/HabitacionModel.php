@@ -40,20 +40,15 @@ class HabitacionModel extends Model
     public function buscar($numero, $tipo, $estado, $piso)
     {
         try {
-            $sql = "SELECT h.id, h.numero_habitacion, h.piso, h.id_tipo_habitacion,
-                           t.tipo AS tipo_nombre,
-                           COALESCE(NULLIF(h.descripcion_habitacion, ''), '') AS descripcion,
-                           h.precio,
-                           h.estado, h.capacidad, h.activo,
-                           ra.id AS reserva_actual_id,
-                           c.nombre_completo AS cliente_actual
-                    FROM habitacion h
-                    JOIN tipo_habitacion t ON t.id = h.id_tipo_habitacion
-                    LEFT JOIN reserva ra ON ra.id_habitacion = h.id
-                        AND ra.estado IN ('en_estadia', 'checkout_pendiente')
-                        AND ra.check_out_real IS NULL
-                    LEFT JOIN cliente c ON c.id = ra.id_cliente
-                    WHERE h.activo = 1";
+            $sql = "SELECT h.id, h.numero_habitacion, h.piso, h.id_tipo_habitacion, t.tipo AS tipo_nombre, COALESCE(NULLIF(h.descripcion_habitacion, ''), '') AS descripcion, h.precio, h.estado, h.capacidad, h.activo, r.id AS reserva_actual_id, c.nombre_completo AS cliente_actual FROM habitacion h
+                JOIN tipo_habitacion t ON t.id = h.id_tipo_habitacion
+                LEFT JOIN reserva_habitacion rh ON rh.id_habitacion = h.id
+                AND rh.check_in <= NOW()
+                AND (rh.check_out IS NULL OR rh.check_out > NOW())
+                AND rh.activo = 1
+                LEFT JOIN reserva r ON r.id = rh.id_reserva AND r.estado IN ('en_estadia', 'checkout_pendiente')
+                LEFT JOIN cliente c ON c.id = r.id_cliente
+                WHERE h.activo = 1;";
 
             $params = [];
 

@@ -25,7 +25,7 @@ class ReservaModel extends Model
         try {
             $sql = "SELECT r.id, r.codigo_reserva, c.id AS id_cliente, c.nombre_completo AS cliente, c.correo_electronico AS correo_electronico,
                            h.id AS id_habitacion, h.numero_habitacion AS habitacion, h.piso,
-                           r.check_in, r.check_out,
+                           rh.check_in, rh.check_out,
                            r.minutos_demora_checkout, r.cargo_checkout_tarde,
                            r.total, r.estado, r.observaciones,
                            IFNULL(p.total_pagado, 0) AS total_pagado,
@@ -35,19 +35,20 @@ class ReservaModel extends Model
                               ELSE ROUND((IFNULL(p.total_pagado, 0) / (r.total + r.cargo_checkout_tarde)) * 100, 0)
                            END AS porcentaje_pago,
                            CASE
-                              WHEN r.estado IN ('en_estadia', 'checkout_pendiente') AND NOW() > r.check_out AND r.check_out_real IS NULL
-                              THEN TIMESTAMPDIFF(MINUTE, r.check_out, NOW())
+                              WHEN r.estado IN ('en_estadia', 'checkout_pendiente') AND NOW() > rh.check_out AND r.check_out_real IS NULL
+                              THEN TIMESTAMPDIFF(MINUTE, rh.check_out, NOW())
                               ELSE 0
                            END AS minutos_checkout_vencido
                     FROM reserva r
                     JOIN cliente c ON r.id_cliente = c.id
-                    JOIN habitacion h ON r.id_habitacion = h.id
+                    JOIN reserva_habitacion rh ON r.id = rh.id_reserva
+                    JOIN habitacion h ON rh.id_habitacion = h.id
                     LEFT JOIN (
                         SELECT id_reserva, SUM(monto) AS total_pagado
                         FROM pago
                         GROUP BY id_reserva
                     ) p ON p.id_reserva = r.id
-                    ORDER BY r.check_in DESC";
+                    ORDER BY rh.check_in DESC";
 
             $statement = $this->conectar()->prepare($sql);
             $statement->execute();
@@ -390,16 +391,21 @@ class ReservaModel extends Model
 
     public function obtenerNotificacionesCheckout()
     {
-        $sql = "SELECT r.id AS id_reserva, c.id AS id_cliente, c.nombre_completo AS cliente, h.id AS id_habitacion,
-                       h.numero_habitacion AS habitacion, r.check_out,
-                       TIMESTAMPDIFF(MINUTE, NOW(), r.check_out) AS minutos_faltantes,
-                       CASE WHEN NOW() > r.check_out THEN TIMESTAMPDIFF(MINUTE, r.check_out, NOW()) ELSE 0 END AS minutos_excedidos
-                FROM reserva r
-                JOIN cliente c ON c.id = r.id_cliente
-                JOIN habitacion h ON h.id = r.id_habitacion
-                WHERE r.estado IN ('en_estadia', 'checkout_pendiente')
-                  AND r.check_out_real IS NULL
-                ORDER BY r.check_out ASC";
+        $sql = "SELECT r.id AS id_reserva, c.id AS id_cliente, c.nombre_completo AS cliente, h.id AS id_habitacion, h.numero_habitacion AS habitacion,
+        rh.check_out, TIMESTAMPDIFF(MINUTE, NOW(), rh.check_out) AS minutos_faltantes,
+            CASE 
+                WHEN NOW() > rh.check_out 
+                THEN TIMESTAMPDIFF(MINUTE, rh.check_out, NOW())
+                ELSE 0 
+            END AS minutos_excedidos
+        FROM reserva_habitacion rh
+        JOIN reserva r ON r.id = rh.id_reserva
+        JOIN cliente c ON c.id = r.id_cliente
+        JOIN habitacion h ON h.id = rh.id_habitacion
+        WHERE r.estado IN ('en_estadia', 'checkout_pendiente')
+        AND rh.check_out IS NOT NULL
+        AND rh.activo = 1
+        ORDER BY rh.check_out ASC;";
         $stmt = $this->conectar()->prepare($sql);
         $stmt->execute();
         $reservas = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -437,15 +443,20 @@ class ReservaModel extends Model
         $stats['habitaciones_reservadas'] = (int) $con->query("SELECT COUNT(*) FROM habitacion WHERE activo = 1 AND estado = 'Reservada'")->fetchColumn();
         $stats['habitaciones_mantenimiento'] = (int) $con->query("SELECT COUNT(*) FROM habitacion WHERE activo = 1 AND estado = 'Mantenimiento'")->fetchColumn();
         $stats['reservas_activas'] = (int) $con->query("SELECT COUNT(*) FROM reserva WHERE estado IN ('pendiente','confirmada','checkin_realizado','en_estadia','checkout_pendiente')")->fetchColumn();
-        $stats['checkins_hoy'] = (int) $con->query("SELECT COUNT(*) FROM reserva WHERE DATE(check_in) = CURDATE() AND estado IN ('confirmada','en_estadia')")->fetchColumn();
-        $stats['checkouts_hoy'] = (int) $con->query("SELECT COUNT(*) FROM reserva WHERE DATE(check_out) = CURDATE() AND estado IN ('en_estadia','checkout_pendiente','checkout_realizado')")->fetchColumn();
-        $stats['checkouts_vencidos'] = (int) $con->query("SELECT COUNT(*) FROM reserva WHERE estado IN ('en_estadia','checkout_pendiente') AND NOW() > check_out AND check_out_real IS NULL")->fetchColumn();
+        $stats['checkins_hoy'] = (int) $con->query("SELECT COUNT(*) FROM reserva_habitacion rh JOIN reserva r ON r.id = rh.id_reserva WHERE DATE(rh.check_in) = CURDATE() AND r.estado IN ('confirmada','en_estadia')
+        ")->fetchColumn();
+        $stats['checkouts_hoy'] = (int) $con->query("SELECT COUNT(*) FROM reserva_habitacion rh JOIN reserva r ON r.id = rh.id_reserva WHERE DATE(rh.check_out) = CURDATE() AND r.estado IN ('en_estadia','checkout_pendiente','checkout_realizado')
+        ")->fetchColumn();
+$stats['checkouts_vencidos'] = (int) $con->query("SELECT COUNT(*) FROM reserva_habitacion rh JOIN reserva r ON r.id = rh.id_reserva WHERE r.estado IN ('en_estadia','checkout_pendiente') AND rh.check_out IS NOT NULL AND NOW() > rh.check_out AND rh.activo = 1
+")->fetchColumn();
         $stats['ingreso_dia'] = (float) $con->query("SELECT IFNULL(SUM(monto),0) FROM pago WHERE DATE(fecha_pago) = CURDATE()")->fetchColumn();
         
         // NUEVOS INDICADORES SOLICITADOS
         $stats['total_procedencias'] = (int) $con->query("SELECT COUNT(DISTINCT procedencia) FROM cliente WHERE procedencia IS NOT NULL AND procedencia != ''")->fetchColumn();
         
-        $stats['estancia_minima'] = (int) $con->query("SELECT IFNULL(MIN(DATEDIFF(check_out, check_in)), 0) FROM reserva WHERE estado NOT IN ('cancelada', 'no_show')")->fetchColumn();
+    $stats['estancia_minima'] = (int) $con->query("SELECT IFNULL( MIN(DATEDIFF(rh.check_out, rh.check_in)), 0) FROM reserva_habitacion rh
+        JOIN reserva r ON r.id = rh.id_reserva WHERE r.estado NOT IN ('cancelada', 'no_show') AND rh.check_out IS NOT NULL
+    ")->fetchColumn();
 
         $totalHabitaciones = max(1, (int) $con->query("SELECT COUNT(*) FROM habitacion WHERE activo = 1")->fetchColumn());
         $stats['ocupacion_porcentual'] = round(($stats['habitaciones_ocupadas'] / $totalHabitaciones) * 100, 1);
