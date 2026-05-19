@@ -50,9 +50,30 @@ hr {
     "Lucida Sans Unicode", Geneva, Verdana, sans-serif;
 }
 
+/* ----- GRID -----*/
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px 20px;
+}
+
+/* --- campos del formulario -----*/
+.form-campo {
+  display: flex;
+  flex-direction: column;
+}
+
+/* campo que ocupa todo el ancho */
+.form-campo--full {
+  grid-column: span 2;
+}
+
 /* ------ inputs ----------*/
 .form-input,
-.form-select {
+.form-select,
+.form-textarea {
+  width: 100%;
+  box-sizing: border-box;
   padding: 10px 12px;
   border-radius: 15px;
   border: 1px solid #dcdcdc;
@@ -63,7 +84,8 @@ hr {
 
 /* efectos */
 .form-input:focus,
-.form-select:focus {
+.form-select:focus,
+.form-textarea:focus {
   border-color: #8fa878;
   box-shadow: 0 0 0 2px rgba(143, 168, 120, 0.2);
 }
@@ -71,9 +93,8 @@ hr {
 /*------ descripcion ----- */
 #descripcion {
   padding: 12px;
-  height: 60px;
-  border: 0px solid;
-  border-radius: 15px;
+  height: 80px;
+  resize: vertical;
 }
 
 /* ---------- botón -----------*/
@@ -95,32 +116,6 @@ hr {
   background: #7b9366;
   transform: translateY(-1px);
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-}
-
-/* --- campos del formulario -----*/
-.form-campo {
-  display: flex;
-  flex-direction: column;
-}
-
-/* ----- form grid -----*/
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px 20px;
-}
-
-.form-grid label {
-  grid-column: span 1;
-}
-
-.form-grid input,
-.form-grid select {
-  width: 100%;
-}
-
-.full {
-  grid-column: span 2;
 }
 
 /*-------------- ERRORES -----------*/
