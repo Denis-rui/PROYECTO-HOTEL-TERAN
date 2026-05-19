@@ -136,6 +136,19 @@ class HabitacionModel extends Model
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    public function calcularTotalReserva($idHabitacion, $checkIn, $checkOut)
+    {
+        $stmt = $this->conectar()->prepare("SELECT COALESCE(NULLIF(h.precio, 0), t.precio_base) AS precio
+            FROM habitacion h
+            JOIN tipo_habitacion t ON t.id = h.id_tipo_habitacion
+            WHERE h.id = ?");
+        $stmt->execute([(int) $idHabitacion]);
+        $precio = (float) $stmt->fetchColumn();
+        $segundos = max(1, strtotime($checkOut) - strtotime($checkIn));
+        $dias = max(1, (int) ceil($segundos / 86400));
+        return $dias * $precio;
+    }
+
     private function normalizarEstado($estado)
     {
         $estado = strtolower(trim((string) $estado));

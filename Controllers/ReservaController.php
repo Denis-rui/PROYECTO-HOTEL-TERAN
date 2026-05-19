@@ -2,6 +2,8 @@
 namespace Controllers;
 
 use Libraries\Core\Controller;
+use Models\DashboardModel;
+use Models\HabitacionModel;
 
 class ReservaController extends Controller
 {
@@ -20,7 +22,7 @@ class ReservaController extends Controller
     public function listar($params = '')
     {
         header('Content-Type: application/json');
-        echo json_encode($this->model->listarReservas());
+        echo json_encode($this->model->obtenerReservas());
     }
 
     public function registrar($params = '')
@@ -84,13 +86,14 @@ class ReservaController extends Controller
     {
         header('Content-Type: application/json');
         $id = (int) ($params ?? 0);
-        echo json_encode($this->model->obtenerReserva($id));
+        echo json_encode($this->model->obtenerReservaPorId($id));
     }
 
     public function dashboard($params = '')
     {
         header('Content-Type: application/json');
-        echo json_encode($this->model->obtenerEstadisticasDashboard());
+        $dashboardModel = new DashboardModel();
+        echo json_encode($dashboardModel->obtenerEstadisticasDashboard());
     }
 
     public function notificaciones($params = '')
@@ -103,7 +106,8 @@ class ReservaController extends Controller
     {
         header('Content-Type: application/json');
         $datos     = json_decode(file_get_contents('php://input'), true);
-        $resultado = $this->model->calcularTotalReserva(
+        $habitacionModel = new HabitacionModel();
+        $resultado = $habitacionModel->calcularTotalReserva(
             (int) ($datos['id_habitacion'] ?? 0),
             $datos['check_in']  ?? '',
             $datos['check_out'] ?? ''
