@@ -89,6 +89,14 @@ const guardarCambiosReserva = async () => {
       sincronizarModalPagoConReserva(resultado.reserva);
     }
 
+    // Indica que, tras guardar cambios de reserva, es necesario recargar la tabla
+    try {
+      const formPagoEl = document.getElementById("formPago");
+      if (formPagoEl) formPagoEl.dataset.needsReload = "true";
+    } catch (e) {
+      // ignore
+    }
+
     return resultado;
   } catch (error) {
     console.error(error);
@@ -596,5 +604,9 @@ window.cerrarModalPago = () => {
 
   if (formPago) {
     formPago.reset();
+    // Si se guardaron cambios a la reserva, recargar para actualizar la tabla
+    if (formPago.dataset.needsReload === "true") {
+      window.location.reload();
+    }
   }
 };
