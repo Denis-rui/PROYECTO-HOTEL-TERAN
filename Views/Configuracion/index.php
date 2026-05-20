@@ -5,7 +5,7 @@ $tipos = $data['tipos_habitacion'] ?? [];
 <section class="configuracion">
   <h2>Configuración del Sistema</h2>
 
-  <form action="<?= BASE_URL ?>?url=Configuracion/actualizar" method="post" class="form" id="formulario">
+  <form  class="form" id="formulario">
     <p>🏨 Datos del Hotel</p>
     <hr />
 

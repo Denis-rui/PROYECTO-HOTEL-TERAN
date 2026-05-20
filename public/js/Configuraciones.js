@@ -4,23 +4,19 @@ window.inicializarConfiguraciones = () => {
   fetch(BASE_URL + "?url=Configuracion/obtener")
     .then((res) => res.json())
     .then((hotel) => {
-      document.getElementById("nombre").value = hotel.nombre ?? "";
-      document.getElementById("ruc").value = hotel.ruc ?? "";
-      document.getElementById("telefono").value = hotel.telefono ?? "";
-      document.getElementById("email").value = hotel.email ?? "";
-      document.getElementById("direccion").value = hotel.direccion ?? "";
-      document.getElementById("ciudad-region").value =
-        hotel.ciudad_region ?? "";
-      document.getElementById("descripcion-slogan").value =
-        hotel.descripcion ?? "";
-      document.getElementById("monedas").value = hotel.moneda ?? "";
-      document.getElementById("check-in").value = hotel.check_in
-        ? hotel.check_in.slice(0, 5)
-        : "";
-      document.getElementById("check-out").value = hotel.check_out
-        ? hotel.check_out.slice(0, 5)
-        : "";
-      document.getElementById("web-redes").value = hotel.web ?? "";
+      document.getElementById("nombre").value    = hotel.nombre        ?? "";
+      document.getElementById("ruc").value       = hotel.ruc           ?? "";
+      document.getElementById("telefono").value  = hotel.telefono      ?? "";
+      document.getElementById("email").value     = hotel.email         ?? "";
+      document.getElementById("ubicacion").value = hotel.direccion     ?? "";
+      document.getElementById("ciudad").value    = hotel.ciudad_region ?? "";
+      document.getElementById("descripcion").value = hotel.descripcion ?? "";
+      document.getElementById("monedas").value   = hotel.moneda        ?? "";
+      document.getElementById("check-in").value  = hotel.check_in  ? hotel.check_in.slice(0, 5)  : "";
+      document.getElementById("checkout").value  = hotel.check_out ? hotel.check_out.slice(0, 5) : "";
+      document.getElementById("web-redes").value = hotel.web           ?? "";
+      document.getElementById("porcentaje_adelanto").value   = hotel.porcentaje_adelanto             ?? 50;
+      document.getElementById("porcentaje_penalidad").value  = hotel.porcentaje_penalidad_cancelacion ?? 25;
     })
     .catch(() => console.error("Error al cargar datos del hotel"));
 
@@ -29,17 +25,19 @@ window.inicializarConfiguraciones = () => {
     if (!validarFormulario()) return;
 
     const datos = {
-      nombre: document.getElementById("nombre").value,
-      ruc: document.getElementById("ruc").value,
-      telefono: document.getElementById("telefono").value,
-      email: document.getElementById("email").value,
-      direccion: document.getElementById("direccion").value,
-      "ciudad-region": document.getElementById("ciudad-region").value,
-      "descripcion-slogan": document.getElementById("descripcion-slogan").value,
-      monedas: document.getElementById("monedas").value,
-      "check-in": document.getElementById("check-in").value,
-      "check-out": document.getElementById("check-out").value,
-      "web-redes": document.getElementById("web-redes").value,
+      nombre:               document.getElementById("nombre").value,
+      ruc:                  document.getElementById("ruc").value,
+      telefono:             document.getElementById("telefono").value,
+      email:                document.getElementById("email").value,
+      direccion:            document.getElementById("ubicacion").value,
+      ciudad_region:        document.getElementById("ciudad").value,
+      descripcion:          document.getElementById("descripcion").value,
+      monedas:              document.getElementById("monedas").value,
+      check_in:             document.getElementById("check-in").value,
+      check_out:            document.getElementById("checkout").value,
+      web_redes:            document.getElementById("web-redes").value,
+      porcentaje_adelanto:  document.getElementById("porcentaje_adelanto").value,
+      porcentaje_penalidad: document.getElementById("porcentaje_penalidad").value,
     };
 
     fetch(BASE_URL + "?url=Configuracion/actualizar", {
@@ -62,13 +60,13 @@ window.inicializarConfiguraciones = () => {
     limpiarErrores();
     let valido = true;
 
-    const nombre_hotel = document.getElementById("nombre");
-    const ruc = document.getElementById("ruc");
+    const nombre   = document.getElementById("nombre");
+    const ruc      = document.getElementById("ruc");
     const telefono = document.getElementById("telefono");
-    const correo = document.getElementById("email");
+    const correo   = document.getElementById("email");
 
-    if (nombre_hotel.value.trim() === "") {
-      mostrarError(nombre_hotel, "error-nombre", "El nombre es obligatorio");
+    if (nombre.value.trim() === "") {
+      mostrarError(nombre, "error-nombre", "El nombre es obligatorio");
       valido = false;
     }
     if (ruc.value.trim().length !== 11 || isNaN(ruc.value)) {
@@ -94,8 +92,8 @@ window.inicializarConfiguraciones = () => {
 
   function limpiarErrores() {
     formulario.querySelectorAll(".error").forEach((e) => (e.textContent = ""));
-    formulario
-      .querySelectorAll(".form-input")
-      .forEach((i) => i.classList.remove("input-error"));
+    formulario.querySelectorAll(".form-input").forEach((i) => i.classList.remove("input-error"));
   }
 };
+
+document.addEventListener('DOMContentLoaded', window.inicializarConfiguraciones);
