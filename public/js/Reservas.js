@@ -96,7 +96,7 @@ const configurarEventosReservas = () => {
       );
     });
 
-    cuerpoTabla.addEventListener("click", (e) => {
+    cuerpoTabla.addEventListener("click", async (e) => {
       const btnEditar = e.target.closest(".boton-editar-reserva");
       if (btnEditar) {
         const fila = btnEditar.closest("tr");
@@ -127,6 +127,16 @@ const configurarEventosReservas = () => {
 
       const btnCheckin = e.target.closest(".boton-checkin-reserva");
       if (btnCheckin) {
+        // Confirmación antes de ejecutar check-in
+        let confirmado = false;
+        if (typeof window.Confirmar === "function") {
+          confirmado = await window.Confirmar("¿Confirmar check-in para esta reserva?");
+        } else {
+          confirmado = confirm("¿Confirmar check-in para esta reserva?");
+        }
+
+        if (!confirmado) return;
+
         ejecutarAccionReserva("checkin", { id_reserva: btnCheckin.dataset.id });
         return;
       }

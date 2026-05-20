@@ -29,6 +29,7 @@ const poblarComprobante = (comprobante = {}) => {
   const cliente = document.getElementById("comprobanteCliente");
   const usuario = document.getElementById("comprobanteUsuario");
   const codigoReserva = document.getElementById("comprobanteCodigoReserva");
+  const totalReserva = document.getElementById("comprobanteTotalReserva");
   const total = document.getElementById("comprobanteTotal");
   const descripcion = document.getElementById("comprobanteDescripcion");
   const habitaciones = document.getElementById("comprobanteHabitaciones");
@@ -45,6 +46,10 @@ const poblarComprobante = (comprobante = {}) => {
   if (usuario) usuario.textContent = comprobante.usuario || "---";
   if (codigoReserva)
     codigoReserva.textContent = comprobante.reserva?.codigo_reserva || "---";
+  if (totalReserva)
+    totalReserva.textContent = Number(comprobante.reserva?.total || 0).toFixed(
+      2,
+    );
   if (total) total.textContent = Number(comprobante.total || 0).toFixed(2);
   if (descripcion) descripcion.textContent = comprobante.descripcion || "---";
 

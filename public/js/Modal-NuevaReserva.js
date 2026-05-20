@@ -817,6 +817,11 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
     estado.elementos.cerrar?.addEventListener("click", () => {
       if (modal) modal.style.display = "none";
       if (contenedor) contenedor.style.display = "none";
+
+      // Si se estaba editando una reserva, recargar para actualizar la tabla
+      if (estado.reservaEditandoId) {
+        window.location.reload();
+      }
     });
 
     estado.elementos.btnContinuarPago?.addEventListener("click", (e) => {
