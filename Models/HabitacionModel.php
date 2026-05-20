@@ -113,28 +113,94 @@ class HabitacionModel extends Eloquent
                 return ['exito' => false, 'mensaje' => 'Habitación no encontrada.'];
             }
 
-            // Si la habitación está ocupada y se intenta marcar como Disponible,
-            // verificar que no exista una estadía activa o un checkout pendiente.
-            if ($habitacion->estado === 'Ocupada' && $nuevoEstado === 'Disponible') {
-                $tieneEstadiaActiva = DB::table('reserva_habitacion as rh')
-                    ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
+            // Si se intenta marcar como Disponible, bloquear si existe cualquier
+            // `reserva_habitacion` para la habitación con `check_out` NULL o en el futuro.
+            if ($nuevoEstado === 'Disponible') {
+                $bloqueoExiste = DB::table('reserva_habitacion as rh')
                     ->where('rh.id_habitacion', (int) $id)
-                    ->where('rh.activo', 1)
-                    ->whereIn('r.estado', ['checkin_realizado', 'en_estadia', 'checkout_pendiente'])
                     ->where(function ($q) {
                         $q->whereNull('rh.check_out')
                           ->orWhere('rh.check_out', '>', DB::raw('NOW()'));
                     })
                     ->exists();
 
-                if ($tieneEstadiaActiva) {
-                    return ['exito' => false, 'mensaje' => 'No se puede marcar como Disponible: existe una estadía o checkout pendiente.'];
+                if ($bloqueoExiste) {
+                    $bloqueante = DB::table('reserva_habitacion as rh')
+                        ->leftJoin('reserva as r', 'r.id', '=', 'rh.id_reserva')
+                        ->where('rh.id_habitacion', (int) $id)
+                        ->where(function ($q) {
+                            $q->whereNull('rh.check_out')
+                              ->orWhere('rh.check_out', '>', DB::raw('NOW()'));
+                        })
+                        ->select(['r.id as id_reserva', 'r.estado as estado_reserva', 'rh.check_in', 'rh.check_out'])
+                        ->orderBy('rh.check_out', 'asc')
+                        ->first();
+
+                    $detalle = $bloqueante ? (array) $bloqueante : null;
+                    if ($detalle && !empty($detalle['check_out'])) {
+                        $checkOutTs = strtotime($detalle['check_out']);
+                        $detalle['minutos_faltantes'] = $checkOutTs > time() ? (int) floor(($checkOutTs - time()) / 60) : 0;
+                    }
+
+                    return [
+                        'exito' => false,
+                        'mensaje' => 'No se puede marcar como Disponible: existe una reserva con checkout pendiente o sin hora registrada.',
+                        'reserva_bloqueante' => $detalle
+                    ];
                 }
             }
 
             $updateData = ['estado' => $nuevoEstado];
             if (strtolower($nuevoEstado) === 'mantenimiento') {
                 $updateData['descripcion_habitacion'] = $motivo;
+            }
+
+            // Si intentan marcar como Disponible, usar una actualización condicional
+            // en la DB para evitar race conditions y garantizar que no exista
+            // una reserva/estadia activa que bloquee el cambio.
+            if ($nuevoEstado === 'Disponible') {
+                $affected = DB::table('habitacion')
+                    ->where('id', (int) $id)
+                    ->whereNotExists(function ($query) use ($id) {
+                        $query->select(DB::raw(1))
+                            ->from('reserva_habitacion as rh')
+                            ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
+                            ->where('rh.id_habitacion', (int) $id)
+                            ->where('rh.activo', 1)
+                            ->whereIn('r.estado', ['checkin_realizado', 'en_estadia', 'checkout_pendiente'])
+                            ->where(function ($q) {
+                                $q->whereNull('rh.check_out')
+                                  ->orWhere('rh.check_out', '>', DB::raw('NOW()'));
+                            });
+                    })
+                    ->update($updateData);
+
+                if ($affected > 0) {
+                    return ['exito' => true, 'mensaje' => 'Estado actualizado correctamente.'];
+                }
+
+                // Si no se actualizó, obtener la reserva bloqueante para informar
+                $bloqueante = DB::table('reserva_habitacion as rh')
+                    ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
+                    ->where('rh.id_habitacion', (int) $id)
+                    ->where('rh.activo', 1)
+                    ->whereIn('r.estado', ['checkin_realizado', 'en_estadia', 'checkout_pendiente'])
+                    ->select(['r.id as id_reserva', 'r.estado as estado_reserva', 'rh.check_in', 'rh.check_out'])
+                    ->orderBy('rh.check_out', 'asc')
+                    ->first();
+
+                $detalle = $bloqueante ? (array) $bloqueante : null;
+                if ($detalle && !empty($detalle['check_out'])) {
+                    $checkOutTs = strtotime($detalle['check_out']);
+                    $minutosFaltantes = $checkOutTs > time() ? (int) floor(($checkOutTs - time()) / 60) : 0;
+                    $detalle['minutos_faltantes'] = $minutosFaltantes;
+                }
+
+                return [
+                    'exito' => false,
+                    'mensaje' => 'No se puede marcar como Disponible: existe una estadía o checkout pendiente.',
+                    'reserva_bloqueante' => $detalle
+                ];
             }
 
             $ok = $habitacion->update($updateData);
@@ -394,5 +460,34 @@ class HabitacionModel extends Eloquent
         ];
 
         return $mapa[$estado] ?? 'Disponible';
+    }
+
+    /**
+     * Busca la reserva/estadia que bloquea el cambio de estado para una habitación.
+     * Retorna array con id_reserva, estado_reserva, check_in, check_out o null.
+     */
+    private function obtenerReservaBloqueante(int $idHabitacion)
+    {
+        try {
+            $res = DB::table('reserva_habitacion as rh')
+                ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
+                ->where('rh.id_habitacion', $idHabitacion)
+                ->where('rh.activo', 1)
+                ->whereIn('r.estado', ['checkin_realizado', 'en_estadia', 'checkout_pendiente'])
+                ->where(function ($q) {
+                    $q->whereNull('rh.check_out')
+                      ->orWhere('rh.check_out', '>', DB::raw('NOW()'));
+                })
+                ->select(['r.id as id_reserva', 'r.estado as estado_reserva', 'rh.check_in', 'rh.check_out'])
+                ->orderBy('rh.check_out', 'asc')
+                ->first();
+
+            if ($res) return (array) $res;
+
+            return null;
+        } catch (\Throwable $e) {
+            error_log('Error obtenerReservaBloqueante: ' . $e->getMessage());
+            return null;
+        }
     }
 }
