@@ -172,13 +172,14 @@ const configurarEventosReservas = () => {
       const btnCancelar = e.target.closest(".boton-cancelar-reserva");
       if (btnCancelar) {
         const confirmado = confirm(
-          "La cancelación debe pasar por devoluciones. Por ahora solo se dejará marcado como cancelada. ¿Continuar?",
+          "¿Desea cancelar la reserva y procesar la devolución (aplicable según política)?",
         );
         if (!confirmado) return;
 
-        ejecutarAccionReserva("actualizarEstado", {
+        const motivo = prompt("Motivo de la cancelación:", "");
+        ejecutarAccionReserva("cancelar", {
           id_reserva: btnCancelar.dataset.id,
-          nuevo_estado: "cancelada",
+          motivo: motivo || ''
         });
         return;
       }
