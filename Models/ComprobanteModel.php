@@ -80,28 +80,21 @@ class ComprobanteModel extends Eloquent
         return $lineas;
     }
 
-    private function formatearDescripcionPago(float $monto, float $totalReserva, array $habitaciones, string $metodoTexto, string $descripcionBase = ''): string
+    private function formatearDescripcionPago(float $totalReserva, float $montoPagadoAcumulado): string
     {
-        $porcentaje = $totalReserva > 0 ? round(($monto / $totalReserva) * 100, 2) : 0;
-        $estadoPago = $monto >= $totalReserva - 0.00001
-            ? 'Pago completo de la reserva'
-            : 'Pago parcial de la reserva (' . number_format($porcentaje, 2) . '%)';
+        $montoPagadoAcumulado = max(0.0, $montoPagadoAcumulado);
+        $saldoPendiente = max(0.0, $totalReserva - $montoPagadoAcumulado);
+        $porcentajePagado = $totalReserva > 0
+            ? min(100.0, round(($montoPagadoAcumulado / $totalReserva) * 100, 0))
+            : 0.0;
 
-        $partes = [$estadoPago];
-        if ($descripcionBase !== '') {
-            $partes[] = $descripcionBase;
-        }
+        $estadoPago = $saldoPendiente <= 0.00001 ? 'Pago total' : 'Pago parcial';
 
-        $habitacionesTexto = $this->obtenerHabitacionesDescripcion($habitaciones);
-        if (!empty($habitacionesTexto)) {
-            $partes[] = 'Habitaciones: ' . implode(' || ', $habitacionesTexto);
-        }
-
-        if ($metodoTexto !== '') {
-            $partes[] = 'Forma de pago: ' . $metodoTexto;
-        }
-
-        return implode(' | ', $partes);
+        return implode("\n", [
+            $estadoPago,
+            'Avance de pago: ' . number_format($porcentajePagado, 0) . '%',
+            'Saldo pendiente: S/ ' . number_format($saldoPendiente, 2),
+        ]);
     }
 
     public function crearDesdePago(Pago $pago, array $reserva, array $habitaciones = [], ?int $idUsuario = null): ?Comprobante
@@ -114,12 +107,13 @@ class ComprobanteModel extends Eloquent
             2 => 'Tarjeta',
             3 => 'Yape / Transferencia',
         ];
+        $montoPagadoAcumulado = (float) DB::table('pago')
+            ->where('id_reserva', (int) ($pago->id_reserva ?? 0))
+            ->sum('monto');
+
         $descripcion = $this->formatearDescripcionPago(
-            $monto,
             $totalReserva,
-            $habitaciones,
-            $metodos[$idMetodo] ?? 'Método ' . $idMetodo,
-            (string) ($pago->descripcion ?? '')
+            $montoPagadoAcumulado
         );
 
         return Comprobante::create([
