@@ -25,6 +25,7 @@
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Modal-Clientes.css" />
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Pago.css" />
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Notificaciones.css" />
+    <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Modal-TipoHabitacion.css" />
 </head>
 <body>
     <div id="nav">

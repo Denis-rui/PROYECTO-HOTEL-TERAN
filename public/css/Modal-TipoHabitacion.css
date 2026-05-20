@@ -1,0 +1,28 @@
+#contenedor-modal-tipo-habitacion {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+}
+
+.modal-tipo-habitacion {
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px;
+}
+
+.modal-tipo-habitacion .contenedor-modal {
+  max-width: 400px;
+}
+
+.modal-tipo-habitacion .formulario-modal {
+  grid-template-columns: 1fr;
+}
+
+.modal-tipo-habitacion .div-mensaje-exito-error {
+  grid-column: span 1;
+}
