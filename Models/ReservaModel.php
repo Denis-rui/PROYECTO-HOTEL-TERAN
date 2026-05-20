@@ -55,6 +55,7 @@ class ReservaModel extends Model
     {
         try {
             return Reserva::with(['cliente', 'pagos', 'reservaHabitacion.habitacion'])
+                ->where('estado', '!=', 'cancelada')
                 ->orderByDesc('id')
                 ->get()
                 ->map(fn ($reserva) => $this->formatearReserva($reserva))
@@ -539,8 +540,31 @@ class ReservaModel extends Model
 
     public function actualizarEstadoReserva($idReserva, $nuevoEstado)
     {
-        $stmt = $this->conectar()->prepare("UPDATE reserva SET estado = ? WHERE id = ?");
-        return $stmt->execute([$nuevoEstado, (int) $idReserva]);
+        $estadoNormalizado = strtolower(trim((string) $nuevoEstado));
+        $estadosPermitidos = ['confirmada', 'en_estadia', 'checkout_realizado', 'cancelada'];
+
+        if (!in_array($estadoNormalizado, $estadosPermitidos, true)) {
+            return ['exito' => false, 'mensaje' => 'Estado no permitido.'];
+        }
+
+        try {
+            $reserva = Reserva::find((int) $idReserva);
+            if (!$reserva) {
+                return ['exito' => false, 'mensaje' => 'Reserva no encontrada.'];
+            }
+
+            $reserva->estado = $estadoNormalizado;
+            $reserva->save();
+
+            return ['exito' => true, 'mensaje' => 'Estado de la reserva actualizado correctamente.'];
+        } catch (\Throwable $e) {
+            return ['exito' => false, 'mensaje' => 'Error al actualizar estado: ' . $e->getMessage()];
+        }
+    }
+
+    public function actualizarEstado($idReserva, $nuevoEstado)
+    {
+        return $this->actualizarEstadoReserva($idReserva, $nuevoEstado);
     }
 
     public function cancelarReserva($idReserva, $motivo = '')

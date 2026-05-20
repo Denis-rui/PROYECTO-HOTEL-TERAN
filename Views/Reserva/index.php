@@ -30,6 +30,36 @@ if (!function_exists('formatearListaHabitacionesReserva')) {
     return htmlspecialchars((string) ($reserva['habitacion'] ?? ''), ENT_QUOTES, 'UTF-8');
   }
 }
+
+if (!function_exists('formatearEstadoReserva')) {
+  function formatearEstadoReserva(string $estado): string
+  {
+    $estado = strtolower(trim($estado));
+    $mapa = [
+      'confirmada' => 'Confirmada',
+      'en_estadia' => 'En estadía',
+      'checkout_realizado' => 'Checkout realizado',
+      'cancelada' => 'Cancelada',
+    ];
+
+    return $mapa[$estado] ?? ucfirst($estado);
+  }
+}
+
+if (!function_exists('claseEstadoReserva')) {
+  function claseEstadoReserva(string $estado): string
+  {
+    $estado = strtolower(trim($estado));
+    $mapa = [
+      'confirmada' => 'estado-confirmada',
+      'en_estadia' => 'estado-en-estadia',
+      'checkout_realizado' => 'estado-checkout-realizado',
+      'cancelada' => 'estado-cancelada',
+    ];
+
+    return $mapa[$estado] ?? 'estado-reserva-desconocido';
+  }
+}
 ?>
 <section class="reservas">
   <header class="header-reservas">
@@ -48,11 +78,8 @@ if (!function_exists('formatearListaHabitacionesReserva')) {
     <select id="filtroEstado" class="filtro-estado">
       <option value="">Todos los estados</option>
       <option value="confirmada">Confirmada</option>
-      <option value="pendiente">Pendiente</option>
       <option value="en_estadia">En estadía</option>
-      <option value="checkout_pendiente">Checkout pendiente</option>
       <option value="checkout_realizado">Checkout realizado</option>
-      <option value="cancelada">Cancelada</option>
     </select>
   </div>
 
@@ -86,7 +113,18 @@ if (!function_exists('formatearListaHabitacionesReserva')) {
               S/ <?= htmlspecialchars($reserva["total"]) ?><br>
               <small>Saldo: S/ <?= htmlspecialchars(number_format((float) $reserva["saldo_pendiente"], 2)) ?></small>
             </td>
-            <td><?= htmlspecialchars($reserva["estado"]) ?></td>
+            <td>
+              <select
+                class="estado-reserva <?= claseEstadoReserva((string) $reserva["estado"]) ?>"
+                data-id="<?= (int) $reserva["id"] ?>"
+                data-estado="<?= htmlspecialchars($reserva["estado"]) ?>"
+                title="Cambiar estado de la reserva"
+              >
+                <option value="confirmada" <?= $reserva["estado"] === "confirmada" ? 'selected' : '' ?>>Confirmada</option>
+                <option value="en_estadia" <?= $reserva["estado"] === "en_estadia" ? 'selected' : '' ?>>En estadía</option>
+                <option value="checkout_realizado" <?= $reserva["estado"] === "checkout_realizado" ? 'selected' : '' ?>>Checkout realizado</option>
+              </select>
+            </td>
             <td>
               <div class="celda-pago">
                 <span class="porcentaje-pago"><?= $reserva["porcentaje_pago"] ?>%</span>
@@ -104,11 +142,8 @@ if (!function_exists('formatearListaHabitacionesReserva')) {
               <?php if ($reserva["estado"] === "confirmada"): ?>
                 <button class="boton-checkin-reserva" data-id="<?= (int) $reserva["id"] ?>" title="Confirmar check-in">Check-in</button>
               <?php endif; ?>
-              <?php if (in_array($reserva["estado"], ["en_estadia", "checkout_pendiente"], true)): ?>
-                <button class="boton-checkout-reserva" data-id="<?= (int) $reserva["id"] ?>" title="Confirmar checkout">Checkout</button>
-                <button class="boton-extender-reserva" data-id="<?= (int) $reserva["id"] ?>" title="Extender estadía">Extender</button>
-                <button class="boton-consumo-reserva" data-id="<?= (int) $reserva["id"] ?>" title="Registrar consumo">Consumo</button>
-                <button class="boton-cambio-habitacion" data-id="<?= (int) $reserva["id"] ?>" title="Cambiar habitación">Cambiar hab.</button>
+              <?php if ($reserva["estado"] !== "cancelada"): ?>
+                <button class="boton-cancelar-reserva" data-id="<?= (int) $reserva["id"] ?>" title="Cancelar reserva">Cancelar</button>
               <?php endif; ?>
             </td>
           </tr>

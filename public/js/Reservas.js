@@ -51,6 +51,30 @@ const configurarEventosReservas = () => {
         return;
       }
 
+      const selectEstado = e.target.closest(".estado-reserva");
+      if (selectEstado && selectEstado.tagName === "SELECT") {
+        const idReserva = selectEstado.dataset.id;
+        const estadoActual = (selectEstado.dataset.estado || "").toLowerCase();
+        const nuevoEstado = (selectEstado.value || "").toLowerCase();
+
+        if (!nuevoEstado || nuevoEstado === estadoActual) {
+          return;
+        }
+
+        const permitidos = ["confirmada", "en_estadia", "checkout_realizado"];
+        if (!permitidos.includes(nuevoEstado)) {
+          alert("Estado no válido. Usa: confirmada, en_estadia o checkout_realizado.");
+          selectEstado.value = estadoActual;
+          return;
+        }
+
+        ejecutarAccionReserva("actualizarEstado", {
+          id_reserva: idReserva,
+          nuevo_estado: nuevoEstado,
+        });
+        return;
+      }
+
       // Evento para botón de pago
       const btnPago = e.target.closest(".boton-pago-tabla");
       if (btnPago) {
@@ -111,6 +135,20 @@ const configurarEventosReservas = () => {
           concepto,
           cantidad,
           precio_unitario: precioUnitario,
+        });
+        return;
+      }
+
+      const btnCancelar = e.target.closest(".boton-cancelar-reserva");
+      if (btnCancelar) {
+        const confirmado = confirm(
+          "La cancelación debe pasar por devoluciones. Por ahora solo se dejará marcado como cancelada. ¿Continuar?",
+        );
+        if (!confirmado) return;
+
+        ejecutarAccionReserva("actualizarEstado", {
+          id_reserva: btnCancelar.dataset.id,
+          nuevo_estado: "cancelada",
         });
         return;
       }
