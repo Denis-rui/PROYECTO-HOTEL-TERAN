@@ -39,8 +39,12 @@ class UsuarioController extends Controller
     {
         header('Content-Type: application/json');
         $datos = json_decode(file_get_contents('php://input'), true);
-        $ok    = $this->model->crearUsuario($datos);
-        echo json_encode(['exito' => $ok]);
+        try {
+            $ok = $this->model->crearUsuario($datos);
+            echo json_encode(['exito' => (bool) $ok]);
+        } catch (\Throwable $e) {
+            echo json_encode(['exito' => false, 'error' => $e->getMessage()]);
+        }
     }
 
     public function actualizar($params = '')
@@ -63,8 +67,12 @@ class UsuarioController extends Controller
     {
         header('Content-Type: application/json');
         $datos = json_decode(file_get_contents('php://input'), true);
-        $ok    = $this->model->updateById((int) ($datos['id'] ?? 0), $datos);
-        echo json_encode(['exito' => $ok]);
+        try {
+            $ok = $this->model->updateById((int) ($datos['id'] ?? 0), $datos);
+            echo json_encode(['exito' => (bool) $ok]);
+        } catch (\Throwable $e) {
+            echo json_encode(['exito' => false, 'error' => $e->getMessage()]);
+        }
     }
 
     public function eliminar($params = '')

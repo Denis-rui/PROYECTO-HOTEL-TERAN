@@ -48,9 +48,33 @@ const obtenerDatosFormularioUsuario = () => ({
   gmail: obtenerElementoModalUsuario("#gmail")?.value.trim() || "",
   telefono: obtenerElementoModalUsuario("#telefono")?.value.trim() || "",
   dni: obtenerElementoModalUsuario("#dni")?.value.trim() || "",
+  fecha_nacimiento:
+    obtenerElementoModalUsuario("#fecha_nacimiento")?.value || "",
   rol: obtenerElementoModalUsuario("#rol")?.value || "",
   password: obtenerElementoModalUsuario("#password")?.value || "",
 });
+
+const calcularEdad = (fechaNacimiento) => {
+  const fecha = new Date(`${fechaNacimiento}T00:00:00`);
+
+  if (Number.isNaN(fecha.getTime())) {
+    return Number.NaN;
+  }
+
+  const hoy = new Date();
+  let edad = hoy.getFullYear() - fecha.getFullYear();
+  const mesActual = hoy.getMonth();
+  const diaActual = hoy.getDate();
+
+  if (
+    mesActual < fecha.getMonth() ||
+    (mesActual === fecha.getMonth() && diaActual < fecha.getDate())
+  ) {
+    edad -= 1;
+  }
+
+  return edad;
+};
 
 const validarFormularioUsuario = (datosUsuario) => {
   const reglas = {
@@ -83,11 +107,28 @@ const validarFormularioUsuario = (datosUsuario) => {
     return "DNI invalido. Debe tener 8 digitos.";
   }
 
+  if (!datosUsuario.fecha_nacimiento) {
+    return "Fecha de nacimiento obligatoria.";
+  }
+
+  const edad = calcularEdad(datosUsuario.fecha_nacimiento);
+
+  if (Number.isNaN(edad)) {
+    return "Fecha de nacimiento invalida.";
+  }
+
+  if (edad < 18) {
+    return "El usuario debe ser mayor de edad.";
+  }
+
   if (!reglas.rol.test(datosUsuario.rol)) {
     return "Rol invalido. Debe ser administrador o recepcionista.";
   }
 
-  if (!reglas.password.test(datosUsuario.password)) {
+  if (
+    modoFormularioUsuario === "nuevo" &&
+    !reglas.password.test(datosUsuario.password)
+  ) {
     return "Contrasena invalida. Minimo 5 caracteres.";
   }
 
@@ -101,6 +142,7 @@ const completarFormularioUsuario = (datosUsuario = null) => {
   const campoGmail = obtenerElementoModalUsuario("#gmail");
   const campoTelefono = obtenerElementoModalUsuario("#telefono");
   const campoDni = obtenerElementoModalUsuario("#dni");
+  const campoFechaNacimiento = obtenerElementoModalUsuario("#fecha_nacimiento");
   const campoRol = obtenerElementoModalUsuario("#rol");
   const campoPassword = obtenerElementoModalUsuario("#password");
   const tituloModal = obtenerElementoModalUsuario("#titulo-modal-id");
@@ -112,6 +154,7 @@ const completarFormularioUsuario = (datosUsuario = null) => {
     !campoGmail ||
     !campoTelefono ||
     !campoDni ||
+    !campoFechaNacimiento ||
     !campoRol ||
     !campoPassword ||
     !tituloModal
@@ -127,12 +170,24 @@ const completarFormularioUsuario = (datosUsuario = null) => {
     campoGmail.value = datosUsuario.gmail || "";
     campoTelefono.value = datosUsuario.telefono || "";
     campoDni.value = datosUsuario.dni || "";
+    campoFechaNacimiento.value = datosUsuario.fecha_nacimiento || "";
     campoRol.value = datosUsuario.rol;
     campoPassword.value = datosUsuario.password;
+    campoPassword.required = false;
     return;
   }
 
   tituloModal.textContent = "Nuevo Usuario";
+  campoId.value = "";
+  campoNombre.value = "";
+  campoUsuario.value = "";
+  campoGmail.value = "";
+  campoTelefono.value = "";
+  campoDni.value = "";
+  campoFechaNacimiento.value = "";
+  campoRol.value = "";
+  campoPassword.value = "";
+  campoPassword.required = true;
 };
 
 const manejarEnvioFormularioUsuario = (evento) => {
@@ -173,7 +228,7 @@ const abrirModalUsuario = (modo, datosUsuario = null) => {
   modoFormularioUsuario = modo;
 
   if (contenedorModal) {
-    contenedorModal.style.display = "block";
+    contenedorModal.classList.add("activo");
     completarFormularioUsuario(datosUsuario);
     configurarEventosModalUsuario();
   }
@@ -186,7 +241,7 @@ const cerrarModalUsuario = () => {
     return;
   }
 
-  contenedorModal.style.display = "none";
+  contenedorModal.classList.remove("activo");
 };
 
 window.abrirModalUsuario = abrirModalUsuario;

@@ -1,3 +1,4 @@
+<?php $devoluciones = $data['devoluciones'] ?? []; ?>
 <section class="devoluciones">
   <header class="header-devoluciones">
     <h2>Devoluciones</h2>

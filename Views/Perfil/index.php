@@ -1,3 +1,4 @@
+<?php $perfil = $data['perfil'] ?? []; ?>
 <section class="layout">
   <!--parte lateral-->
   <div class="parte-lateral">

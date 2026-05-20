@@ -1,4 +1,4 @@
-<section class="modal-usuario" id="contenedor-modal-usuario" style="display: none;">
+<section class="modal-usuario" id="contenedor-modal-usuario">
   <div class="contenedor-modal" role="dialog" aria-modal="true">
     <h3 id="titulo-modal-id" class="titulo-modal">Nuevo Usuario</h3>
 
@@ -80,8 +80,7 @@
           name="password"
           id="password"
           placeholder="Contrasena"
-          class="input-modal"
-          required />
+          class="input-modal" />
       </div>
 
       <div class="label-input-modal">
@@ -90,7 +89,7 @@
           type="date"
           name="fecha_nacimiento"
           id="fecha_nacimiento"
-          class=input-modal
+          class="input-modal"
           required>
       </div>
 
