@@ -1,8 +1,14 @@
 #contenedor-modal-usuario {
-  display: none;
   position: fixed;
   inset: 0;
   z-index: 9999;
+  display: none;
+  justify-content: center;
+  align-items: center;
+}
+
+#contenedor-modal-usuario.activo {
+  display: flex;
 }
 
 .modal-usuario {

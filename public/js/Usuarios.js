@@ -1,47 +1,14 @@
-let listaUsuarios = [];
-let textoBusquedaUsuarios = "";
-
-const normalizarTextoBusqueda = (texto) => texto.toLowerCase().trim();
-
-const obtenerUsuariosFiltradosPorNombre = () => {
-  const criterioBusqueda = normalizarTextoBusqueda(textoBusquedaUsuarios);
-  if (!criterioBusqueda) return listaUsuarios;
-  return listaUsuarios.filter((usuario) =>
-    normalizarTextoBusqueda(usuario.nombre_completo).includes(criterioBusqueda),
-  );
-};
-
-const renderizarTablaUsuarios = (usuariosAMostrar = listaUsuarios) => {
-  const cuerpoTabla = document.getElementById("contenido-usuarios");
-  if (!cuerpoTabla) return;
-
-  cuerpoTabla.innerHTML = "";
-  usuariosAMostrar.forEach((usuario) => {
-    cuerpoTabla.innerHTML += `<tr>
-            <td>${usuario.id}</td>
-            <td>${usuario.nombre_completo}</td>
-            <td>${usuario.nombre_usuario}</td>
-            <td>${usuario.correo || ""}</td>
-            <td>${usuario.telefono || ""}</td>
-            <td>${usuario.dni || ""}</td>
-            <td>${usuario.rol}</td>
-            <td>
-                <button type="button" class="btnEditar" data-id="${usuario.id}">✏️</button>
-                <button type="button" class="btnEliminar" data-id="${usuario.id}">🗑️</button>
-            </td>
-        </tr>`;
-  });
-};
-
-const cargarUsuarios = () => {
-  fetch(BASE_URL + "?url=Usuario/listar")
-    .then((res) => res.json())
-    .then((usuarios) => {
-      listaUsuarios = usuarios;
-      renderizarTablaUsuarios(obtenerUsuariosFiltradosPorNombre());
-    })
-    .catch(() => console.error("Error al cargar usuarios"));
-};
+const obtenerDatosUsuarioDesdeBoton = (boton) => ({
+  id: boton.dataset.id || "",
+  nombre: boton.dataset.nombre || "",
+  usuario: boton.dataset.usuario || "",
+  gmail: boton.dataset.correo || "",
+  telefono: boton.dataset.telefono || "",
+  dni: boton.dataset.dni || "",
+  fecha_nacimiento: boton.dataset.fechaNacimiento || "",
+  rol: boton.dataset.rol || "",
+  password: "",
+});
 
 const eliminarUsuarioPorId = (idUsuario) => {
   if (!confirm("¿Estás seguro de eliminar este usuario?")) return;
@@ -54,7 +21,7 @@ const eliminarUsuarioPorId = (idUsuario) => {
     .then((res) => res.json())
     .then((data) => {
       if (data.exito) {
-        cargarUsuarios();
+        window.location.reload();
       } else {
         alert("Error al eliminar usuario.");
       }
@@ -62,28 +29,13 @@ const eliminarUsuarioPorId = (idUsuario) => {
     .catch(() => alert("Error de conexión."));
 };
 
-const abrirModalParaEditar = (idUsuario) => {
-  const usuarioSeleccionado = listaUsuarios.find(
-    (usuario) => Number(usuario.id) === Number(idUsuario),
-  );
-  if (!usuarioSeleccionado) return;
-
-  window.abrirModalUsuario("editar", {
-    id: usuarioSeleccionado.id,
-    nombre: usuarioSeleccionado.nombre_completo,
-    usuario: usuarioSeleccionado.nombre_usuario,
-    gmail: usuarioSeleccionado.correo,
-    telefono: usuarioSeleccionado.telefono,
-    dni: usuarioSeleccionado.dni,
-    rol: usuarioSeleccionado.rol,
-    password: "",
-  });
+const abrirModalParaEditar = (boton) => {
+  window.abrirModalUsuario("editar", obtenerDatosUsuarioDesdeBoton(boton));
 };
 
 const configurarEventosUsuarios = () => {
   const botonNuevoUsuario = document.getElementById("btnNuevoUsuario");
-  const cuerpoTabla = document.getElementById("contenido-usuarios");
-  const inputBuscarUsuario = document.getElementById("inputBuscarUsuario");
+  const cuerpoTabla = document.getElementById("tabla-usuarios-body");
 
   if (botonNuevoUsuario) {
     botonNuevoUsuario.addEventListener("click", () => {
@@ -93,28 +45,24 @@ const configurarEventosUsuarios = () => {
 
   if (cuerpoTabla) {
     cuerpoTabla.addEventListener("click", (evento) => {
-      const botonEditar = evento.target.closest(".btnEditar");
+      const botonEditar = evento.target.closest(".btnEditarUsuario");
       if (botonEditar) {
-        abrirModalParaEditar(botonEditar.dataset.id);
+        abrirModalParaEditar(botonEditar);
         return;
       }
-      const botonEliminar = evento.target.closest(".btnEliminar");
+      const botonEliminar = evento.target.closest(".btnEliminarUsuario");
       if (botonEliminar) {
         eliminarUsuarioPorId(botonEliminar.dataset.id);
       }
     });
   }
-
-  if (inputBuscarUsuario) {
-    inputBuscarUsuario.addEventListener("input", (evento) => {
-      textoBusquedaUsuarios = evento.target.value;
-      renderizarTablaUsuarios(obtenerUsuariosFiltradosPorNombre());
-    });
-  }
 };
 
 window.inicializarUsuarios = () => {
-  cargarUsuarios();
+  if (!document.getElementById("tabla-usuarios-body")) {
+    return;
+  }
+
   configurarEventosUsuarios();
 };
 
@@ -140,9 +88,9 @@ window.registrarUsuarioNuevo = (datosUsuario) => {
     .then((data) => {
       if (data.exito) {
         alert("Usuario registrado correctamente.");
-        cargarUsuarios();
+        window.location.reload();
       } else {
-        alert("Error al registrar usuario.");
+        alert(data.error || "Error al registrar usuario.");
       }
     });
 };
@@ -156,6 +104,7 @@ window.actualizarUsuarioExistente = (datosUsuario) => {
     correo: datosUsuario.gmail,
     telefono: datosUsuario.telefono,
     dni: datosUsuario.dni,
+    fecha_nacimiento: datosUsuario.fecha_nacimiento,
     rol: datosUsuario.rol,
   };
 
@@ -168,12 +117,12 @@ window.actualizarUsuarioExistente = (datosUsuario) => {
     .then((data) => {
       if (data.exito) {
         alert("Usuario actualizado correctamente.");
-        cargarUsuarios();
+        window.location.reload();
       } else {
-        alert("Error al actualizar usuario.");
+        alert(data.error || "Error al actualizar usuario.");
       }
     })
     .catch(() => alert("Error de conexión."));
 };
 
-window.obtenerListaUsuarios = () => listaUsuarios;
+document.addEventListener("DOMContentLoaded", window.inicializarUsuarios);
