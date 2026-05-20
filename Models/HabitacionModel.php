@@ -324,12 +324,11 @@ class HabitacionModel extends Eloquent
 
     public function calcularTotalReserva($idHabitacion, $checkIn, $checkOut)
     {
-        $stmt = $this->conectar()->prepare("SELECT t.precio_base AS precio
-            FROM habitacion h
-            JOIN tipo_habitacion t ON t.id = h.id_tipo_habitacion
-            WHERE h.id = ?");
-        $stmt->execute([(int) $idHabitacion]);
-        $precio = (float) $stmt->fetchColumn();
+        $precio = (float) DB::table('habitacion as h')
+            ->join('tipo_habitacion as t', 't.id', '=', 'h.id_tipo_habitacion')
+            ->where('h.id', (int) $idHabitacion)
+            ->value('t.precio_base');
+
         $segundos = max(1, strtotime($checkOut) - strtotime($checkIn));
         $dias = max(1, (int) ceil($segundos / 86400));
         return $dias * $precio;
@@ -356,9 +355,20 @@ class HabitacionModel extends Eloquent
                 $params[] = (int) $idReservaExcluir;
             }
 
-            $stmt = $this->conectar()->prepare($sql);
-            $stmt->execute($params);
-            $count = (int) $stmt->fetchColumn();
+            $count = (int) DB::table('reserva_habitacion as rh')
+                ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
+                ->where('rh.id_habitacion', (int) $idHabitacion)
+                ->where('rh.activo', 1)
+                ->whereIn('r.estado', ['pendiente', 'confirmada', 'checkin_realizado', 'en_estadia', 'checkout_pendiente'])
+                ->where('rh.check_in', '<', $checkOut)
+                ->where(function ($q) use ($checkIn) {
+                    $q->whereNull('rh.check_out')
+                      ->orWhere('rh.check_out', '>', $checkIn);
+                })
+                ->when($idReservaExcluir, function ($q) use ($idReservaExcluir) {
+                    $q->where('r.id', '!=', (int) $idReservaExcluir);
+                })
+                ->count();
 
             if ($count > 0) {
                 return ['disponible' => false, 'mensaje' => 'La habitación no está disponible en el rango indicado.'];

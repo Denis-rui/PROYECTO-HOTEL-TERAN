@@ -9,7 +9,7 @@ class Habitacion extends Eloquent
     public $timestamps = false;
     protected $fillable = [
         'numero_habitacion', 'piso', 'id_tipo_habitacion', 'estado',
-        'descripcion_habitacion', 'capacidad', 'activo', 'estado_operativo', 'estado_limpieza'
+        'descripcion_habitacion', 'capacidad', 'activo' 
     ];
 
     public function reservas()

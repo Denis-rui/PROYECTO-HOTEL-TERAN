@@ -180,6 +180,12 @@ class ReservaModel extends Model
                     'activo'       => 1,
                 ]);
 
+                DB::table('habitacion')
+                    ->where('id', $habitacionNormalizada['id'])
+                    ->update([
+                        'estado' => 'Ocupada'
+                    ]);
+
                 $habitacionActual = $habitacionNormalizada['habitacion'];
                 $habitacionModel->registrarHistorial(
                     $habitacionNormalizada['id'],
