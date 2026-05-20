@@ -1,10 +1,11 @@
 <!doctype html>
 <html lang="es">
 <head>
+    <?php $page_title = $data['page_title'] ?? 'Dashboard'; ?>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="<?= BASE_URL ?>public/assets/img/image.jpeg" />
-    <title>Hotel Teran - <?= $data['page_title'] ?? 'Dashboard' ?></title>
+    <title>Hotel Teran - <?= $page_title ?></title>
     
     <script>
         const BASE_URL = "<?= BASE_URL ?>";

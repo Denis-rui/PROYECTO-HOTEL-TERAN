@@ -6,6 +6,63 @@ use Models\Entities\Usuario;
 
 class UsuarioModel
 {
+    private function validarMayorEdad(?string $fechaNacimiento): void
+    {
+        if (empty($fechaNacimiento)) {
+            throw new \Exception('La fecha de nacimiento es obligatoria');
+        }
+
+        $fecha = \DateTime::createFromFormat('Y-m-d', $fechaNacimiento);
+
+        if (!$fecha || $fecha->format('Y-m-d') !== $fechaNacimiento) {
+            throw new \Exception('La fecha de nacimiento no es valida');
+        }
+
+        $hoy = new \DateTime('today');
+        $edad = $fecha->diff($hoy)->y;
+
+        if ($edad < 18) {
+            throw new \Exception('El usuario debe ser mayor de edad');
+        }
+    }
+
+    private function validarUnicidadCampos(array $datos, ?int $ignorarId = null): void
+    {
+        $nombreUsuario = trim((string) ($datos['nombre_usuario'] ?? ''));
+        $correo = trim((string) ($datos['correo'] ?? ''));
+        $dni = trim((string) ($datos['dni'] ?? ''));
+
+        if ($nombreUsuario !== '') {
+            $query = Usuario::where('nombre_usuario', $nombreUsuario);
+            if ($ignorarId !== null) {
+                $query->where('id', '<>', $ignorarId);
+            }
+            if ($query->exists()) {
+                throw new \Exception('El nombre de usuario ya existe');
+            }
+        }
+
+        if ($correo !== '') {
+            $query = Usuario::where('correo', $correo);
+            if ($ignorarId !== null) {
+                $query->where('id', '<>', $ignorarId);
+            }
+            if ($query->exists()) {
+                throw new \Exception('El correo ya esta registrado');
+            }
+        }
+
+        if ($dni !== '') {
+            $query = Usuario::where('dni', $dni);
+            if ($ignorarId !== null) {
+                $query->where('id', '<>', $ignorarId);
+            }
+            if ($query->exists()) {
+                throw new \Exception('El DNI ya esta registrado');
+            }
+        }
+    }
+
     // Obtener usuario para login (con rol)
     public function obtenerUsuarios($usuario)
     {
@@ -72,6 +129,7 @@ class UsuarioModel
                     'correo'          => $user->correo,
                     'telefono'        => $user->telefono,
                     'dni'             => $user->dni,
+                    'fecha_nacimiento'=> $user->fecha_nacimiento,
                     'rol'             => $user->rol->rol ?? '',
                     'estado'          => $user->estado ? 'activo' : 'inactivo',
                 ];
@@ -87,6 +145,9 @@ class UsuarioModel
         if (!$rolId) {
             throw new \Exception('Rol no encontrado');
         }
+
+        $this->validarMayorEdad($datos['fecha_nacimiento'] ?? null);
+    $this->validarUnicidadCampos($datos);
 
         $userData = [
             'nombre_completo'  => $datos['nombre_completo']  ?? '',
@@ -112,10 +173,17 @@ class UsuarioModel
             return false;
         }
 
+        $this->validarUnicidadCampos($datos, (int) $user->id);
+
         $user->nombre_completo = $datos['nombre_completo'] ?? $user->nombre_completo;
         $user->nombre_usuario  = $datos['nombre_usuario']  ?? $user->nombre_usuario;
         $user->correo          = $datos['correo']          ?? $user->correo;
         $user->telefono        = $datos['telefono']        ?? $user->telefono;
+
+        if (!empty($datos['fecha_nacimiento'])) {
+            $this->validarMayorEdad($datos['fecha_nacimiento']);
+            $user->fecha_nacimiento = $datos['fecha_nacimiento'];
+        }
 
 
         // Para cambio de contraseña
@@ -143,11 +211,18 @@ class UsuarioModel
             return false;
         }
 
+        $this->validarUnicidadCampos($datos, (int) $user->id);
+
         $user->nombre_completo = $datos['nombre_completo'] ?? $user->nombre_completo;
         $user->nombre_usuario  = $datos['nombre_usuario']  ?? $user->nombre_usuario;
         $user->correo          = $datos['correo']          ?? $user->correo;
         $user->telefono        = $datos['telefono']        ?? $user->telefono;
         $user->dni             = $datos['dni']             ?? $user->dni;
+
+        $fechaNacimiento = $datos['fecha_nacimiento'] ?? $user->fecha_nacimiento ?? null;
+        $this->validarMayorEdad($fechaNacimiento);
+        $user->fecha_nacimiento = $fechaNacimiento;
+
         $user->id_rol          = $rolId;
 
         return $user->save();
