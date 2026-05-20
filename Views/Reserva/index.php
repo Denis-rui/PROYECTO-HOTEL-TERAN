@@ -88,4 +88,5 @@
   <!-- INCLUSIÓN DE MODALES -->
   <?php require_once("Views/Template/Modals/Modal-NuevaReserva.php"); ?>
   <?php require_once("Views/Template/Modals/Modal-Pago.php"); ?>
+  <?php require_once("Views/Template/Modals/Modal-Clientes.php"); ?>
 </section>
