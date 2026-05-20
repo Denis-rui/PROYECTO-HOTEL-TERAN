@@ -109,7 +109,7 @@ window.SolicitarDato = (titulo, mensaje) => {
       cerrar(val || null);
     };
     document.getElementById("prompt-cancel").onclick = () => cerrar(null);
-    
+
     // Permitir Enter
     input.onkeyup = (e) => {
       if (e.key === "Enter") document.getElementById("prompt-ok").click();

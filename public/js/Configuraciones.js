@@ -94,6 +94,64 @@ window.inicializarConfiguraciones = () => {
     formulario.querySelectorAll(".error").forEach((e) => (e.textContent = ""));
     formulario.querySelectorAll(".form-input").forEach((i) => i.classList.remove("input-error"));
   }
+
+  // ---- Modal Tipo Habitación ----
+  const modal        = document.getElementById("contenedor-modal-tipo-habitacion");
+  const tituloModal  = document.getElementById("titulo-modal-tipo");
+  const formTipo     = document.getElementById("form-tipo-habitacion");
+  const mensajeModal = document.getElementById("error-exito-modal-tipo");
+
+  document.getElementById("btnNuevoTipoHabitacion").addEventListener("click", () => {
+    tituloModal.textContent = "Nuevo Tipo de Habitación";
+    formTipo.reset();
+    document.getElementById("id-tipo").value = "";
+    mensajeModal.textContent = "";
+    modal.style.display = "flex";
+  });
+
+  document.querySelectorAll(".btn-editar-tipo").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      tituloModal.textContent = "Editar Tipo de Habitación";
+      document.getElementById("id-tipo").value         = btn.dataset.id;
+      document.getElementById("tipo-habitacion").value = btn.dataset.tipo;
+      document.getElementById("precio-base").value     = btn.dataset.precio;
+      mensajeModal.textContent = "";
+      modal.style.display = "flex";
+    });
+  });
+
+  document.getElementById("btn-cancelar-tipo").addEventListener("click", () => {
+    modal.style.display = "none";
+  });
+
+
+  formTipo.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const tipo   = document.getElementById("tipo-habitacion").value.trim();
+    const precio = document.getElementById("precio-base").value.trim();
+
+    if (!tipo || !precio) {
+      mensajeModal.className = "div-mensaje-exito-error error";
+      mensajeModal.textContent = "Todos los campos son obligatorios";
+      return;
+    }
+
+    const body = new FormData();
+    body.append("id",          document.getElementById("id-tipo").value);
+    body.append("tipo",        tipo);
+    body.append("precio_base", precio);
+
+    const res = await fetch(BASE_URL + "?url=Configuracion/guardarTipo", { method: "POST", body });
+
+    if (res.ok) {
+      modal.style.display = "none";
+      location.reload();
+    } else {
+      mensajeModal.className = "div-mensaje-exito-error error";
+      mensajeModal.textContent = "Error al guardar. Intenta de nuevo.";
+    }
+  });
 };
 
 document.addEventListener('DOMContentLoaded', window.inicializarConfiguraciones);

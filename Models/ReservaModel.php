@@ -26,14 +26,17 @@ class ReservaModel extends Model
             return 0;
         }
 
-        $inicio = strtotime((string) $checkIn);
-        $fin = strtotime((string) $checkOut);
+        $inicioTexto = substr(trim((string) $checkIn), 0, 10);
+        $finTexto = substr(trim((string) $checkOut), 0, 10);
 
-        if ($inicio === false || $fin === false || $fin <= $inicio) {
+        $inicio = \DateTime::createFromFormat('Y-m-d', $inicioTexto);
+        $fin = \DateTime::createFromFormat('Y-m-d', $finTexto);
+
+        if (!$inicio || !$fin || $fin <= $inicio) {
             return 0;
         }
 
-        return max(1, (int) ceil(($fin - $inicio) / 86400));
+        return (int) $inicio->diff($fin)->days;
     }
 
     private function combinarFechaHora($fecha, $hora = null)
@@ -46,7 +49,7 @@ class ReservaModel extends Model
         }
 
         if ($hora === '') {
-            return $fecha;
+            return $fecha . ' 12:00:00';
         }
 
         return $fecha . ' ' . $hora . ':00';
@@ -599,19 +602,58 @@ class ReservaModel extends Model
     {
         $estadoNormalizado = strtolower(trim((string) $nuevoEstado));
         $estadosPermitidos = ['confirmada', 'en_estadia', 'checkout_realizado', 'cancelada'];
+        $ordenEstados = [
+            'confirmada' => 1,
+            'en_estadia' => 2,
+            'checkout_realizado' => 3,
+        ];
 
         if (!in_array($estadoNormalizado, $estadosPermitidos, true)) {
             return ['exito' => false, 'mensaje' => 'Estado no permitido.'];
         }
 
         try {
-            $reserva = Reserva::find((int) $idReserva);
+            $reserva = Reserva::with(['reservaHabitacion.habitacion'])->find((int) $idReserva);
             if (!$reserva) {
                 return ['exito' => false, 'mensaje' => 'Reserva no encontrada.'];
             }
 
+            $estadoActual = strtolower(trim((string) $reserva->estado));
+            if (isset($ordenEstados[$estadoActual], $ordenEstados[$estadoNormalizado]) && $ordenEstados[$estadoNormalizado] < $ordenEstados[$estadoActual]) {
+                return ['exito' => false, 'mensaje' => 'No se permite volver a un estado anterior.'];
+            }
+
             $reserva->estado = $estadoNormalizado;
             $reserva->save();
+
+            if ($estadoNormalizado === 'checkout_realizado') {
+                $habitacionesRelacionadas = $reserva->reservaHabitacion ?? [];
+                foreach ($habitacionesRelacionadas as $itemHabitacion) {
+                    if (!$itemHabitacion || empty($itemHabitacion->id_habitacion)) {
+                        continue;
+                    }
+
+                    DB::table('habitacion')
+                        ->where('id', (int) $itemHabitacion->id_habitacion)
+                        ->update([
+                            'estado' => 'Mantenimiento',
+                        ]);
+
+                    $habitacionModel = new HabitacionModel();
+                    $habitacionActual = $habitacionModel->obtenerPorId((int) $itemHabitacion->id_habitacion) ?? [];
+                    $estadoAnterior = $itemHabitacion->habitacion->estado ?? 'Ocupada';
+                    $habitacionModel->registrarHistorial(
+                        (int) $itemHabitacion->id_habitacion,
+                        (int) $idReserva,
+                        $estadoAnterior,
+                        'Mantenimiento',
+                        null,
+                        null,
+                        'checkout_realizado',
+                        'Habitación enviada a mantenimiento tras checkout realizado.'
+                    );
+                }
+            }
 
             return ['exito' => true, 'mensaje' => 'Estado de la reserva actualizado correctamente.'];
         } catch (\Throwable $e) {

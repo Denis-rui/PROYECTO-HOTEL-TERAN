@@ -60,6 +60,26 @@ if (!function_exists('claseEstadoReserva')) {
     return $mapa[$estado] ?? 'estado-reserva-desconocido';
   }
 }
+
+if (!function_exists('esEstadoBloqueadoReserva')) {
+  function esEstadoBloqueadoReserva(string $estadoActual, string $opcion): bool
+  {
+    $orden = [
+      'confirmada' => 1,
+      'en_estadia' => 2,
+      'checkout_realizado' => 3,
+    ];
+
+    $estadoActual = strtolower(trim($estadoActual));
+    $opcion = strtolower(trim($opcion));
+
+    if (!isset($orden[$estadoActual], $orden[$opcion])) {
+      return false;
+    }
+
+    return $orden[$opcion] < $orden[$estadoActual];
+  }
+}
 ?>
 <section class="reservas">
   <header class="header-reservas">
@@ -120,9 +140,9 @@ if (!function_exists('claseEstadoReserva')) {
                 data-estado="<?= htmlspecialchars($reserva["estado"]) ?>"
                 title="Cambiar estado de la reserva"
               >
-                <option value="confirmada" <?= $reserva["estado"] === "confirmada" ? 'selected' : '' ?>>Confirmada</option>
-                <option value="en_estadia" <?= $reserva["estado"] === "en_estadia" ? 'selected' : '' ?>>En estadía</option>
-                <option value="checkout_realizado" <?= $reserva["estado"] === "checkout_realizado" ? 'selected' : '' ?>>Checkout realizado</option>
+                <option value="confirmada" <?= $reserva["estado"] === "confirmada" ? 'selected' : '' ?> <?= esEstadoBloqueadoReserva((string) $reserva["estado"], "confirmada") ? 'disabled' : '' ?>>Confirmada</option>
+                <option value="en_estadia" <?= $reserva["estado"] === "en_estadia" ? 'selected' : '' ?> <?= esEstadoBloqueadoReserva((string) $reserva["estado"], "en_estadia") ? 'disabled' : '' ?>>En estadía</option>
+                <option value="checkout_realizado" <?= $reserva["estado"] === "checkout_realizado" ? 'selected' : '' ?> <?= esEstadoBloqueadoReserva((string) $reserva["estado"], "checkout_realizado") ? 'disabled' : '' ?>>Checkout realizado</option>
               </select>
             </td>
             <td>
@@ -136,7 +156,11 @@ if (!function_exists('claseEstadoReserva')) {
               </div>
             </td>
             <td>
-              <button class="boton-editar-reserva" data-id="<?= $reserva["id"] ?>">
+              <button
+                class="boton-editar-reserva"
+                data-id="<?= $reserva["id"] ?>"
+                <?= $reserva["estado"] === "checkout_realizado" ? 'disabled title="No se puede editar una reserva con checkout realizado"' : '' ?>
+              >
                 ✏️
               </button>
               <?php if ($reserva["estado"] === "confirmada"): ?>
