@@ -8,21 +8,22 @@ body {
   font-family: "Times New Roman", Times, serif;
   min-height: 100vh;
   display: flex;
-  background-color: black;
+  background-color: #f2f4ee;
 }
 
 #nav {
-  flex: 0 0 auto;
+  flex: 0 0 280px;
+  width: 280px;
+  background: transparent;
 }
 
 #app {
   flex: 1;
   padding: 10px;
+  min-width: 0;
+  background-color: #f2f4ee !important;
 }
 
 .informacion h2 {
   color: #2f3e1f;
-}
-#app {
-  background-color: #f2f4ee !important;
 }

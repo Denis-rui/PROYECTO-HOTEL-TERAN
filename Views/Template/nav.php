@@ -1,5 +1,6 @@
 <section class="menu">
   <aside class="sidebar">
+    <canvas class="sidebar-particles" id="sidebarCanvas"></canvas>
     <div class="nav-info">
       <img
         class="imagen"
@@ -27,6 +28,11 @@
         <li class="<?= (isset($_GET['url']) && strpos($_GET['url'], 'Cliente') !== false) ? 'activo' : '' ?>">
           <a href="<?= BASE_URL ?>?url=Cliente/index">
             <span class="nav-icon">✦</span> Clientes
+          </a>
+        </li>
+        <li class="<?= (isset($_GET['url']) && strpos($_GET['url'], 'Devolucion') !== false) ? 'activo' : '' ?>">
+          <a href="<?= BASE_URL ?>?url=Devolucion/index">
+            <span class="nav-icon">↩</span> Devoluciones
           </a>
         </li>
         <?php if ($_SESSION['rol'] == 'administrador'): ?>

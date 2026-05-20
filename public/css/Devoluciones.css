@@ -1,0 +1,77 @@
+.header-devoluciones {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.header-devoluciones h2 {
+  color: #2f3e1f;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.boton-nueva-devolucion {
+  background-color: #4f6422;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.boton-nueva-devolucion:hover {
+  background-color: #3d4e1a;
+}
+
+.buscar {
+  margin-bottom: 20px;
+}
+
+.buscar input {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+  width: 320px;
+}
+
+.tabla {
+  width: 100%;
+  border-radius: 20px;
+  overflow: hidden;
+  background-color: rgba(232, 223, 200, 0.5);
+}
+
+.tbl-devoluciones {
+  width: 100%;
+  border-spacing: 0;
+}
+
+.tbl-devoluciones thead {
+  background-color: rgba(232, 223, 200, 1);
+}
+
+.tbl-devoluciones th,
+.tbl-devoluciones td {
+  padding: 12px;
+  text-align: left;
+}
+
+.tbl-devoluciones th {
+  color: #2f3e1f;
+}
+
+/* Badges de estado */
+.badge-estado {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-pendiente  { background: #fff3cd; color: #856404; }
+.badge-aprobada   { background: #d1e7dd; color: #0f5132; }
+.badge-rechazada  { background: #f8d7da; color: #842029; }
+.badge-completada { background: #cfe2ff; color: #084298; }

@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Detectar página actual y llamar a su inicializador si existe
+    // Detectar pagina actual y llamar a su inicializador si existe
     const currentUrl = new URLSearchParams(window.location.search).get('url') || '';
     const urlLower = currentUrl.toLowerCase();
 
