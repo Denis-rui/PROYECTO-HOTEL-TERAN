@@ -1,4 +1,36 @@
-<?php $reservas = $data['reservas'] ?? []; ?>
+<?php
+$reservas = $data['reservas'] ?? [];
+
+if (!function_exists('formatearListaHabitacionesReserva')) {
+  function formatearListaHabitacionesReserva(array $reserva): string
+  {
+    if (!empty($reserva['habitaciones']) && is_array($reserva['habitaciones'])) {
+      $partes = [];
+
+      foreach ($reserva['habitaciones'] as $habitacion) {
+        if (!is_array($habitacion)) {
+          continue;
+        }
+
+        $numero = $habitacion['numero_habitacion'] ?? '';
+        $piso = $habitacion['piso'] ?? '';
+        $tipo = $habitacion['tipo_nombre'] ?? '';
+
+        $texto = trim('Hab. ' . $numero . ($piso !== '' ? ' - Piso ' . $piso : '') . ($tipo !== '' ? ' - ' . $tipo : ''));
+        if ($texto !== '') {
+          $partes[] = htmlspecialchars($texto, ENT_QUOTES, 'UTF-8');
+        }
+      }
+
+      if (!empty($partes)) {
+        return implode('<br>', $partes);
+      }
+    }
+
+    return htmlspecialchars((string) ($reserva['habitacion'] ?? ''), ENT_QUOTES, 'UTF-8');
+  }
+}
+?>
 <section class="reservas">
   <header class="header-reservas">
     <h2 class="titulo-reservas">Reservas</h2>
@@ -40,9 +72,9 @@
       </thead>
       <tbody id="contenido-reservas">
         <?php foreach ($reservas as $reserva) : ?>
-          <tr data-id="<?= (int) $reserva["id"] ?>" data-estado="<?= htmlspecialchars($reserva["estado"]) ?>" data-porcentajepago="<?= htmlspecialchars($reserva["porcentaje_pago"]) ?>" data-total="<?= htmlspecialchars($reserva["total"]) ?>" data-cliente="<?= htmlspecialchars($reserva["cliente"]) ?>" data-habitacion="<?= htmlspecialchars($reserva["habitacion"]) ?>" data-checkin="<?= htmlspecialchars($reserva["check_in"]) ?>" data-checkout="<?= htmlspecialchars($reserva["check_out"]) ?>" data-email="<?= htmlspecialchars($reserva["correo_electronico"] ?? '') ?>">
+          <tr data-id="<?= (int) $reserva["id"] ?>" data-estado="<?= htmlspecialchars($reserva["estado"]) ?>" data-porcentajepago="<?= htmlspecialchars($reserva["porcentaje_pago"]) ?>" data-total="<?= htmlspecialchars($reserva["total"]) ?>" data-cliente="<?= htmlspecialchars($reserva["cliente"]) ?>" data-habitacion="<?= htmlspecialchars($reserva["habitacion"]) ?>" data-habitaciones='<?= htmlspecialchars(json_encode($reserva["habitaciones"] ?? [], JSON_UNESCAPED_UNICODE), ENT_QUOTES, "UTF-8") ?>' data-checkin="<?= htmlspecialchars($reserva["check_in"]) ?>" data-checkout="<?= htmlspecialchars($reserva["check_out"]) ?>" data-email="<?= htmlspecialchars($reserva["correo_electronico"] ?? '') ?>">
             <td><?= htmlspecialchars($reserva["cliente"]) ?></td>
-            <td><?= htmlspecialchars($reserva["habitacion"]) ?></td>
+            <td><?= formatearListaHabitacionesReserva($reserva) ?></td>
             <td><?= htmlspecialchars($reserva["check_in"]) ?></td>
             <td>
               <?= htmlspecialchars($reserva["check_out"]) ?>

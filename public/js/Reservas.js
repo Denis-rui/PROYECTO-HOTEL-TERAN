@@ -79,7 +79,9 @@ const configurarEventosReservas = () => {
 
       const btnCheckout = e.target.closest(".boton-checkout-reserva");
       if (btnCheckout) {
-        ejecutarAccionReserva("checkout", { id_reserva: btnCheckout.dataset.id });
+        ejecutarAccionReserva("checkout", {
+          id_reserva: btnCheckout.dataset.id,
+        });
         return;
       }
 
@@ -115,7 +117,9 @@ const configurarEventosReservas = () => {
 
       const btnCambioHabitacion = e.target.closest(".boton-cambio-habitacion");
       if (btnCambioHabitacion) {
-        const idHabitacionNueva = prompt("ID de la nueva habitación disponible:");
+        const idHabitacionNueva = prompt(
+          "ID de la nueva habitación disponible:",
+        );
         if (!idHabitacionNueva) return;
         const motivo = prompt("Motivo del cambio:");
         if (!motivo) return;
@@ -139,7 +143,10 @@ const ejecutarAccionReserva = async (accion, datos) => {
     const resultado = await res.json();
 
     if (typeof Notificar === "function") {
-      Notificar(resultado.mensaje || "Acción procesada", resultado.exito ? "exito" : "error");
+      Notificar(
+        resultado.mensaje || "Acción procesada",
+        resultado.exito ? "exito" : "error",
+      );
     } else {
       alert(resultado.mensaje || "Acción procesada");
     }
@@ -152,27 +159,6 @@ const ejecutarAccionReserva = async (accion, datos) => {
     alert("Error de conexión con el servidor.");
   }
 };
-
-document.addEventListener("click", (e) => {
-  const btnEditar = e.target.closest(".boton-editar-reserva");
-  if (!btnEditar) return;
-
-  const fila = btnEditar.closest("tr");
-  if (!fila) return;
-
-  const datos = {
-    id: fila.dataset.id,
-    cliente: fila.dataset.cliente,
-    habitacion: fila.dataset.habitacion,
-    checkIn: fila.dataset.checkin,
-    checkOut: fila.dataset.checkout,
-    total: fila.dataset.total,
-    email: fila.dataset.email,
-    estado: fila.dataset.estado,
-  };
-
-  window.abrirModalReserva("editar", datos);
-});
 
 // Inicializar automáticamente al cargar el script
 window.inicializarReservas();

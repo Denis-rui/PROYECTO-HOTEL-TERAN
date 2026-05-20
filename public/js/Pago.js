@@ -8,6 +8,97 @@ const asegurarModalPago = async () => {
   return document.getElementById("modalPago");
 };
 
+const obtenerEsEdicionReserva = () => {
+  const formPago = document.getElementById("formPago");
+  return formPago?.dataset.guardarCambiosReserva === "true";
+};
+
+const obtenerDatosReservaDesdeFormularioPago = () => ({
+  id_reserva: document.getElementById("formPago")?.dataset.idReserva || "",
+  cliente:
+    document.getElementById("pagoIdCliente")?.value.trim() ||
+    document.getElementById("pagoCliente")?.value.trim() ||
+    "",
+  nombre: document.getElementById("pagoNombre")?.value.trim() || "",
+  email: document.getElementById("pagoEmail")?.value.trim() || "",
+  checkIn: document.getElementById("pagoCheckIn")?.value.trim() || "",
+  horaEntrada: document.getElementById("pagoHoraEntrada")?.value.trim() || "",
+  checkOut: document.getElementById("pagoCheckOut")?.value.trim() || "",
+  horaSalida: document.getElementById("pagoHoraSalida")?.value.trim() || "",
+  habitacion: document.getElementById("pagoHabitacion")?.value.trim() || "",
+  habitaciones: JSON.parse(
+    document.getElementById("pagoHabitaciones")?.value || "[]",
+  ),
+  totalReserva: document.getElementById("pagoTotalReserva")?.value.trim() || "",
+  observaciones:
+    document.getElementById("observacionesPago")?.value.trim() || "",
+});
+
+const sincronizarModalPagoConReserva = (reserva = {}) => {
+  if (!reserva) return;
+
+  poblarCamposOcultosReserva({
+    idReserva:
+      reserva.id ||
+      reserva.id_reserva ||
+      document.getElementById("formPago")?.dataset.idReserva,
+    guardarCambiosReserva:
+      document.getElementById("formPago")?.dataset.guardarCambiosReserva ===
+      "true",
+    cliente: reserva.cliente || "",
+    clienteTexto: reserva.cliente || "",
+    nombre: reserva.cliente || "",
+    email: reserva.correo_electronico || "",
+    checkIn: reserva.check_in || "",
+    horaEntrada: "",
+    checkOut: reserva.check_out || "",
+    horaSalida: "",
+    habitacion: reserva.habitacion || "",
+    habitaciones: reserva.habitaciones || [],
+    totalReserva: reserva.total || 0,
+    totalPagado: reserva.total_pagado || 0,
+    saldoPendiente: reserva.saldo_pendiente || 0,
+    pagos: reserva.pagos || [],
+  });
+};
+
+const guardarCambiosReserva = async () => {
+  const formPago = document.getElementById("formPago");
+  if (!formPago?.dataset.idReserva) {
+    return {
+      exito: false,
+      mensaje: "No hay una reserva activa para actualizar.",
+    };
+  }
+
+  const datosReserva = obtenerDatosReservaDesdeFormularioPago();
+
+  try {
+    const res = await fetch(BASE_URL + "?url=Reserva/actualizar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(datosReserva),
+    });
+    const resultado = await res.json();
+
+    if (!resultado.exito) {
+      return resultado;
+    }
+
+    if (resultado.reserva) {
+      sincronizarModalPagoConReserva(resultado.reserva);
+    }
+
+    return resultado;
+  } catch (error) {
+    console.error(error);
+    return {
+      exito: false,
+      mensaje: "Error al guardar los cambios de la reserva.",
+    };
+  }
+};
+
 const poblarCamposOcultosReserva = (datos = {}) => {
   const formPago = document.getElementById("formPago");
   if (formPago) {
@@ -17,6 +108,12 @@ const poblarCamposOcultosReserva = (datos = {}) => {
     } else {
       delete formPago.dataset.idReserva;
       formPago.dataset.modoNuevo = "true";
+    }
+
+    if (datos.guardarCambiosReserva) {
+      formPago.dataset.guardarCambiosReserva = "true";
+    } else {
+      delete formPago.dataset.guardarCambiosReserva;
     }
   }
 
@@ -75,6 +172,7 @@ const poblarCamposOcultosReserva = (datos = {}) => {
   );
 
   const esReservaNueva = formPago?.dataset.modoNuevo === "true";
+  const esEdicionReserva = formPago?.dataset.guardarCambiosReserva === "true";
 
   // Cálculos de política
   const infoSugerido = document.getElementById("infoPagoSugerido");
@@ -87,7 +185,7 @@ const poblarCamposOcultosReserva = (datos = {}) => {
     const saldo = total - pagado;
 
     let sugerido = 0;
-    if (!esReservaNueva) {
+    if (!esReservaNueva && !esEdicionReserva) {
       sugerido = saldo;
       if (etiquetaPolitica) {
         etiquetaPolitica.textContent = "(Saldo pendiente)";
@@ -164,6 +262,13 @@ const poblarCamposOcultosReserva = (datos = {}) => {
         .join("");
     }
   }
+
+  const botonCancelar = document.getElementById("btnCancelarPago");
+  if (botonCancelar) {
+    botonCancelar.textContent = esEdicionReserva
+      ? "Salir guardando"
+      : "Cancelar";
+  }
 };
 
 const configurarEventosPago = () => {
@@ -175,11 +280,29 @@ const configurarEventosPago = () => {
   const formPago = document.getElementById("formPago");
 
   if (cerrarBtn) {
-    cerrarBtn.addEventListener("click", window.cerrarModalPago);
+    cerrarBtn.addEventListener("click", async () => {
+      if (obtenerEsEdicionReserva()) {
+        const resultado = await guardarCambiosReserva();
+        if (!resultado.exito) {
+          alert(resultado.mensaje || "No se pudieron guardar los cambios.");
+          return;
+        }
+      }
+      window.cerrarModalPago();
+    });
   }
 
   if (cancelarBtn) {
-    cancelarBtn.addEventListener("click", window.cerrarModalPago);
+    cancelarBtn.addEventListener("click", async () => {
+      if (obtenerEsEdicionReserva()) {
+        const resultado = await guardarCambiosReserva();
+        if (!resultado.exito) {
+          alert(resultado.mensaje || "No se pudieron guardar los cambios.");
+          return;
+        }
+      }
+      window.cerrarModalPago();
+    });
   }
 
   if (modalPago) {
@@ -224,6 +347,8 @@ const configurarEventosPago = () => {
       const montoNumerico = parseFloat(montoPago);
 
       const esReservaNueva = formPago.dataset.modoNuevo === "true";
+      const esEdicionReserva =
+        formPago.dataset.guardarCambiosReserva === "true";
       if (esReservaNueva) {
         const cliente =
           document.getElementById("pagoIdCliente")?.value.trim() ||
@@ -262,7 +387,7 @@ const configurarEventosPago = () => {
         }
       }
 
-      if (!esReservaNueva) {
+      if (!esReservaNueva && !esEdicionReserva) {
         const saldoDisponible = parseFloat(
           (document.getElementById("montoPago")?.max || "0").toString(),
         );
@@ -278,11 +403,29 @@ const configurarEventosPago = () => {
         document.getElementById("descripcionPago")?.value.trim() || "";
 
       try {
-        let url =
+        if (esEdicionReserva && formPago.dataset.idReserva) {
+          const guardado = await guardarCambiosReserva();
+          if (!guardado.exito) {
+            alert(guardado.mensaje || "No se pudieron guardar los cambios.");
+            return;
+          }
+
+          const saldoActualizado = parseFloat(
+            (document.getElementById("montoPago")?.max || "0").toString(),
+          );
+          if (saldoActualizado > 0 && montoNumerico > saldoActualizado) {
+            alert(
+              `El monto no puede ser mayor al saldo pendiente actualizado. Saldo disponible: S/ ${saldoActualizado.toFixed(2)}`,
+            );
+            return;
+          }
+        }
+
+        const url =
           BASE_URL +
           (esReservaNueva ? "?url=Reserva/registrar" : "?url=Reserva/pago");
 
-        let fetchPayload = esReservaNueva
+        const fetchPayload = esReservaNueva
           ? {
               cliente:
                 document.getElementById("pagoCliente")?.value.trim() || "",
@@ -355,7 +498,7 @@ window.abrirModalPago = async (datosReserva = {}) => {
   const modalPago = await asegurarModalPago();
   if (!modalPago) return;
 
-  if (datosReserva.idReserva && !datosReserva.totalReserva) {
+  if (datosReserva.idReserva) {
     try {
       const res = await fetch(
         BASE_URL +
@@ -376,16 +519,18 @@ window.abrirModalPago = async (datosReserva = {}) => {
           : reserva.habitacion;
 
         datosReserva = {
+          ...reserva,
           ...datosReserva,
-          clienteTexto: reserva.cliente,
-          habitacion: habitacionesResumen,
-          habitaciones: reserva.habitaciones || [],
-          checkIn: reserva.check_in,
-          checkOut: reserva.check_out,
-          totalReserva: reserva.total,
-          totalPagado: reserva.total_pagado,
-          saldoPendiente: reserva.saldo_pendiente,
-          pagos: reserva.pagos || [],
+          clienteTexto: datosReserva.clienteTexto || reserva.cliente,
+          habitacion: datosReserva.habitacion || habitacionesResumen,
+          habitaciones: datosReserva.habitaciones || reserva.habitaciones || [],
+          checkIn: datosReserva.checkIn || reserva.check_in,
+          checkOut: datosReserva.checkOut || reserva.check_out,
+          totalReserva: datosReserva.totalReserva || reserva.total,
+          totalPagado: datosReserva.totalPagado ?? reserva.total_pagado,
+          saldoPendiente:
+            datosReserva.saldoPendiente ?? reserva.saldo_pendiente,
+          pagos: reserva.pagos || datosReserva.pagos || [],
         };
       }
     } catch (error) {

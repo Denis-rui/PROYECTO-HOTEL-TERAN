@@ -227,6 +227,179 @@ class ReservaModel extends Model
         }
     }
 
+    public function actualizarReserva($datos)
+    {
+        try {
+            $idReserva = (int) ($datos['id_reserva'] ?? 0);
+            if ($idReserva <= 0) {
+                return ['exito' => false, 'mensaje' => 'No se recibió el ID de la reserva.'];
+            }
+
+            $reservaActual = Reserva::with(['pagos', 'reservaHabitacion.habitacion'])->find($idReserva);
+            if (!$reservaActual) {
+                return ['exito' => false, 'mensaje' => 'Reserva no encontrada.'];
+            }
+
+            $habitacionModel = new HabitacionModel();
+            $checkIn = $this->combinarFechaHora($datos['checkIn'] ?? null, $datos['horaEntrada'] ?? null);
+            $checkOut = $this->combinarFechaHora($datos['checkOut'] ?? null, $datos['horaSalida'] ?? null);
+
+            $habitacionesActuales = $reservaActual->reservaHabitacion ?? [];
+            $idsHabitacionesActuales = [];
+            foreach ($habitacionesActuales as $itemHabitacionActual) {
+                if ($itemHabitacionActual && !empty($itemHabitacionActual->id_habitacion)) {
+                    $idsHabitacionesActuales[] = (int) $itemHabitacionActual->id_habitacion;
+                }
+            }
+
+            $habitacionesIngresadas = $datos['habitaciones'] ?? [];
+            if (is_string($habitacionesIngresadas)) {
+                $decoded = json_decode($habitacionesIngresadas, true);
+                $habitacionesIngresadas = is_array($decoded) ? $decoded : [];
+            }
+
+            if (empty($habitacionesIngresadas) && !empty($datos['habitacion'])) {
+                $habitacionesIngresadas = [$datos['habitacion']];
+            }
+
+            $habitacionesNormalizadas = [];
+            $totalCalculado = 0;
+            $dias = $this->obtenerDiasEstadia($checkIn, $checkOut);
+
+            if ($dias <= 0) {
+                return ['exito' => false, 'mensaje' => 'Rango de fechas inválido.'];
+            }
+
+            foreach ($habitacionesIngresadas as $habitacionIngresada) {
+                $idHabitacion = is_array($habitacionIngresada)
+                    ? (int) ($habitacionIngresada['id'] ?? $habitacionIngresada['id_habitacion'] ?? 0)
+                    : (int) $habitacionIngresada;
+
+                if ($idHabitacion <= 0) {
+                    continue;
+                }
+
+                $esHabitacionYaAsignada = in_array($idHabitacion, $idsHabitacionesActuales, true);
+                if (!$esHabitacionYaAsignada) {
+                    $disponibilidad = $habitacionModel->validarDisponibilidadHabitacion(
+                        $idHabitacion,
+                        $checkIn,
+                        $checkOut,
+                        $idReserva
+                    );
+
+                    if (!$disponibilidad['disponible']) {
+                        return ['exito' => false, 'mensaje' => $disponibilidad['mensaje']];
+                    }
+                }
+
+                $habitacionActual = $habitacionModel->obtenerPorId($idHabitacion);
+                if (!$habitacionActual) {
+                    return ['exito' => false, 'mensaje' => 'No se encontró una de las habitaciones seleccionadas.'];
+                }
+
+                $precioHabitacion = (float) ($habitacionActual['precio'] ?? 0);
+                $habitacionesNormalizadas[] = [
+                    'id' => $idHabitacion,
+                    'habitacion' => $habitacionActual,
+                    'precio' => $precioHabitacion,
+                ];
+
+                $totalCalculado += $precioHabitacion * $dias;
+            }
+
+            if (empty($habitacionesNormalizadas)) {
+                return ['exito' => false, 'mensaje' => 'Debe seleccionar al menos una habitación válida.'];
+            }
+
+            $totalPagado = (float) ($reservaActual->pagos->sum('monto') ?? 0);
+            if ($totalPagado > $totalCalculado + 0.00001) {
+                return [
+                    'exito' => false,
+                    'mensaje' => 'No se puede dejar un total menor al monto ya pagado. Total pagado: S/ ' . number_format($totalPagado, 2)
+                ];
+            }
+
+            $habitacionesAnteriores = $reservaActual->reservaHabitacion ?? [];
+            $idsHabitacionesAnteriores = [];
+            foreach ($habitacionesAnteriores as $itemHabitacion) {
+                if ($itemHabitacion && !empty($itemHabitacion->id_habitacion)) {
+                    $idsHabitacionesAnteriores[] = (int) $itemHabitacion->id_habitacion;
+                }
+            }
+
+            $idsHabitacionesNuevas = array_values(array_unique(array_map(
+                fn ($item) => (int) $item['id'],
+                $habitacionesNormalizadas
+            )));
+
+            DB::connection()->beginTransaction();
+
+            $reservaActual->update([
+                'id_cliente' => (int) ($datos['cliente'] ?? $datos['id_cliente'] ?? $reservaActual->id_cliente),
+                'total' => $totalCalculado,
+                'observaciones' => $datos['observaciones'] ?? $reservaActual->observaciones,
+            ]);
+
+            DB::table('reserva_habitacion')
+                ->where('id_reserva', $idReserva)
+                ->delete();
+
+            foreach ($habitacionesNormalizadas as $habitacionNormalizada) {
+                ReservaHabitacion::create([
+                    'id_reserva'    => $idReserva,
+                    'id_habitacion' => $habitacionNormalizada['id'],
+                    'check_in'      => $checkIn,
+                    'check_out'     => $checkOut,
+                    'activo'        => 1,
+                ]);
+
+                DB::table('habitacion')
+                    ->where('id', $habitacionNormalizada['id'])
+                    ->update([
+                        'estado' => 'Ocupada'
+                    ]);
+            }
+
+            foreach ($idsHabitacionesAnteriores as $idHabitacionAnterior) {
+                if (in_array($idHabitacionAnterior, $idsHabitacionesNuevas, true)) {
+                    continue;
+                }
+
+                $sigueOcupada = DB::table('reserva_habitacion as rh')
+                    ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
+                    ->where('rh.id_habitacion', $idHabitacionAnterior)
+                    ->where('rh.activo', 1)
+                    ->whereIn('r.estado', self::ESTADOS_ACTIVOS)
+                    ->exists();
+
+                if (!$sigueOcupada) {
+                    DB::table('habitacion')
+                        ->where('id', $idHabitacionAnterior)
+                        ->update([
+                            'estado' => 'Disponible'
+                        ]);
+                }
+            }
+
+            DB::connection()->commit();
+
+            return [
+                'exito' => true,
+                'mensaje' => 'Reserva actualizada correctamente.',
+                'id_reserva' => $idReserva,
+                'reserva' => $this->obtenerReservaPorId($idReserva),
+            ];
+        } catch (\Throwable $e) {
+            $conexion = DB::connection();
+            if ($conexion->getPdo()->inTransaction()) {
+                $conexion->rollBack();
+            }
+
+            return ['exito' => false, 'mensaje' => 'Error al actualizar reserva: ' . $e->getMessage()];
+        }
+    }
+
     public function registrarPago($idReserva, $monto, $idMetodoPago, $descripcion = '', $fechaPago = null)
     {
         try {
