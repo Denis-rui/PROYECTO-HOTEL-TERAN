@@ -2,6 +2,7 @@
 namespace Models;
 use Illuminate\Database\Capsule\Manager as DB;
 use Libraries\Core\Model;
+use Models\ComprobanteModel;
 use Models\Entities\Habitacion;
 use Models\HabitacionModel;
 use Models\Entities\Pago;
@@ -75,10 +76,13 @@ class ReservaModel extends Model
         return $reserva ? $this->formatearReserva($reserva) : null;
     }
 
-    public function registrarReserva($reserva)
+    public function registrarReserva($reserva, $idUsuario = null)
     {
         try {
             $habitacionModel = new HabitacionModel();
+            $comprobanteModel = new ComprobanteModel();
+            $pago = null;
+            $comprobanteData = null;
             $checkIn = $this->combinarFechaHora($reserva['checkIn'] ?? null, $reserva['horaEntrada'] ?? null);
             $checkOut = $this->combinarFechaHora($reserva['checkOut'] ?? null, $reserva['horaSalida'] ?? null);
 
@@ -207,18 +211,41 @@ class ReservaModel extends Model
                         return ['exito' => false, 'mensaje' => 'El pago inicial no puede ser mayor al total de la reserva.'];
                     }
 
-                    Pago::create([
+                    $pago = Pago::create([
                         'id_reserva'     => $idReserva,
                         'monto'          => $montoPagoInicial,
                         'descripcion'    => $pagoInicial['descripcion'] ?? 'Pago inicial',
                         'fecha_pago'     => $pagoInicial['fecha_pago'] ?? date('Y-m-d H:i:s'),
                         'id_metodo_pago' => (int) ($pagoInicial['id_metodo_pago'] ?? 0),
                     ]);
+
+                    if (!$pago) {
+                        throw new \RuntimeException('No se pudo registrar el pago inicial.');
+                    }
+
+                    $comprobante = $comprobanteModel->crearDesdePago(
+                        $pago,
+                        ['total' => $totalFinal],
+                        $habitacionesNormalizadas,
+                        (int) ($idUsuario ?? $reservaCreada->id_usuario ?? 1)
+                    );
+
+                    if (!$comprobante) {
+                        throw new \RuntimeException('No se pudo generar el comprobante del pago inicial.');
+                    }
+
+                    $comprobanteData = $comprobanteModel->obtenerPorPago((int) $pago->id);
                 }
             }
 
             DB::connection()->commit();
-            return ['exito' => $ok, 'mensaje' => 'Reserva registrada correctamente.', 'id_reserva' => $idReserva];
+            return [
+                'exito' => $ok,
+                'mensaje' => 'Reserva registrada correctamente.',
+                'id_reserva' => $idReserva,
+                'pago_id' => $pago->id ?? null,
+                'comprobante' => $comprobanteData ?? null,
+            ];
         } catch (\Exception $e) {
             $conexion = DB::connection();
             if ($conexion->getPdo()->inTransaction()) {
@@ -401,7 +428,7 @@ class ReservaModel extends Model
         }
     }
 
-    public function registrarPago($idReserva, $monto, $idMetodoPago, $descripcion = '', $fechaPago = null)
+    public function registrarPago($idReserva, $monto, $idMetodoPago, $descripcion = '', $fechaPago = null, $idUsuario = null)
     {
         try {
             $reserva = $this->obtenerReservaPorId($idReserva);
@@ -419,6 +446,10 @@ class ReservaModel extends Model
             }
 
             $fecha = $fechaPago ? $fechaPago . ' ' . date('H:i:s') : date('Y-m-d H:i:s');
+            $comprobanteModel = new ComprobanteModel();
+
+            DB::connection()->beginTransaction();
+
             $pago = Pago::create([
                 'id_reserva'      => (int) $idReserva,
                 'monto'           => $monto,
@@ -426,10 +457,36 @@ class ReservaModel extends Model
                 'fecha_pago'      => $fecha,
                 'id_metodo_pago'  => (int) $idMetodoPago,
             ]);
-            $ok = (bool) $pago;
 
-            return ['exito' => $ok, 'mensaje' => $ok ? 'Pago registrado correctamente.' : 'No se pudo registrar el pago.'];
+            if (!$pago) {
+                throw new \RuntimeException('No se pudo registrar el pago.');
+            }
+
+            $habitaciones = $reserva['habitaciones'] ?? [];
+            $comprobante = $comprobanteModel->crearDesdePago(
+                $pago,
+                $reserva,
+                $habitaciones,
+                (int) ($idUsuario ?? $reserva['id_usuario'] ?? 1)
+            );
+
+            if (!$comprobante) {
+                throw new \RuntimeException('No se pudo generar el comprobante.');
+            }
+
+            DB::connection()->commit();
+
+            return [
+                'exito' => true,
+                'mensaje' => 'Pago registrado correctamente.',
+                'pago_id' => (int) $pago->id,
+                'comprobante' => $comprobanteModel->obtenerPorPago((int) $pago->id),
+            ];
         } catch (\Throwable $e) {
+            $conexion = DB::connection();
+            if ($conexion->getPdo()->inTransaction()) {
+                $conexion->rollBack();
+            }
             return ['exito' => false, 'mensaje' => 'Error al registrar pago: ' . $e->getMessage()];
         }
     }

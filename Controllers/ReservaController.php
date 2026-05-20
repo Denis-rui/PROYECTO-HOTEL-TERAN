@@ -15,7 +15,7 @@ class ReservaController extends Controller
         }
         $data['page_title'] = "Gestión de Reservas";
         $data['reservas'] = $this->model->obtenerReservas();
-        $data['page_js'] = ['Clientes.js', 'Modal-Clientes.js', 'Modal-NuevaReserva.js', 'Pago.js', 'Reservas.js'];
+        $data['page_js'] = ['Clientes.js', 'Modal-Clientes.js', 'Modal-NuevaReserva.js', 'Pago.js', 'Comprobante.js', 'Reservas.js'];
         $this->views->render($this, 'index', $data);
     }
 
@@ -29,7 +29,7 @@ class ReservaController extends Controller
     {
         header('Content-Type: application/json');
         $datos     = json_decode(file_get_contents('php://input'), true);
-        $resultado = $this->model->registrarReserva($datos);
+        $resultado = $this->model->registrarReserva($datos, $_SESSION['id_usuario'] ?? null);
         echo json_encode($resultado);
     }
 
@@ -50,7 +50,8 @@ class ReservaController extends Controller
             (float) ($datos['monto']       ?? 0),
             (int) ($datos['id_metodo_pago'] ?? 0),
             $datos['descripcion'] ?? '',
-            $datos['fecha_pago']  ?? null
+            $datos['fecha_pago']  ?? null,
+            $_SESSION['id_usuario'] ?? null
         );
         echo json_encode($resultado);
     }

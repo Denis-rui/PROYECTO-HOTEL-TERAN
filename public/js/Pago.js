@@ -483,7 +483,35 @@ const configurarEventosPago = () => {
         }
 
         window.cerrarModalPago();
-        window.location.reload(); // Recargar para ver cambios
+
+        if (
+          resultado.comprobante &&
+          typeof window.abrirModalComprobante === "function"
+        ) {
+          window.abrirModalComprobante(resultado.comprobante);
+          return;
+        }
+
+        if (
+          resultado.pago_id &&
+          typeof window.abrirModalComprobante === "function"
+        ) {
+          try {
+            const comprobanteRes = await fetch(
+              BASE_URL +
+                `?url=Comprobante/obtenerPorPago/${encodeURIComponent(resultado.pago_id)}`,
+            );
+            const comprobante = await comprobanteRes.json();
+            if (comprobante) {
+              window.abrirModalComprobante(comprobante);
+              return;
+            }
+          } catch (error) {
+            console.error(error);
+          }
+        }
+
+        window.location.reload(); // Recargar si no se pudo mostrar el comprobante
       } catch (error) {
         console.error(error);
         alert("Error de conexión con el servidor.");

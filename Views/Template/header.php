@@ -24,6 +24,7 @@
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Clientes.css" />
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Modal-Clientes.css" />
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Pago.css" />
+    <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Modal-Comprobante.css" />
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Notificaciones.css" />
 </head>
 <body>
