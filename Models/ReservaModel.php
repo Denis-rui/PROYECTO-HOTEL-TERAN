@@ -188,11 +188,8 @@ class ReservaModel extends Model
                     'activo'       => 1,
                 ]);
 
-                DB::table('habitacion')
-                    ->where('id', $habitacionNormalizada['id'])
-                    ->update([
-                        'estado' => 'Ocupada'
-                    ]);
+                // No cambiar el estado de la habitación al crear la reserva.
+                // La habitación pasará a 'Ocupada' cuando se confirme el check-in.
 
                 $habitacionActual = $habitacionNormalizada['habitacion'];
                 $habitacionModel->registrarHistorial(
@@ -353,9 +350,15 @@ class ReservaModel extends Model
 
             $habitacionesAnteriores = $reservaActual->reservaHabitacion ?? [];
             $idsHabitacionesAnteriores = [];
+            $mapHabitacionFechas = [];
             foreach ($habitacionesAnteriores as $itemHabitacion) {
                 if ($itemHabitacion && !empty($itemHabitacion->id_habitacion)) {
-                    $idsHabitacionesAnteriores[] = (int) $itemHabitacion->id_habitacion;
+                    $idHab = (int) $itemHabitacion->id_habitacion;
+                    $idsHabitacionesAnteriores[] = $idHab;
+                    $mapHabitacionFechas[$idHab] = [
+                        'check_in' => $itemHabitacion->check_in ?? null,
+                        'check_out' => $itemHabitacion->check_out ?? null,
+                    ];
                 }
             }
 
@@ -385,13 +388,11 @@ class ReservaModel extends Model
                     'activo'        => 1,
                 ]);
 
-                DB::table('habitacion')
-                    ->where('id', $habitacionNormalizada['id'])
-                    ->update([
-                        'estado' => 'Ocupada'
-                    ]);
+                    // No cambiar el estado de la habitación al actualizar la reserva.
+                    // El estado se actualiza al confirmar el check-in.
             }
 
+            // Decidir estado de habitaciones que fueron removidas de la reserva
             foreach ($idsHabitacionesAnteriores as $idHabitacionAnterior) {
                 if (in_array($idHabitacionAnterior, $idsHabitacionesNuevas, true)) {
                     continue;
@@ -404,12 +405,52 @@ class ReservaModel extends Model
                     ->whereIn('r.estado', self::ESTADOS_ACTIVOS)
                     ->exists();
 
-                if (!$sigueOcupada) {
+                if ($sigueOcupada) {
+                    // Hay otra reserva activa que ocupa o reservó la habitación: no cambiamos su estado aquí.
+                    continue;
+                }
+
+                // Determinar si la habitación removida corresponde a fechas actuales (durante la estadía)
+                $fechas = $mapHabitacionFechas[$idHabitacionAnterior] ?? null;
+                $hoy = date('Y-m-d');
+                $nuevoEstado = null; // null => no cambiar
+
+                if ($fechas && !empty($fechas['check_in']) && !empty($fechas['check_out'])) {
+                    $checkInFecha = substr(trim((string) $fechas['check_in']), 0, 10);
+                    $checkOutFecha = substr(trim((string) $fechas['check_out']), 0, 10);
+
+                    if ($checkInFecha !== '' && $checkOutFecha !== '' && $hoy >= $checkInFecha && $hoy < $checkOutFecha) {
+                        // Si la eliminación ocurre dentro del periodo original de la reserva, enviar a mantenimiento
+                        $nuevoEstado = 'Mantenimiento';
+                    }
+                }
+
+                // Solo actualizar el estado si determinamos un nuevo estado (p.ej. Mantenimiento).
+                // Si $nuevoEstado es null, dejamos la habitación tal como está.
+                if ($nuevoEstado !== null) {
                     DB::table('habitacion')
                         ->where('id', $idHabitacionAnterior)
                         ->update([
-                            'estado' => 'Disponible'
+                            'estado' => $nuevoEstado
                         ]);
+
+                    // Registrar historial de movimiento de habitación
+                    try {
+                        $habitacionActual = $habitacionModel->obtenerPorId((int) $idHabitacionAnterior) ?? [];
+                        $estadoAnterior = $habitacionActual['estado'] ?? 'Ocupada';
+                        $habitacionModel->registrarHistorial(
+                            (int) $idHabitacionAnterior,
+                            (int) $idReserva,
+                            $estadoAnterior,
+                            $nuevoEstado,
+                            null,
+                            null,
+                            'editar_reserva_quitar_habitacion',
+                            'Habitación removida de reserva: estado ajustado según fechas.'
+                        );
+                    } catch (\Throwable $e) {
+                       
+                    }
                 }
             }
 
@@ -731,7 +772,8 @@ class ReservaModel extends Model
             }
 
             $habitacionModel = new HabitacionModel();
-            $ocupada = $habitacionModel->obtenerReservaEnEstadiaPorHabitacion((int) $reserva['id_habitacion']);
+            // Usar el método existente que devuelve la reserva en estadía para la habitación
+            $ocupada = $habitacionModel->obtenerReser_EstadiaHab((int) $reserva['id_habitacion']);
             if ($ocupada && (int) $ocupada['id'] !== (int) $idReserva) {
                 return ['exito' => false, 'mensaje' => 'La habitación está ocupada por otra reserva.'];
             }
@@ -739,8 +781,19 @@ class ReservaModel extends Model
             $con = $this->conectar();
             $con->beginTransaction();
 
-            $stmt = $con->prepare("UPDATE reserva SET estado = 'en_estadia', check_in_real = NOW() WHERE id = ?");
+            // Actualizar estado de la reserva. No asumimos existencia de columna `check_in_real`.
+            $stmt = $con->prepare("UPDATE reserva SET estado = 'en_estadia' WHERE id = ?");
             $stmt->execute([(int) $idReserva]);
+
+            // Registrar el check-in real en la tabla intermedia `reserva_habitacion` si aplica.
+            try {
+                if (!empty($reserva['id_habitacion'])) {
+                    $stmtRh = $con->prepare("UPDATE reserva_habitacion SET check_in = NOW() WHERE id_reserva = ? AND id_habitacion = ?");
+                    $stmtRh->execute([(int) $idReserva, (int) $reserva['id_habitacion']]);
+                }
+            } catch (\Throwable $e) {
+                // No interrumpir el flujo si falla el update en reserva_habitacion
+            }
 
             $stmtHab = $con->prepare("UPDATE habitacion SET estado = 'Ocupada' WHERE id = ?");
             $stmtHab->execute([(int) $reserva['id_habitacion']]);
