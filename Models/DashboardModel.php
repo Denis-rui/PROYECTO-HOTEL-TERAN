@@ -1,40 +1,104 @@
 <?php
 namespace Models;
 
-use Libraries\Core\Model;
-use PDO;
+// Importamos Eloquent y el Query Builder de Laravel
+use Illuminate\Database\Eloquent\Model as Eloquent;
+use Illuminate\Database\Capsule\Manager as DB;
 
-class DashboardModel extends Model
+class DashboardModel extends Eloquent
 {
-    public function __construct()
-    {
-        parent::__construct();
-    }
+    protected $table   = 'habitacion'; // tabla base (no se usa directamente, sólo Eloquent la necesita)
+    public $timestamps = false;
 
-    public function obtenerEstadisticasDashboard()
+        // ESTADÍSTICAS PRINCIPALES DEL DASHBOARD
+
+    public function obtenerEstadisticasDashboard(): array
     {
         $stats = [];
-        $con = $this->conectar();
-        $stats['habitaciones_disponibles'] = (int) $con->query("SELECT COUNT(*) FROM habitacion WHERE activo = 1 AND estado = 'Disponible'")->fetchColumn();
-        $stats['habitaciones_ocupadas'] = (int) $con->query("SELECT COUNT(*) FROM habitacion WHERE activo = 1 AND estado = 'Ocupada'")->fetchColumn();
-        $stats['habitaciones_reservadas'] = (int) $con->query("SELECT COUNT(*) FROM habitacion WHERE activo = 1 AND estado = 'Reservada'")->fetchColumn();
-        $stats['habitaciones_mantenimiento'] = (int) $con->query("SELECT COUNT(*) FROM habitacion WHERE activo = 1 AND estado = 'Mantenimiento'")->fetchColumn();
-        $stats['reservas_activas'] = (int) $con->query("SELECT COUNT(*) FROM reserva WHERE estado IN ('pendiente','confirmada','checkin_realizado','en_estadia','checkout_pendiente')")->fetchColumn();
-        $stats['checkins_hoy'] = (int) $con->query("SELECT COUNT(*) FROM reserva_habitacion rh JOIN reserva r ON r.id = rh.id_reserva WHERE DATE(rh.check_in) = CURDATE() AND r.estado IN ('confirmada','en_estadia')")->fetchColumn();
-        $stats['checkouts_hoy'] = (int) $con->query("SELECT COUNT(*) FROM reserva_habitacion rh JOIN reserva r ON r.id = rh.id_reserva WHERE DATE(rh.check_out) = CURDATE() AND r.estado IN ('en_estadia','checkout_pendiente','checkout_realizado')")->fetchColumn();
-        $stats['checkouts_vencidos'] = (int) $con->query("SELECT COUNT(*) FROM reserva_habitacion rh JOIN reserva r ON r.id = rh.id_reserva WHERE r.estado IN ('en_estadia','checkout_pendiente') AND rh.check_out IS NOT NULL AND NOW() > rh.check_out AND rh.activo = 1")->fetchColumn();
-        $stats['ingreso_dia'] = (float) $con->query("SELECT IFNULL(SUM(monto),0) FROM pago WHERE DATE(fecha_pago) = CURDATE()")->fetchColumn();
-        $stats['total_procedencias'] = (int) $con->query("SELECT COUNT(DISTINCT procedencia) FROM cliente WHERE procedencia IS NOT NULL AND procedencia != ''")->fetchColumn();
-        $stats['estancia_minima'] = (int) $con->query("SELECT IFNULL(MIN(DATEDIFF(rh.check_out, rh.check_in)), 0) FROM reserva_habitacion rh JOIN reserva r ON r.id = rh.id_reserva WHERE r.estado NOT IN ('cancelada', 'no_show') AND rh.check_out IS NOT NULL")->fetchColumn();
 
-        $totalHabitaciones = max(1, (int) $con->query("SELECT COUNT(*) FROM habitacion WHERE activo = 1")->fetchColumn());
+        // ── Conteo de habitaciones por estado ──
+        $conteoEstados = DB::table('habitacion')
+            ->where('activo', 1)
+            ->selectRaw("
+                SUM(CASE WHEN estado = 'Disponible'    THEN 1 ELSE 0 END) AS disponibles,
+                SUM(CASE WHEN estado = 'Ocupada'        THEN 1 ELSE 0 END) AS ocupadas,
+                SUM(CASE WHEN estado = 'Reservada'      THEN 1 ELSE 0 END) AS reservadas,
+                SUM(CASE WHEN estado = 'Mantenimiento'  THEN 1 ELSE 0 END) AS mantenimiento,
+                COUNT(*)                                                    AS total
+            ")
+            ->first();
+
+        $stats['habitaciones_disponibles']  = (int) ($conteoEstados->disponibles   ?? 0);
+        $stats['habitaciones_ocupadas']     = (int) ($conteoEstados->ocupadas      ?? 0);
+        $stats['habitaciones_reservadas']   = (int) ($conteoEstados->reservadas    ?? 0);
+        $stats['habitaciones_mantenimiento']= (int) ($conteoEstados->mantenimiento ?? 0);
+        $totalHabitaciones                  = max(1, (int) ($conteoEstados->total  ?? 1));
+
+        // ── Porcentaje de ocupación ──
         $stats['ocupacion_porcentual'] = round(($stats['habitaciones_ocupadas'] / $totalHabitaciones) * 100, 1);
 
-        $sqlMante = "SELECT numero_habitacion, COALESCE(descripcion_habitacion, 'Sin motivo especificado') as motivo 
-                     FROM habitacion 
-                     WHERE estado = 'Mantenimiento' AND activo = 1";
-        $stats['detalles_mantenimiento'] = $con->query($sqlMante)->fetchAll(PDO::FETCH_ASSOC);
+        // ── Reservas activas ──
+        $stats['reservas_activas'] = (int) DB::table('reserva')
+            ->whereIn('estado', ['pendiente', 'confirmada', 'checkin_realizado', 'en_estadia', 'checkout_pendiente'])
+            ->count();
+
+        // ── Check-ins de hoy ──
+        $stats['checkins_hoy'] = (int) DB::table('reserva_habitacion as rh')
+            ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
+            ->whereRaw('DATE(rh.check_in) = CURDATE()')
+            ->whereIn('r.estado', ['confirmada', 'en_estadia'])
+            ->count();
+
+        // ── Check-outs de hoy ──
+        $stats['checkouts_hoy'] = (int) DB::table('reserva_habitacion as rh')
+            ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
+            ->whereRaw('DATE(rh.check_out) = CURDATE()')
+            ->whereIn('r.estado', ['en_estadia', 'checkout_pendiente', 'checkout_realizado'])
+            ->count();
+
+        // ── Check-outs vencidos ──
+        $stats['checkouts_vencidos'] = (int) DB::table('reserva_habitacion as rh')
+            ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
+            ->whereIn('r.estado', ['en_estadia', 'checkout_pendiente'])
+            ->whereNotNull('rh.check_out')
+            ->whereRaw('NOW() > rh.check_out')
+            ->where('rh.activo', 1)
+            ->count();
+
+        // ── Ingreso del día ──
+        $stats['ingreso_dia'] = (float) DB::table('pago')
+            ->whereRaw('DATE(fecha_pago) = CURDATE()')
+            ->sum('monto');
+
+        // ── Procedencias únicas de clientes ──
+        $stats['total_procedencias'] = (int) DB::table('cliente')
+            ->whereNotNull('procedencia')
+            ->where('procedencia', '!=', '')
+            ->distinct()
+            ->count('procedencia');
+
+        // ── Estancia mínima en días ──
+        $stats['estancia_minima'] = (int) DB::table('reserva_habitacion as rh')
+            ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
+            ->whereNotIn('r.estado', ['cancelada', 'no_show'])
+            ->whereNotNull('rh.check_out')
+            ->selectRaw('IFNULL(MIN(DATEDIFF(rh.check_out, rh.check_in)), 0) AS min_dias')
+            ->value('min_dias');
+
+        // ── Detalles de habitaciones en mantenimiento ──
+        $stats['detalles_mantenimiento'] = DB::table('habitacion')
+            ->where('estado', 'Mantenimiento')
+            ->where('activo', 1)
+            ->select([
+                'numero_habitacion',
+                DB::raw("COALESCE(NULLIF(descripcion_habitacion, ''), 'Sin motivo especificado') AS motivo")
+            ])
+            ->orderBy('numero_habitacion')
+            ->get()
+            ->map(fn($row) => (array) $row)
+            ->toArray();
 
         return $stats;
     }
+
 }

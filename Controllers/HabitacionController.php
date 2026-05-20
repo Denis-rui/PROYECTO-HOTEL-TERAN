@@ -74,7 +74,8 @@ class HabitacionController extends Controller
         $checkOut = $_GET['check_out'] ?? '';
         $tipo     = $_GET['tipo']      ?? null;
         $piso     = $_GET['piso']      ?? null;
-        echo json_encode($this->model->disponiblesPorRango($checkIn, $checkOut, $tipo, $piso));
+        $habitaciones = $this->model->disponiblesPorRango($checkIn, $checkOut, $tipo, $piso);
+        echo json_encode(['habitaciones' => $habitaciones]);
     }
 
     public function obtenerFiltros()
