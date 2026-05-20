@@ -577,6 +577,9 @@ window.abrirModalReserva = (modo = "nuevo", datos = null) => {
     limpiarSeleccionHabitaciones();
     const titulo = document.querySelector(".titulo-modal");
     if (titulo) titulo.textContent = "Nueva Reserva";
+    if (estado.elementos.btnContinuarPago) {
+      estado.elementos.btnContinuarPago.textContent = "Continuar con pago";
+    }
   }
 
   if (modo === "editar" && datos) {
