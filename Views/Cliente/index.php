@@ -25,12 +25,12 @@
         <tr>
           <th>ID</th>
           <th>Nombre</th>
+          <th>Tipo Documento</th>
           <th>Documento</th>
           <th>Correo</th>
           <th>Telefono</th>
           <th>Procedencia</th>
           <th>Reservaciones</th>
-          <th>Metodo de Pago</th>
           <th>Acciones</th>
         </tr>
       </thead>
@@ -40,12 +40,12 @@
             <tr>
               <td><?= $cliente['id'] ?></td>
               <td><?= htmlspecialchars($cliente['nombre_completo'] ?? '') ?></td>
+              <td><?= htmlspecialchars($cliente['id_tipo_documento'] ?? '') ?></td>
               <td><?= htmlspecialchars($cliente['documento'] ?? '') ?></td>
               <td><?= htmlspecialchars($cliente['correo_electronico'] ?? '') ?></td>
               <td><?= htmlspecialchars($cliente['telefono'] ?? '') ?></td>
               <td><?= htmlspecialchars($cliente['procedencia'] ?? '') ?></td>
               <td><?= $cliente['reservaciones'] ?? 0 ?></td>
-              <td><?= htmlspecialchars($cliente['metodoPago'] ?? '') ?></td>
               <td>
                 <button type="button" class="btnEditarCliente" data-id="<?= $cliente['id'] ?>">✏️</button>
                 <button type="button" class="btnEliminarCliente" data-id="<?= $cliente['id'] ?>">🗑️</button>
