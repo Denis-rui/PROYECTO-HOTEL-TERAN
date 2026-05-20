@@ -19,6 +19,58 @@ const obtenerHoraActualISO = () => {
   return `${horas}:${minutos}`;
 };
 
+const sumarDiasISO = (fechaISO, dias = 1) => {
+  const partes = String(fechaISO || "")
+    .split("-")
+    .map((valor) => Number(valor));
+  if (partes.length !== 3 || partes.some((valor) => Number.isNaN(valor))) {
+    return "";
+  }
+
+  const fecha = new Date(partes[0], partes[1] - 1, partes[2]);
+  fecha.setDate(fecha.getDate() + dias);
+
+  const anio = fecha.getFullYear();
+  const mes = String(fecha.getMonth() + 1).padStart(2, "0");
+  const dia = String(fecha.getDate()).padStart(2, "0");
+  return `${anio}-${mes}-${dia}`;
+};
+
+const establecerHorasPorDefectoEstadia = (forzar = false) => {
+  const estado = obtenerEstadoModalReserva();
+  const horaEntrada = estado.elementos?.horaEntrada;
+  const horaSalida = estado.elementos?.horaSalida;
+
+  if (horaEntrada) {
+    if (forzar || !horaEntrada.value) {
+      horaEntrada.value = "12:00";
+    }
+    horaEntrada.min = "";
+  }
+
+  if (horaSalida) {
+    if (forzar || !horaSalida.value) {
+      horaSalida.value = "12:00";
+    }
+    horaSalida.min = "";
+  }
+};
+
+const ajustarCheckoutPorDefecto = () => {
+  const estado = obtenerEstadoModalReserva();
+  const fechaEntrada = estado.elementos?.fechaEntrada;
+  const fechaSalida = estado.elementos?.fechaSalida;
+
+  if (!fechaEntrada || !fechaSalida || !fechaEntrada.value) return;
+
+  const minimoCheckout = sumarDiasISO(fechaEntrada.value, 1);
+  fechaSalida.min = minimoCheckout;
+
+  if (!fechaSalida.value || fechaSalida.value < minimoCheckout) {
+    fechaSalida.value = minimoCheckout;
+  }
+};
+
 const separarFechaHora = (valor) => {
   const texto = String(valor || "").trim();
   if (!texto) {
@@ -117,8 +169,12 @@ const formatearHabitacionTexto = (habitacion) =>
 const obtenerDiasEstadia = (checkIn, checkOut) => {
   if (!checkIn || !checkOut) return 0;
 
-  const inicio = new Date(checkIn);
-  const fin = new Date(checkOut);
+  const fechaInicio = String(checkIn).slice(0, 10);
+  const fechaFin = String(checkOut).slice(0, 10);
+
+  const inicio = new Date(`${fechaInicio}T00:00:00`);
+  const fin = new Date(`${fechaFin}T00:00:00`);
+
   if (
     Number.isNaN(inicio.getTime()) ||
     Number.isNaN(fin.getTime()) ||
@@ -261,21 +317,7 @@ const renderizarHabitacionesSeleccionadas = () => {
 };
 
 const actualizarHoraMinimaEntrada = () => {
-  const estado = obtenerEstadoModalReserva();
-  const fechaEntrada = estado.elementos?.fechaEntrada;
-  const horaEntrada = estado.elementos?.horaEntrada;
-  if (!fechaEntrada || !horaEntrada) return;
-
-  const hoy = obtenerFechaActualISO();
-  if (fechaEntrada.value === hoy) {
-    const horaMinima = obtenerHoraActualISO();
-    horaEntrada.min = horaMinima;
-    if (horaEntrada.value && horaEntrada.value < horaMinima) {
-      horaEntrada.value = horaMinima;
-    }
-  } else {
-    horaEntrada.min = "";
-  }
+  establecerHorasPorDefectoEstadia(false);
 };
 
 const actualizarMinimosFecha = () => {
@@ -286,8 +328,18 @@ const actualizarMinimosFecha = () => {
 
   const hoy = obtenerFechaActualISO();
   fechaEntrada.min = hoy;
-  fechaSalida.min = fechaEntrada.value || hoy;
-  actualizarHoraMinimaEntrada();
+  const minimoCheckout = fechaEntrada.value
+    ? sumarDiasISO(fechaEntrada.value, 1)
+    : sumarDiasISO(hoy, 1);
+  fechaSalida.min = minimoCheckout || hoy;
+
+  if (fechaEntrada.value) {
+    if (!fechaSalida.value || fechaSalida.value < fechaSalida.min) {
+      fechaSalida.value = fechaSalida.min;
+    }
+  }
+
+  establecerHorasPorDefectoEstadia(false);
 };
 
 const limpiarSeleccionHabitaciones = () => {
@@ -399,22 +451,16 @@ const validarFechasReserva = () => {
     return false;
   }
 
-  const checkIn = new Date(`${fechaEntrada}T${horaEntrada}`);
-  const checkOut = new Date(`${fechaSalida}T${horaSalida}`);
-  const ahora = new Date();
+  const checkIn = new Date(`${fechaEntrada}T00:00:00`);
+  const checkOut = new Date(`${fechaSalida}T00:00:00`);
 
   if (Number.isNaN(checkIn.getTime()) || Number.isNaN(checkOut.getTime())) {
     alert("Fecha/hora inválida");
     return false;
   }
 
-  if (checkIn < ahora) {
-    alert("La fecha y hora de check-in debe ser igual o posterior a ahora");
-    return false;
-  }
-
   if (checkOut <= checkIn) {
-    alert("La fecha y hora de check-out debe ser posterior al check-in");
+    alert("La fecha de check-out debe ser posterior a la fecha de check-in");
     return false;
   }
 
@@ -432,10 +478,8 @@ const cargarHabitacionesDisponibles = () => {
   const mensajeHabitaciones = estado.elementos?.mensajeHabitaciones;
   const listaDisponibles = estado.elementos?.listaHabitacionesDisponibles;
 
-  const checkIn =
-    fechaEntrada && horaEntrada ? `${fechaEntrada} ${horaEntrada}` : "";
-  const checkOut =
-    fechaSalida && horaSalida ? `${fechaSalida} ${horaSalida}` : "";
+  const checkIn = fechaEntrada && horaEntrada ? `${fechaEntrada} 12:00:00` : "";
+  const checkOut = fechaSalida && horaSalida ? `${fechaSalida} 12:00:00` : "";
 
   estado.habitacionesDisponibles = [];
   renderizarHabitacionesDisponibles();
@@ -452,7 +496,8 @@ const cargarHabitacionesDisponibles = () => {
   }
 
   if (
-    new Date(checkOut.replace(" ", "T")) <= new Date(checkIn.replace(" ", "T"))
+    new Date(`${checkOut.slice(0, 10)}T00:00:00`) <=
+    new Date(`${checkIn.slice(0, 10)}T00:00:00`)
   ) {
     if (mensajeHabitaciones)
       mensajeHabitaciones.textContent =
@@ -665,6 +710,7 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
   if (modo === "nuevo") {
     estado.elementos.form?.reset();
     limpiarSeleccionHabitaciones();
+    establecerHorasPorDefectoEstadia(true);
     const titulo = document.querySelector(".titulo-modal");
     if (titulo) titulo.textContent = "Nueva Reserva";
     if (estado.elementos.btnContinuarPago) {
@@ -691,6 +737,7 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
       await cargarClientes(datosReserva.cliente || "");
       aplicarReservaEdicion(datosReserva);
       actualizarMinimosFecha();
+      establecerHorasPorDefectoEstadia(false);
       await cargarFiltrosHabitacion();
       await cargarHabitacionesDisponibles();
       renderizarHabitacionesSeleccionadas();
@@ -700,6 +747,7 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
       await cargarFiltrosHabitacion();
       await cargarHabitacionesDisponibles();
       aplicarReservaEdicion(datos);
+      establecerHorasPorDefectoEstadia(false);
     }
   } else {
     await cargarClientes();
@@ -719,17 +767,19 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
 
     estado.elementos.fechaEntrada?.addEventListener("change", () => {
       actualizarMinimosFecha();
+      ajustarCheckoutPorDefecto();
       limpiarSeleccionHabitaciones();
       cargarHabitacionesDisponibles();
     });
 
     estado.elementos.horaEntrada?.addEventListener("change", () => {
-      actualizarHoraMinimaEntrada();
+      establecerHorasPorDefectoEstadia(false);
       cargarHabitacionesDisponibles();
     });
 
     estado.elementos.fechaSalida?.addEventListener("change", () => {
       actualizarMinimosFecha();
+      establecerHorasPorDefectoEstadia(false);
       cargarHabitacionesDisponibles();
     });
 

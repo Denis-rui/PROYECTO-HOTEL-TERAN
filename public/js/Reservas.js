@@ -11,7 +11,14 @@ window.inicializarReservas = () => {
     const filas = document.querySelectorAll("#contenido-reservas tr");
     filas.forEach((fila) => {
       const nombre = fila.children[0].textContent.toLowerCase();
-      const estado = fila.children[5].textContent.toLocaleLowerCase();
+      const estadoSelect = fila.children[5]?.querySelector(
+        "select.estado-reserva",
+      );
+      const estado = (
+        estadoSelect?.value ||
+        fila.dataset.estado ||
+        ""
+      ).toLowerCase();
       if (
         nombre.includes(nombreBuscar) &&
         (estadoSeleccionado === "" || estado === estadoSeleccionado)
@@ -35,6 +42,22 @@ const configurarEventosReservas = () => {
   const btnNuevaReserva = document.getElementById("btnNuevaReserva");
   const cuerpoTabla = document.getElementById("contenido-reservas");
 
+  const pedirConfirmacionCambioEstado = async (estadoAnterior, estadoNuevo) => {
+    const etiquetas = {
+      confirmada: "Confirmada",
+      en_estadia: "En estadía",
+      checkout_realizado: "Checkout realizado",
+    };
+
+    const mensaje = `¿Deseas cambiar el estado de la reserva de ${etiquetas[estadoAnterior] || estadoAnterior} a ${etiquetas[estadoNuevo] || estadoNuevo}?`;
+
+    if (typeof window.Confirmar === "function") {
+      return window.Confirmar(mensaje);
+    }
+
+    return Promise.resolve(confirm(mensaje));
+  };
+
   if (btnNuevaReserva) {
     btnNuevaReserva.addEventListener("click", () => {
       window.abrirModalReserva("nuevo");
@@ -42,36 +65,43 @@ const configurarEventosReservas = () => {
   }
 
   if (cuerpoTabla) {
+    cuerpoTabla.addEventListener("change", (e) => {
+      const selectEstado = e.target.closest(".estado-reserva");
+      if (!selectEstado || selectEstado.tagName !== "SELECT") return;
+
+      const idReserva = selectEstado.dataset.id;
+      const estadoActual = (selectEstado.dataset.estado || "").toLowerCase();
+      const nuevoEstado = (selectEstado.value || "").toLowerCase();
+
+      if (!nuevoEstado || nuevoEstado === estadoActual) {
+        return;
+      }
+
+      if (typeof window.SolicitarDato === "function") {
+        // Solo aprovechamos el modal bonito si existe; la confirmación sí usa Confirmar.
+      }
+
+      pedirConfirmacionCambioEstado(estadoActual, nuevoEstado).then(
+        (confirmado) => {
+          if (!confirmado) {
+            selectEstado.value = estadoActual;
+            return;
+          }
+
+          ejecutarAccionReserva("actualizarEstado", {
+            id_reserva: idReserva,
+            nuevo_estado: nuevoEstado,
+          });
+        },
+      );
+    });
+
     cuerpoTabla.addEventListener("click", (e) => {
       const btnEditar = e.target.closest(".boton-editar-reserva");
       if (btnEditar) {
         const fila = btnEditar.closest("tr");
         const id = Number(fila.dataset.id);
         window.abrirModalReserva("editar", { id });
-        return;
-      }
-
-      const selectEstado = e.target.closest(".estado-reserva");
-      if (selectEstado && selectEstado.tagName === "SELECT") {
-        const idReserva = selectEstado.dataset.id;
-        const estadoActual = (selectEstado.dataset.estado || "").toLowerCase();
-        const nuevoEstado = (selectEstado.value || "").toLowerCase();
-
-        if (!nuevoEstado || nuevoEstado === estadoActual) {
-          return;
-        }
-
-        const permitidos = ["confirmada", "en_estadia", "checkout_realizado"];
-        if (!permitidos.includes(nuevoEstado)) {
-          alert("Estado no válido. Usa: confirmada, en_estadia o checkout_realizado.");
-          selectEstado.value = estadoActual;
-          return;
-        }
-
-        ejecutarAccionReserva("actualizarEstado", {
-          id_reserva: idReserva,
-          nuevo_estado: nuevoEstado,
-        });
         return;
       }
 

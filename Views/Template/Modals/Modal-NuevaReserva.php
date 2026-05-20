@@ -74,7 +74,7 @@
 
           <div class="form-group">
             <label for="horaEntrada">HORA DE ENTRADA:</label>
-            <input type="time" id="horaEntrada" name="horaEntrada" required />
+            <input type="time" id="horaEntrada" name="horaEntrada" required readonly />
           </div>
         </div>
 
@@ -86,7 +86,7 @@
 
           <div class="form-group">
             <label for="horaSalida">HORA DE SALIDA:</label>
-            <input type="time" id="horaSalida" name="horaSalida" required />
+            <input type="time" id="horaSalida" name="horaSalida" required readonly />
           </div>
         </div>
 
