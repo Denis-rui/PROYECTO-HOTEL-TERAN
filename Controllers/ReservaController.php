@@ -33,6 +33,14 @@ class ReservaController extends Controller
         echo json_encode($resultado);
     }
 
+    public function actualizar($params = '')
+    {
+        header('Content-Type: application/json');
+        $datos     = json_decode(file_get_contents('php://input'), true);
+        $resultado = $this->model->actualizarReserva($datos);
+        echo json_encode($resultado);
+    }
+
     public function pago($params = '')
     {
         header('Content-Type: application/json');

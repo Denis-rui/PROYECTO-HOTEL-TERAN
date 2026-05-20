@@ -19,6 +19,90 @@ const obtenerHoraActualISO = () => {
   return `${horas}:${minutos}`;
 };
 
+const separarFechaHora = (valor) => {
+  const texto = String(valor || "").trim();
+  if (!texto) {
+    return { fecha: "", hora: "" };
+  }
+
+  const normalizado = texto.replace("T", " ");
+  const [fecha = "", horaCompleta = ""] = normalizado.split(" ");
+  const hora = horaCompleta ? horaCompleta.slice(0, 5) : "";
+
+  return { fecha, hora };
+};
+
+const asegurarOpcionCliente = (cliente) => {
+  const estado = obtenerEstadoModalReserva();
+  const selectorCliente = estado.elementos?.selectorCliente;
+  if (!selectorCliente || !cliente?.id) return;
+
+  const existe = Array.from(selectorCliente.options || []).some(
+    (opcion) => String(opcion.value) === String(cliente.id),
+  );
+
+  if (!existe) {
+    const option = document.createElement("option");
+    option.value = String(cliente.id);
+    option.textContent = cliente.nombre || `Cliente ${cliente.id}`;
+    selectorCliente.appendChild(option);
+  }
+};
+
+const aplicarReservaEdicion = (reserva) => {
+  const estado = obtenerEstadoModalReserva();
+  if (!reserva) return;
+
+  asegurarOpcionCliente({
+    id: reserva.id_cliente,
+    nombre: reserva.cliente,
+  });
+
+  if (estado.elementos?.inputBuscarCliente) {
+    estado.elementos.inputBuscarCliente.value = reserva.cliente || "";
+  }
+
+  if (estado.elementos?.selectorCliente) {
+    estado.elementos.selectorCliente.value = reserva.id_cliente
+      ? String(reserva.id_cliente)
+      : "";
+  }
+
+  if (estado.elementos?.idClienteReserva) {
+    estado.elementos.idClienteReserva.value = reserva.id_cliente || "";
+  }
+
+  if (estado.elementos?.campoNombre) {
+    estado.elementos.campoNombre.value = reserva.cliente || "";
+  }
+
+  if (estado.elementos?.campoEmail) {
+    estado.elementos.campoEmail.value = reserva.correo_electronico || "";
+  }
+
+  const checkIn = separarFechaHora(reserva.check_in);
+  const checkOut = separarFechaHora(reserva.check_out);
+
+  if (estado.elementos?.fechaEntrada) {
+    estado.elementos.fechaEntrada.value = checkIn.fecha;
+  }
+  if (estado.elementos?.horaEntrada) {
+    estado.elementos.horaEntrada.value = checkIn.hora;
+  }
+  if (estado.elementos?.fechaSalida) {
+    estado.elementos.fechaSalida.value = checkOut.fecha;
+  }
+  if (estado.elementos?.horaSalida) {
+    estado.elementos.horaSalida.value = checkOut.hora;
+  }
+
+  estado.habitacionesSeleccionadas = Array.isArray(reserva.habitaciones)
+    ? reserva.habitaciones.map(normalizarHabitacion)
+    : [];
+
+  renderizarHabitacionesSeleccionadas();
+};
+
 const normalizarHabitacion = (habitacion) => ({
   id: String(habitacion.id),
   numero_habitacion: habitacion.numero_habitacion,
@@ -245,7 +329,7 @@ const cargarClientes = (texto = "") => {
   const estado = obtenerEstadoModalReserva();
   const mensajeBusquedaCliente = estado.elementos?.mensajeBusquedaCliente;
 
-  fetch(BASE_URL + `?url=Cliente/buscar&q=${encodeURIComponent(texto)}`)
+  return fetch(BASE_URL + `?url=Cliente/buscar&q=${encodeURIComponent(texto)}`)
     .then((res) => res.json())
     .then((respuesta) => {
       if (respuesta.error) {
@@ -390,7 +474,9 @@ const cargarHabitacionesDisponibles = () => {
   if (filtroPisoReserva && filtroPisoReserva.value)
     params.append("piso", filtroPisoReserva.value);
 
-  fetch(BASE_URL + `?url=Habitacion/disponiblesPorRango&${params.toString()}`)
+  return fetch(
+    BASE_URL + `?url=Habitacion/disponiblesPorRango&${params.toString()}`,
+  )
     .then((res) => res.json())
     .then((respuesta) => {
       const habitaciones = Array.isArray(respuesta)
@@ -420,7 +506,7 @@ const cargarFiltrosHabitacion = () => {
   const filtroTipoReserva = estado.elementos?.filtroTipoReserva;
   const filtroPisoReserva = estado.elementos?.filtroPisoReserva;
 
-  fetch(BASE_URL + "?url=Habitacion/obtenerFiltros")
+  return fetch(BASE_URL + "?url=Habitacion/obtenerFiltros")
     .then((res) => res.json())
     .then((data) => {
       if (filtroTipoReserva && data.tipos) {
@@ -505,6 +591,8 @@ const validarYContinuarPago = () => {
     habitaciones: resumen.habitaciones,
     habitacionPrincipal: resumen.habitacionPrincipal,
     totalReserva: resumen.totalReserva,
+    idReserva: estado.reservaEditandoId || "",
+    guardarCambiosReserva: Boolean(estado.reservaEditandoId),
   });
 
   if (modal) modal.style.display = "none";
@@ -520,7 +608,7 @@ const abrirModalPagoConDatos = (datosReserva) => {
   window.abrirModalPago(datosReserva);
 };
 
-window.abrirModalReserva = (modo = "nuevo", datos = null) => {
+window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
   const contenedor = document.getElementById("contenedor-modal-reserva");
   if (!contenedor) return;
 
@@ -569,6 +657,8 @@ window.abrirModalReserva = (modo = "nuevo", datos = null) => {
   estado.clientes = [];
   estado.habitacionesDisponibles = [];
   estado.habitacionesSeleccionadas = [];
+  estado.modo = modo;
+  estado.reservaEditandoId = datos?.id || null;
 
   actualizarMinimosFecha();
 
@@ -588,15 +678,34 @@ window.abrirModalReserva = (modo = "nuevo", datos = null) => {
     if (estado.elementos.btnContinuarPago) {
       estado.elementos.btnContinuarPago.textContent = "Actualizar";
     }
-    if (estado.elementos.campoNombre)
-      estado.elementos.campoNombre.value = datos.cliente || "";
-    if (estado.elementos.campoEmail)
-      estado.elementos.campoEmail.value = datos.email || "";
   }
 
-  cargarClientes();
-  cargarFiltrosHabitacion();
-  cargarHabitacionesDisponibles();
+  if (modo === "editar" && datos?.id) {
+    try {
+      const respuesta = await fetch(
+        BASE_URL + `?url=Reserva/obtener/${encodeURIComponent(datos.id)}`,
+      );
+      const reserva = await respuesta.json();
+      const datosReserva = reserva?.id ? reserva : datos;
+
+      await cargarClientes(datosReserva.cliente || "");
+      aplicarReservaEdicion(datosReserva);
+      actualizarMinimosFecha();
+      await cargarFiltrosHabitacion();
+      await cargarHabitacionesDisponibles();
+      renderizarHabitacionesSeleccionadas();
+    } catch (error) {
+      console.error("Error cargando reserva para edición:", error);
+      await cargarClientes(datos.cliente || "");
+      await cargarFiltrosHabitacion();
+      await cargarHabitacionesDisponibles();
+      aplicarReservaEdicion(datos);
+    }
+  } else {
+    await cargarClientes();
+    await cargarFiltrosHabitacion();
+    await cargarHabitacionesDisponibles();
+  }
 
   if (!eventosDashboardConfigurados) {
     estado.elementos.inputBuscarCliente?.addEventListener("input", () => {
