@@ -31,6 +31,7 @@ const poblarCamposOcultosReserva = (datos = {}) => {
     pagoHabitacion: datos.habitacion || "",
     pagoHabitaciones: JSON.stringify(datos.habitaciones || []),
     pagoTotalReserva: datos.totalReserva || "",
+    pagoIdCliente: datos.idCliente || datos.cliente || "",
   };
 
   Object.entries(mapa).forEach(([id, valor]) => {
@@ -65,7 +66,15 @@ const poblarCamposOcultosReserva = (datos = {}) => {
       ? `S/ ${Number(datos.totalReserva).toFixed(2)}`
       : "S/ ---";
   }
-  if (infoPagado) infoPagado.textContent = `S/ ${Number(datos.totalPagado || 0).toFixed(2)}`;
+  if (infoPagado)
+    infoPagado.textContent = `S/ ${Number(datos.totalPagado || 0).toFixed(2)}`;
+
+  const saldoDisponible = Math.max(
+    0,
+    Number(datos.totalReserva || 0) - Number(datos.totalPagado || 0),
+  );
+
+  const esReservaNueva = formPago?.dataset.modoNuevo === "true";
 
   // Cálculos de política
   const infoSugerido = document.getElementById("infoPagoSugerido");
@@ -73,24 +82,86 @@ const poblarCamposOcultosReserva = (datos = {}) => {
   const inputMonto = document.getElementById("montoPago");
 
   if (infoSugerido && datos.totalReserva) {
-    const hoy = new Date().toISOString().split("T")[0];
-    const esHoy = datos.checkIn === hoy;
     const total = parseFloat(datos.totalReserva);
     const pagado = parseFloat(datos.totalPagado || 0);
     const saldo = total - pagado;
 
     let sugerido = 0;
-    if (esHoy) {
+    if (!esReservaNueva) {
       sugerido = saldo;
-      if (etiquetaPolitica) etiquetaPolitica.textContent = "(100% por ingreso directo/hoy)";
+      if (etiquetaPolitica) {
+        etiquetaPolitica.textContent = "(Saldo pendiente)";
+      }
     } else {
-      sugerido = Math.max(0, (total * 0.5) - pagado);
-      if (etiquetaPolitica) etiquetaPolitica.textContent = "(50% por reserva anticipada)";
+      const hoy = new Date().toISOString().split("T")[0];
+      const esHoy = datos.checkIn === hoy;
+      sugerido = esHoy ? saldo : Math.max(0, total * 0.5 - pagado);
+      if (etiquetaPolitica) {
+        etiquetaPolitica.textContent = "(50% por reserva anticipada)";
+      }
     }
 
     infoSugerido.textContent = `S/ ${sugerido.toFixed(2)}`;
     if (inputMonto && !inputMonto.value) {
-        inputMonto.value = sugerido > 0 ? sugerido.toFixed(2) : "";
+      inputMonto.value = sugerido > 0 ? sugerido.toFixed(2) : "";
+    }
+  }
+
+  if (inputMonto) {
+    inputMonto.max = saldoDisponible > 0 ? saldoDisponible.toFixed(2) : "";
+    inputMonto.min = datos.idReserva
+      ? "0.01"
+      : Math.max(
+          0.01,
+          Number((Number(datos.totalReserva || 0) * 0.5).toFixed(2)),
+        );
+  }
+
+  const historial = document.getElementById("contenidoHistorialPagos");
+  if (historial) {
+    const pagos = Array.isArray(datos.pagos) ? datos.pagos : [];
+    const formatearFechaPago = (valor) => {
+      if (!valor) return "--";
+      const texto = String(valor).trim().replace(" ", "T");
+      const fecha = new Date(texto);
+      if (Number.isNaN(fecha.getTime())) {
+        return String(valor);
+      }
+
+      const yyyy = fecha.getFullYear();
+      const mm = String(fecha.getMonth() + 1).padStart(2, "0");
+      const dd = String(fecha.getDate()).padStart(2, "0");
+      const hh = String(fecha.getHours()).padStart(2, "0");
+      const mi = String(fecha.getMinutes()).padStart(2, "0");
+      const ss = String(fecha.getSeconds()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
+    };
+    const metodoPagoTexto = (idMetodo) => {
+      const mapa = {
+        1: "Efectivo",
+        2: "Tarjeta",
+        3: "Yape / Transferencia",
+      };
+      return mapa[Number(idMetodo)] || `Método ${idMetodo || "--"}`;
+    };
+
+    if (pagos.length === 0) {
+      historial.innerHTML = `
+        <tr>
+          <td colspan="4" style="text-align:center; color:#777; padding: 12px;">Sin pagos registrados</td>
+        </tr>`;
+    } else {
+      historial.innerHTML = pagos
+        .map(
+          (pago) => `
+            <tr>
+              <td>${formatearFechaPago(pago.fecha_pago)}</td>
+              <td>S/ ${Number(pago.monto || 0).toFixed(2)}</td>
+              <td>${metodoPagoTexto(pago.id_metodo_pago)}</td>
+              <td>${pago.descripcion || "--"}</td>
+            </tr>`,
+        )
+        .join("");
     }
   }
 };
@@ -150,10 +221,14 @@ const configurarEventosPago = () => {
         return;
       }
 
+      const montoNumerico = parseFloat(montoPago);
+
       const esReservaNueva = formPago.dataset.modoNuevo === "true";
       if (esReservaNueva) {
         const cliente =
-          document.getElementById("pagoCliente")?.value.trim() || "";
+          document.getElementById("pagoIdCliente")?.value.trim() ||
+          document.getElementById("pagoCliente")?.value.trim() ||
+          "";
         const habitacion =
           document.getElementById("pagoHabitacion")?.value.trim() || "";
         const checkIn =
@@ -167,26 +242,67 @@ const configurarEventosPago = () => {
           );
           return;
         }
+
+        const totalReserva = parseFloat(
+          document.getElementById("pagoTotalReserva")?.value || "0",
+        );
+        const minimoInicial = totalReserva * 0.5;
+        if (montoNumerico < minimoInicial) {
+          alert(
+            `El pago inicial debe ser al menos el 50% del total. Monto mínimo: S/ ${minimoInicial.toFixed(2)}`,
+          );
+          return;
+        }
+
+        if (montoNumerico > totalReserva) {
+          alert(
+            `El pago inicial no puede ser mayor al total de la reserva. Total permitido: S/ ${totalReserva.toFixed(2)}`,
+          );
+          return;
+        }
+      }
+
+      if (!esReservaNueva) {
+        const saldoDisponible = parseFloat(
+          (document.getElementById("montoPago")?.max || "0").toString(),
+        );
+        if (saldoDisponible > 0 && montoNumerico > saldoDisponible) {
+          alert(
+            `El monto no puede ser mayor al saldo pendiente. Saldo disponible: S/ ${saldoDisponible.toFixed(2)}`,
+          );
+          return;
+        }
       }
 
       const descripcionPago =
         document.getElementById("descripcionPago")?.value.trim() || "";
 
       try {
-        let url = BASE_URL + (esReservaNueva ? "?url=Reserva/registrar" : "?url=Reserva/pago");
-        
-        let fetchPayload = esReservaNueva 
+        let url =
+          BASE_URL +
+          (esReservaNueva ? "?url=Reserva/registrar" : "?url=Reserva/pago");
+
+        let fetchPayload = esReservaNueva
           ? {
-              cliente: document.getElementById("pagoCliente")?.value.trim() || "",
+              cliente:
+                document.getElementById("pagoCliente")?.value.trim() || "",
               nombre: document.getElementById("pagoNombre")?.value.trim() || "",
               email: document.getElementById("pagoEmail")?.value.trim() || "",
-              checkIn: document.getElementById("pagoCheckIn")?.value.trim() || "",
-              horaEntrada: document.getElementById("pagoHoraEntrada")?.value.trim() || "",
-              checkOut: document.getElementById("pagoCheckOut")?.value.trim() || "",
-              horaSalida: document.getElementById("pagoHoraSalida")?.value.trim() || "",
-              habitacion: document.getElementById("pagoHabitacion")?.value.trim() || "",
-              habitaciones: JSON.parse(document.getElementById("pagoHabitaciones")?.value || "[]"),
-              totalReserva: document.getElementById("pagoTotalReserva")?.value.trim() || "",
+              checkIn:
+                document.getElementById("pagoCheckIn")?.value.trim() || "",
+              horaEntrada:
+                document.getElementById("pagoHoraEntrada")?.value.trim() || "",
+              checkOut:
+                document.getElementById("pagoCheckOut")?.value.trim() || "",
+              horaSalida:
+                document.getElementById("pagoHoraSalida")?.value.trim() || "",
+              habitacion:
+                document.getElementById("pagoHabitacion")?.value.trim() || "",
+              habitaciones: JSON.parse(
+                document.getElementById("pagoHabitaciones")?.value || "[]",
+              ),
+              totalReserva:
+                document.getElementById("pagoTotalReserva")?.value.trim() || "",
               pago: {
                 monto: montoPago,
                 id_metodo_pago: metodoPago,
@@ -215,7 +331,10 @@ const configurarEventosPago = () => {
         }
 
         if (typeof Notificar === "function") {
-          Notificar(resultado.mensaje || "Operación registrada correctamente", "exito");
+          Notificar(
+            resultado.mensaje || "Operación registrada correctamente",
+            "exito",
+          );
         } else {
           alert(resultado.mensaje || "Operación registrada correctamente");
         }
@@ -239,29 +358,34 @@ window.abrirModalPago = async (datosReserva = {}) => {
   if (datosReserva.idReserva && !datosReserva.totalReserva) {
     try {
       const res = await fetch(
-        BASE_URL + `?url=Reserva/obtener/${encodeURIComponent(datosReserva.idReserva)}`,
+        BASE_URL +
+          `?url=Reserva/obtener/${encodeURIComponent(datosReserva.idReserva)}`,
       );
       const respuesta = await res.json();
-      if (respuesta.reserva) {
-        const habitacionesResumen = Array.isArray(respuesta.reserva.habitaciones)
-          ? respuesta.reserva.habitaciones
+      const reserva = respuesta?.reserva || respuesta;
+
+      if (reserva) {
+        const habitacionesResumen = Array.isArray(reserva.habitaciones)
+          ? reserva.habitaciones
               .map((habitacion) => {
                 if (!habitacion) return "";
                 return `Hab. ${habitacion.numero_habitacion} - Piso ${habitacion.piso}`;
               })
               .filter(Boolean)
               .join(" | ")
-          : respuesta.reserva.habitacion;
+          : reserva.habitacion;
 
         datosReserva = {
           ...datosReserva,
-          clienteTexto: respuesta.reserva.cliente,
+          clienteTexto: reserva.cliente,
           habitacion: habitacionesResumen,
-          habitaciones: respuesta.reserva.habitaciones || [],
-          checkIn: respuesta.reserva.check_in,
-          checkOut: respuesta.reserva.check_out,
-          totalReserva: respuesta.reserva.total,
-          totalPagado: respuesta.reserva.total_pagado,
+          habitaciones: reserva.habitaciones || [],
+          checkIn: reserva.check_in,
+          checkOut: reserva.check_out,
+          totalReserva: reserva.total,
+          totalPagado: reserva.total_pagado,
+          saldoPendiente: reserva.saldo_pendiente,
+          pagos: reserva.pagos || [],
         };
       }
     } catch (error) {

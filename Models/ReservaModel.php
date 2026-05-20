@@ -196,6 +196,10 @@ class ReservaModel extends Model
 
             if (is_array($pagoInicial)) {
                 if ($montoPagoInicial > 0) {
+                    if ($montoPagoInicial > $totalFinal) {
+                        return ['exito' => false, 'mensaje' => 'El pago inicial no puede ser mayor al total de la reserva.'];
+                    }
+
                     Pago::create([
                         'id_reserva'     => $idReserva,
                         'monto'          => $montoPagoInicial,
@@ -227,6 +231,11 @@ class ReservaModel extends Model
 
             if ((float) $monto <= 0) {
                 return ['exito' => false, 'mensaje' => 'El monto debe ser mayor a cero.'];
+            }
+
+            $saldoDisponible = (float) ($reserva['saldo_pendiente'] ?? 0);
+            if ($monto > $saldoDisponible + 0.00001) {
+                return ['exito' => false, 'mensaje' => 'El monto no puede ser mayor al saldo pendiente. Saldo disponible: S/ ' . number_format($saldoDisponible, 2)];
             }
 
             $fecha = $fechaPago ? $fechaPago . ' ' . date('H:i:s') : date('Y-m-d H:i:s');
@@ -294,6 +303,17 @@ class ReservaModel extends Model
             }
         }
 
+        $pagos = [];
+        foreach (($reserva->pagos ?? []) as $pago) {
+            $pagos[] = [
+                'id' => $pago->id,
+                'monto' => (float) $pago->monto,
+                'fecha_pago' => $pago->fecha_pago,
+                'id_metodo_pago' => $pago->id_metodo_pago ?? null,
+                'descripcion' => $pago->descripcion ?? '',
+            ];
+        }
+
         $habitacionPrincipal = $habitaciones[0] ?? null;
         $totalPagado = (float) ($reserva->pagos->sum('monto') ?? 0);
         $checkIn = $reserva->check_in ?? ($habitacionesRelacionadas[0]->check_in ?? null);
@@ -333,6 +353,7 @@ class ReservaModel extends Model
             'total_pagado' => $totalPagado,
             'saldo_pendiente' => $saldoPendiente,
             'porcentaje_pago' => $total + $cargoTarde > 0 ? round(($totalPagado / ($total + $cargoTarde)) * 100, 0) : 0,
+            'pagos' => $pagos,
             'minutos_checkout_vencido' => $minutosCheckoutVencido,
         ];
     }

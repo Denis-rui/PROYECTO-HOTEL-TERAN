@@ -98,7 +98,7 @@
                         rows="3"></textarea>
                 </div>
 
-
+                <input type="hidden" id="pagoIdCliente" name="id_cliente" />
                 <input type="hidden" id="pagoCliente" name="cliente" />
                 <input type="hidden" id="pagoEmail" name="email" />
                 <input type="hidden" id="pagoNombre" name="nombre" />
@@ -109,6 +109,8 @@
                 <input type="hidden" id="pagoHabitacion" name="habitacion" />
                 <input type="hidden" id="pagoHabitaciones" name="habitaciones" />
                 <input type="hidden" id="pagoTotalReserva" name="totalReserva" />
+
+
 
                 <!-- BOTONES -->
                 <div class="form-acciones-pago">

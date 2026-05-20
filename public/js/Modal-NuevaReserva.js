@@ -4,7 +4,13 @@ window.__modalReservaState = window.__modalReservaState || {};
 
 const obtenerEstadoModalReserva = () => window.__modalReservaState;
 
-const obtenerFechaActualISO = () => new Date().toISOString().split("T")[0];
+const obtenerFechaActualISO = () => {
+  const hoy = new Date();
+  const anio = hoy.getFullYear();
+  const mes = String(hoy.getMonth() + 1).padStart(2, "0");
+  const dia = String(hoy.getDate()).padStart(2, "0");
+  return `${anio}-${mes}-${dia}`;
+};
 
 const obtenerHoraActualISO = () => {
   const ahora = new Date();
@@ -389,11 +395,9 @@ const cargarHabitacionesDisponibles = () => {
     .then((respuesta) => {
       const habitaciones = Array.isArray(respuesta)
         ? respuesta
-        : (respuesta.habitaciones || []);
+        : respuesta.habitaciones || [];
 
-      estado.habitacionesDisponibles = habitaciones.map(
-        normalizarHabitacion,
-      );
+      estado.habitacionesDisponibles = habitaciones.map(normalizarHabitacion);
       renderizarHabitacionesDisponibles();
       renderizarHabitacionesSeleccionadas();
 
@@ -453,6 +457,7 @@ const prepararResumenReserva = () => {
 const validarYContinuarPago = () => {
   const estado = obtenerEstadoModalReserva();
   const selectorCliente = estado.elementos?.selectorCliente;
+  const idClienteReserva = estado.elementos?.idClienteReserva;
   const campoNombre = estado.elementos?.campoNombre;
   const campoEmail = estado.elementos?.campoEmail;
   const fechaEntrada = estado.elementos?.fechaEntrada;
@@ -462,7 +467,7 @@ const validarYContinuarPago = () => {
   const modal = estado.elementos?.modal;
   const contenedor = estado.elementos?.contenedor;
 
-  const cliente = selectorCliente?.value || "";
+  const cliente = idClienteReserva?.value || selectorCliente?.value || "";
   const nombre = campoNombre?.value.trim() || "";
   const email = campoEmail?.value.trim() || "";
   const habitaciones = estado.habitacionesSeleccionadas || [];
@@ -488,6 +493,7 @@ const validarYContinuarPago = () => {
 
   abrirModalPagoConDatos({
     cliente,
+    idCliente: cliente,
     clienteTexto: textoClienteSeleccionado,
     nombre,
     email,
