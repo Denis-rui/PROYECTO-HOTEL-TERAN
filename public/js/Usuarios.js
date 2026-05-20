@@ -79,7 +79,7 @@ window.registrarUsuarioNuevo = (datosUsuario) => {
     rol: datosUsuario.rol,
   };
 
-  fetch(BASE_URL + "?url=Usuario/crear", {
+  return fetch(BASE_URL + "?url=Usuario/crear", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(datos),
@@ -87,11 +87,20 @@ window.registrarUsuarioNuevo = (datosUsuario) => {
     .then((res) => res.json())
     .then((data) => {
       if (data.exito) {
-        alert("Usuario registrado correctamente.");
         window.location.reload();
+        return data;
       } else {
-        alert(data.error || "Error al registrar usuario.");
+        window.mostrarMensajeModalUsuario?.(
+          data.error || "Error al registrar usuario.",
+          "error",
+        );
+        return data;
       }
+    })
+    .catch(() => {
+      const respuesta = { exito: false, error: "Error de conexion." };
+      window.mostrarMensajeModalUsuario?.(respuesta.error, "error");
+      return respuesta;
     });
 };
 
@@ -108,7 +117,7 @@ window.actualizarUsuarioExistente = (datosUsuario) => {
     rol: datosUsuario.rol,
   };
 
-  fetch(BASE_URL + "?url=Usuario/actualizarAdmin", {
+  return fetch(BASE_URL + "?url=Usuario/actualizarAdmin", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(datos),
@@ -116,13 +125,21 @@ window.actualizarUsuarioExistente = (datosUsuario) => {
     .then((res) => res.json())
     .then((data) => {
       if (data.exito) {
-        alert("Usuario actualizado correctamente.");
         window.location.reload();
+        return data;
       } else {
-        alert(data.error || "Error al actualizar usuario.");
+        window.mostrarMensajeModalUsuario?.(
+          data.error || "Error al actualizar usuario.",
+          "error",
+        );
+        return data;
       }
     })
-    .catch(() => alert("Error de conexión."));
+    .catch(() => {
+      const respuesta = { exito: false, error: "Error de conexion." };
+      window.mostrarMensajeModalUsuario?.(respuesta.error, "error");
+      return respuesta;
+    });
 };
 
 document.addEventListener("DOMContentLoaded", window.inicializarUsuarios);

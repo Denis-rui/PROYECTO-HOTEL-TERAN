@@ -26,6 +26,43 @@ class UsuarioModel
         }
     }
 
+    private function validarUnicidadCampos(array $datos, ?int $ignorarId = null): void
+    {
+        $nombreUsuario = trim((string) ($datos['nombre_usuario'] ?? ''));
+        $correo = trim((string) ($datos['correo'] ?? ''));
+        $dni = trim((string) ($datos['dni'] ?? ''));
+
+        if ($nombreUsuario !== '') {
+            $query = Usuario::where('nombre_usuario', $nombreUsuario);
+            if ($ignorarId !== null) {
+                $query->where('id', '<>', $ignorarId);
+            }
+            if ($query->exists()) {
+                throw new \Exception('El nombre de usuario ya existe');
+            }
+        }
+
+        if ($correo !== '') {
+            $query = Usuario::where('correo', $correo);
+            if ($ignorarId !== null) {
+                $query->where('id', '<>', $ignorarId);
+            }
+            if ($query->exists()) {
+                throw new \Exception('El correo ya esta registrado');
+            }
+        }
+
+        if ($dni !== '') {
+            $query = Usuario::where('dni', $dni);
+            if ($ignorarId !== null) {
+                $query->where('id', '<>', $ignorarId);
+            }
+            if ($query->exists()) {
+                throw new \Exception('El DNI ya esta registrado');
+            }
+        }
+    }
+
     // Obtener usuario para login (con rol)
     public function obtenerUsuarios($usuario)
     {
@@ -110,6 +147,7 @@ class UsuarioModel
         }
 
         $this->validarMayorEdad($datos['fecha_nacimiento'] ?? null);
+    $this->validarUnicidadCampos($datos);
 
         $userData = [
             'nombre_completo'  => $datos['nombre_completo']  ?? '',
@@ -134,6 +172,8 @@ class UsuarioModel
         if (!$user) {
             return false;
         }
+
+        $this->validarUnicidadCampos($datos, (int) $user->id);
 
         $user->nombre_completo = $datos['nombre_completo'] ?? $user->nombre_completo;
         $user->nombre_usuario  = $datos['nombre_usuario']  ?? $user->nombre_usuario;
@@ -170,6 +210,8 @@ class UsuarioModel
         if (!$user) {
             return false;
         }
+
+        $this->validarUnicidadCampos($datos, (int) $user->id);
 
         $user->nombre_completo = $datos['nombre_completo'] ?? $user->nombre_completo;
         $user->nombre_usuario  = $datos['nombre_usuario']  ?? $user->nombre_usuario;

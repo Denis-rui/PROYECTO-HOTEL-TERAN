@@ -202,13 +202,21 @@ const manejarEnvioFormularioUsuario = (evento) => {
     return;
   }
 
-  if (modoFormularioUsuario === "editar") {
-    window.actualizarUsuarioExistente?.(datosUsuario);
-  } else {
-    window.registrarUsuarioNuevo?.(datosUsuario);
+  const accion =
+    modoFormularioUsuario === "editar"
+      ? window.actualizarUsuarioExistente
+      : window.registrarUsuarioNuevo;
+
+  if (typeof accion !== "function") {
+    mostrarMensajeModal("No se pudo procesar el formulario.", "error");
+    return;
   }
 
-  cerrarModalUsuario();
+  Promise.resolve(accion(datosUsuario)).then((respuesta) => {
+    if (respuesta?.exito) {
+      cerrarModalUsuario();
+    }
+  });
 };
 
 const configurarEventosModalUsuario = () => {
@@ -219,8 +227,8 @@ const configurarEventosModalUsuario = () => {
     return;
   }
 
-  formulario.addEventListener("submit", manejarEnvioFormularioUsuario);
-  botonCancelar.addEventListener("click", cerrarModalUsuario);
+  formulario.onsubmit = manejarEnvioFormularioUsuario;
+  botonCancelar.onclick = cerrarModalUsuario;
 };
 
 const abrirModalUsuario = (modo, datosUsuario = null) => {
@@ -246,3 +254,4 @@ const cerrarModalUsuario = () => {
 
 window.abrirModalUsuario = abrirModalUsuario;
 window.cerrarModalUsuario = cerrarModalUsuario;
+window.mostrarMensajeModalUsuario = mostrarMensajeModal;

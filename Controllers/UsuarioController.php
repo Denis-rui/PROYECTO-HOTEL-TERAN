@@ -5,6 +5,17 @@ use Libraries\Core\Controller;
 
 class UsuarioController extends Controller
 {
+    private function mensajeErrorUsuario(\Throwable $e): string
+    {
+        $mensaje = $e->getMessage();
+
+        if (stripos($mensaje, 'Duplicate entry') !== false || stripos($mensaje, 'Integrity constraint violation') !== false) {
+            return 'Ya existe un usuario con esos datos (usuario, correo o DNI).';
+        }
+
+        return $mensaje ?: 'Ocurrio un error al procesar la solicitud.';
+    }
+
     // Responde JSON - lista todos los usuarios
     public function index($params = '')
     {
@@ -43,7 +54,7 @@ class UsuarioController extends Controller
             $ok = $this->model->crearUsuario($datos);
             echo json_encode(['exito' => (bool) $ok]);
         } catch (\Throwable $e) {
-            echo json_encode(['exito' => false, 'error' => $e->getMessage()]);
+            echo json_encode(['exito' => false, 'error' => $this->mensajeErrorUsuario($e)]);
         }
     }
 
@@ -56,11 +67,15 @@ class UsuarioController extends Controller
             echo json_encode(['error' => 'No hay sesión activa']);
             exit;
         }
-        $ok = $this->model->updateByNombreUsuario($nombreUsuario, $datos);
-        if ($ok && isset($datos['nombre_usuario'])) {
-            $_SESSION['nombreUsuario'] = $datos['nombre_usuario'];
+        try {
+            $ok = $this->model->updateByNombreUsuario($nombreUsuario, $datos);
+            if ($ok && isset($datos['nombre_usuario'])) {
+                $_SESSION['nombreUsuario'] = $datos['nombre_usuario'];
+            }
+            echo json_encode(['exito' => (bool) $ok]);
+        } catch (\Throwable $e) {
+            echo json_encode(['exito' => false, 'error' => $this->mensajeErrorUsuario($e)]);
         }
-        echo json_encode(['exito' => $ok]);
     }
 
     public function actualizarAdmin($params = '')
@@ -71,7 +86,7 @@ class UsuarioController extends Controller
             $ok = $this->model->updateById((int) ($datos['id'] ?? 0), $datos);
             echo json_encode(['exito' => (bool) $ok]);
         } catch (\Throwable $e) {
-            echo json_encode(['exito' => false, 'error' => $e->getMessage()]);
+            echo json_encode(['exito' => false, 'error' => $this->mensajeErrorUsuario($e)]);
         }
     }
 
