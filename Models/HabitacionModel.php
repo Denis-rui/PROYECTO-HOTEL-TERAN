@@ -395,8 +395,16 @@ class HabitacionModel extends Eloquent
             ->where('h.id', (int) $idHabitacion)
             ->value('t.precio_base');
 
-        $segundos = max(1, strtotime($checkOut) - strtotime($checkIn));
-        $dias = max(1, (int) ceil($segundos / 86400));
+        $inicioTexto = substr(trim((string) $checkIn), 0, 10);
+        $finTexto = substr(trim((string) $checkOut), 0, 10);
+        $inicio = \DateTime::createFromFormat('Y-m-d', $inicioTexto);
+        $fin = \DateTime::createFromFormat('Y-m-d', $finTexto);
+
+        if (!$inicio || !$fin || $fin <= $inicio) {
+            return 0;
+        }
+
+        $dias = (int) $inicio->diff($fin)->days;
         return $dias * $precio;
     }
 
