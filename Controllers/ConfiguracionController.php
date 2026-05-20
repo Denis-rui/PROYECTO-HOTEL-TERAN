@@ -2,7 +2,8 @@
 namespace Controllers;
 
 use Libraries\Core\Controller;
-use PDO;
+use Models\Entities\TipoHabitacion;
+
 
 class ConfiguracionController extends Controller
 {
@@ -16,47 +17,56 @@ class ConfiguracionController extends Controller
         $data['hotel'] = $this->model->find(1);
         
         // Cargar tipos de habitación
-        $con = $this->model->conectar();
-        $data['tipos_habitacion'] = $con->query("SELECT * FROM tipo_habitacion")->fetchAll(PDO::FETCH_ASSOC);
-
+        $data['tipos_habitacion'] = TipoHabitacion::orderBy('id')->get()->toArray();
         $data['page_js'] = ['Configuraciones.js'];
         $this->views->render($this, 'index', $data);
     }
 
     public function actualizar($params = '')
-    {
-        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            $ok = $this->model->actualizarHotel($_POST);
-            if ($ok) {
-                header('Location: ' . BASE_URL . '?url=Configuracion/index&exito=1');
-            } else {
-                header('Location: ' . BASE_URL . '?url=Configuracion/index&error=1');
-            }
+   {
+        if (!isset($_SESSION['usuario'])) {
+            header('Content-Type: application/json');
+            echo json_encode(['exito' => false, 'mensaje' => 'No autenticado']);
+            exit();
         }
-    }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
+
+        $body  = file_get_contents('php://input');
+        $datos = json_decode($body, true) ?? [];
+
+        header('Content-Type: application/json');
+
+        try {
+            $ok = $this->model->actualizarHotel($datos);
+            echo json_encode(['exito' => (bool) $ok]);
+        } catch (\Exception $e) {
+            echo json_encode(['exito' => false, 'mensaje' => $e->getMessage()]);
+        }
+        exit();
+   }
 
     public function guardarTipo($params = '')
     {
-        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            $con = $this->model->conectar();
-            $id = $_POST['id'] ?? null;
-            $tipo = $_POST['tipo'] ?? '';
-            $precio = $_POST['precio_base'] ?? 0;
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
 
-            if ($id) {
-                $stmt = $con->prepare("UPDATE tipo_habitacion SET tipo = ?, precio_base = ? WHERE id = ?");
-                $stmt->execute([$tipo, $precio, $id]);
-            } else {
-                $stmt = $con->prepare("INSERT INTO tipo_habitacion (tipo, precio_base) VALUES (?, ?)");
-                $stmt->execute([$tipo, $precio]);
-            }
-            header('Location: ' . BASE_URL . '?url=Configuracion/index&exito=1');
+        $id     = $_POST['id']         ?? null;
+        $tipo   = $_POST['tipo']        ?? '';
+        $precio = $_POST['precio_base'] ?? 0;
+
+        if ($id) {
+            TipoHabitacion::where('id', $id)->update(['tipo' => $tipo, 'precio_base' => $precio]);
+        } else {
+            TipoHabitacion::create(['tipo' => $tipo, 'precio_base' => $precio]);
         }
+
+        header('Location: ' . BASE_URL . '?url=Configuracion/index&exito=1');
     }
 
     public function obtener($params = '')
     {
         header('Content-Type: application/json');
-        echo json_encode($this->model->read());
+        echo json_encode($this->model->find());
+        exit();
     }
 }

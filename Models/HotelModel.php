@@ -1,55 +1,35 @@
 <?php
 namespace Models;
 
-use Libraries\Core\Model;
-use PDO;
+use Models\Entities\Hotel;
 
-class HotelModel extends Model
+class HotelModel
 {
-    protected $table = 'hotel';
-
-    public function __construct()
-    {
-        parent::__construct();
+    public function find($id){
+        $hotel = Hotel::find($id);
+        return $hotel ? $hotel->toArray() : [];
     }
 
     public function actualizarHotel($datos)
     {
-        try {
-            $sql = "UPDATE hotel SET 
-                nombre        = :nombre,
-                ruc           = :ruc,
-                telefono      = :telefono,
-                email         = :email,
-                direccion     = :direccion,
-                ciudad_region = :ciudad_region,
-                descripcion   = :descripcion,
-                moneda        = :moneda,
-                check_in      = :check_in,
-                check_out     = :check_out,
-                web           = :web,
-                porcentaje_adelanto = :porcentaje_adelanto,
-                porcentaje_penalidad_cancelacion = :porcentaje_penalidad
-                LIMIT 1";
+        $hotel = Hotel::find(1);
 
-            $statement = $this->conectar()->prepare($sql);
-            return $statement->execute([
-                ':nombre'        => $datos['nombre'] ?? '',
-                ':ruc'           => $datos['ruc'] ?? '',
-                ':telefono'      => $datos['telefono'] ?? '',
-                ':email'         => $datos['email'] ?? '',
-                ':direccion'     => $datos['direccion'] ?? '',
-                ':ciudad_region' => $datos['ciudad-region'] ?? '',
-                ':descripcion'   => $datos['descripcion-slogan'] ?? '',
-                ':moneda'        => $datos['monedas'] ?? '',
-                ':check_in'      => $datos['check-in'] ?? '',
-                ':check_out'     => $datos['check-out'] ?? '',
-                ':web'           => $datos['web-redes'] ?? '',
-                ':porcentaje_adelanto' => $datos['porcentaje_adelanto'] ?? 50,
-                ':porcentaje_penalidad' => $datos['porcentaje_penalidad'] ?? 25,
-            ]);
-        } catch (\PDOException $e) {
-            throw new \Exception("Error al actualizar hotel: " . $e->getMessage());
-        }
+        if (!$hotel) return false;
+
+        $hotel->nombre                          = $datos['nombre']               ?? $hotel->nombre;
+        $hotel->ruc                             = $datos['ruc']                  ?? $hotel->ruc;
+        $hotel->telefono                        = $datos['telefono']             ?? $hotel->telefono;
+        $hotel->email                           = $datos['email']                ?? $hotel->email;
+        $hotel->direccion                       = $datos['direccion']            ?? $hotel->direccion;
+        $hotel->ciudad_region                   = $datos['ciudad_region']        ?? $hotel->ciudad_region;
+        $hotel->descripcion                     = $datos['descripcion']          ?? $hotel->descripcion;
+        $hotel->moneda                          = $datos['monedas']              ?? $hotel->moneda;
+        $hotel->check_in                        = $datos['check_in']             ?? $hotel->check_in;
+        $hotel->check_out                       = $datos['check_out']            ?? $hotel->check_out;
+        $hotel->web                             = $datos['web_redes']            ?? $hotel->web;
+        $hotel->porcentaje_adelanto             = $datos['porcentaje_adelanto']  ?? $hotel->porcentaje_adelanto;
+        $hotel->porcentaje_penalidad_cancelacion = $datos['porcentaje_penalidad'] ?? $hotel->porcentaje_penalidad_cancelacion;
+
+        return $hotel->save();
     }
 }
