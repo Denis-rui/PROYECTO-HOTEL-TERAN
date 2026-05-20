@@ -116,4 +116,7 @@ $tipos = $data['tipos_habitacion'] ?? [];
     </table>
   </div>
   <button id="btnNuevoTipoHabitacion" class="form-button" style="width: auto; margin-top: 10px;">+ Agregar Nuevo Tipo</button>
+
+  <!-- INCLUSIÓN DEL MODAL DE TIPO DE HABITACIÓN -->
+  <?php require_once 'Views/Template/Modals/Modal-TipoHabitacion.php'; ?>
 </section>

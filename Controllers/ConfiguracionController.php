@@ -18,7 +18,7 @@ class ConfiguracionController extends Controller
         
         // Cargar tipos de habitación
         $data['tipos_habitacion'] = TipoHabitacion::orderBy('id')->get()->toArray();
-        $data['page_js'] = ['Configuraciones.js'];
+        $data['page_js'] = ['Configuraciones.js', 'Modal-TipoHabitacion.js'];
         $this->views->render($this, 'index', $data);
     }
 
