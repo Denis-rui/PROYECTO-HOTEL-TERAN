@@ -1,9 +1,23 @@
 <section class="layout">
   <!--parte lateral-->
   <div class="parte-lateral">
-    <div class="perfil-cargo"><?= $_SESSION['rol'] ?? 'Usuario' ?></div>
-    <div class="perfil-rol"><?= $_SESSION['usuario'] ?? '' ?></div>
-  </div>
+    <span class="avatar">
+        <?= strtoupper(substr($_SESSION['usuario'] ?? 'U',0,1)) ?>
+    </span>
+
+    <h3 class="perfil-cargo">
+        <?= htmlspecialchars($_SESSION['rol'] ?? 'Usuario') ?>
+    </h3>
+
+    <span class="perfil-rol">
+        <?= htmlspecialchars($_SESSION['usuario'] ?? '') ?>
+    </span>
+
+    <hr>
+    <span class="info">📨 <?= htmlspecialchars($perfil['correo'] ?? '') ?></span>
+    <span class="info">📞 <?= htmlspecialchars($perfil['telefono'] ?? '') ?></span>
+    <span class="info">👤 <?= htmlspecialchars($perfil['nombre_completo'] ?? '') ?></span>
+</div>
 
   <!--Formularios --->
   <div class="contenido">
@@ -12,6 +26,7 @@
     
     <form class="form" id="formPerfilPersonal">
       <h2>👤 Información Personal</h2>
+      <p>Actualiza tus datos de identificación</p>
       <div>
         <div class="form-campo">
           <label for="nombre_completo" class="form-label"
@@ -52,6 +67,7 @@
 
     <form action="#" class="form" id="formCambiarClave">
       <h2>🔒 Cambiar Contraseña</h2>
+      <p>Usa una contraseña segura de al menos 8 caracteres</p>
       <div>
         <div class="form-campo full">
           <label for="clave_actual" class="form-label">CONTRASEÑA ACTUAL</label>
