@@ -122,7 +122,7 @@ class ComprobanteModel extends Eloquent
             (string) ($pago->descripcion ?? '')
         );
 
-        return self::create([
+        return Comprobante::create([
             'id_pago' => (int) $pago->id,
             'numero_ticket' => $this->generarNumeroTicket(),
             'fecha_emision' => date('Y-m-d H:i:s'),
@@ -135,7 +135,7 @@ class ComprobanteModel extends Eloquent
 
     public function obtenerPorPago($idPago)
     {
-        $comprobante = self::with(['pago.reserva.reservaHabitacion.habitacion', 'usuario'])
+        $comprobante = Comprobante::with(['pago.reserva.reservaHabitacion.habitacion', 'usuario'])
             ->where('id_pago', (int) $idPago)
             ->first();
 
