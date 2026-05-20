@@ -113,6 +113,25 @@ class HabitacionModel extends Eloquent
                 return ['exito' => false, 'mensaje' => 'Habitación no encontrada.'];
             }
 
+            // Si la habitación está ocupada y se intenta marcar como Disponible,
+            // verificar que no exista una estadía activa o un checkout pendiente.
+            if ($habitacion->estado === 'Ocupada' && $nuevoEstado === 'Disponible') {
+                $tieneEstadiaActiva = DB::table('reserva_habitacion as rh')
+                    ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
+                    ->where('rh.id_habitacion', (int) $id)
+                    ->where('rh.activo', 1)
+                    ->whereIn('r.estado', ['checkin_realizado', 'en_estadia', 'checkout_pendiente'])
+                    ->where(function ($q) {
+                        $q->whereNull('rh.check_out')
+                          ->orWhere('rh.check_out', '>', DB::raw('NOW()'));
+                    })
+                    ->exists();
+
+                if ($tieneEstadiaActiva) {
+                    return ['exito' => false, 'mensaje' => 'No se puede marcar como Disponible: existe una estadía o checkout pendiente.'];
+                }
+            }
+
             $updateData = ['estado' => $nuevoEstado];
             if (strtolower($nuevoEstado) === 'mantenimiento') {
                 $updateData['descripcion_habitacion'] = $motivo;
@@ -265,10 +284,7 @@ class HabitacionModel extends Eloquent
         }
     }
 
-    public function validarDisponibilidadHabitacion($idHabitacion, $checkIn, $checkOut)
-    {
-        return $this->validarDisp_habitacion($idHabitacion, $checkIn, $checkOut);
-    }
+
 
     public function registrarHistorial($idHabitacion, $idReserva, $estadoAnterior, $estadoNuevo, $limpiezaAnterior = null, $limpiezaNueva = null, $accion = '', $comentario = '', $idUsuario = null)
     {
@@ -317,6 +333,41 @@ class HabitacionModel extends Eloquent
         $segundos = max(1, strtotime($checkOut) - strtotime($checkIn));
         $dias = max(1, (int) ceil($segundos / 86400));
         return $dias * $precio;
+    }
+
+
+    public function validarDisponibilidadHabitacion($idHabitacion, $checkIn, $checkOut, $idReservaExcluir = null)
+    {
+        try {
+            if (empty($idHabitacion) || empty($checkIn) || empty($checkOut)) {
+                return ['disponible' => false, 'mensaje' => 'Parámetros incompletos para validar disponibilidad.'];
+            }
+
+            $sql = "SELECT COUNT(*) FROM reserva_habitacion rh JOIN reserva r ON r.id = rh.id_reserva
+                WHERE rh.id_habitacion = ?
+                  AND rh.activo = 1
+                  AND r.estado IN ('pendiente', 'confirmada', 'checkin_realizado', 'en_estadia', 'checkout_pendiente')
+                  AND rh.check_in < ?
+                  AND (rh.check_out IS NULL OR rh.check_out > ?)";
+
+            $params = [(int) $idHabitacion, $checkOut, $checkIn];
+            if ($idReservaExcluir) {
+                $sql .= " AND r.id <> ?";
+                $params[] = (int) $idReservaExcluir;
+            }
+
+            $stmt = $this->conectar()->prepare($sql);
+            $stmt->execute($params);
+            $count = (int) $stmt->fetchColumn();
+
+            if ($count > 0) {
+                return ['disponible' => false, 'mensaje' => 'La habitación no está disponible en el rango indicado.'];
+            }
+
+            return ['disponible' => true, 'mensaje' => 'Disponible'];
+        } catch (\PDOException $e) {
+            return ['disponible' => false, 'mensaje' => 'Error al validar disponibilidad: ' . $e->getMessage()];
+        }
     }
 
     private function normalizarEstado($estado)
