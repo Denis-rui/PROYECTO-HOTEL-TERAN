@@ -150,6 +150,17 @@ class ReservaController extends Controller
         echo json_encode($resultado);
     }
 
+    public function cancelar($params = '')
+    {
+        header('Content-Type: application/json');
+        $datos = json_decode(file_get_contents('php://input'), true);
+        $idReserva = (int) ($datos['id_reserva'] ?? 0);
+        $motivo = $datos['motivo'] ?? '';
+        $idUsuario = $_SESSION['id_usuario'] ?? null;
+        $resultado = $this->model->cancelarReserva($idReserva, $motivo, $idUsuario);
+        echo json_encode($resultado);
+    }
+
     public function cambiarHabitacion($params = '')
     {
         header('Content-Type: application/json');

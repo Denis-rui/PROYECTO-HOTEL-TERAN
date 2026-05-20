@@ -666,7 +666,7 @@ class ReservaModel extends Model
         return $this->actualizarEstadoReserva($idReserva, $nuevoEstado);
     }
 
-    public function cancelarReserva($idReserva, $motivo = '')
+    public function cancelarReserva($idReserva, $motivo = '', $idUsuario = null)
     {
         try {
             $reserva = $this->obtenerReservaPorId($idReserva);
@@ -703,9 +703,50 @@ class ReservaModel extends Model
             $habitacionModel = new HabitacionModel();
             $habitacionModel->registrarHistorial((int) $reserva['id_habitacion'], (int) $idReserva, $reserva['estado'], 'Disponible', null, null, 'cancelar_reserva', 'Reserva cancelada. Penalidad: S/ ' . $penalidad);
 
-            if ($reembolso > 0) {
-                // Opcional: Registrar un "pago" negativo o una devolución en una tabla de devoluciones si existe
-                // Por ahora solo lo mencionamos en observaciones
+            // Registrar devolución en tabla `devolucion` (aunque el monto sea 0, se guarda el registro)
+            try {
+                $checkIn = $reserva['check_in'] ?? null;
+                $checkOut = $reserva['check_out'] ?? null;
+                $diasUsados = 0;
+                $diasNoUsados = 0;
+                $totalNoOcupado = 0.0;
+
+                if ($checkIn && $checkOut) {
+                    $tsIn = strtotime($checkIn);
+                    $tsOut = strtotime($checkOut);
+                    $totalDias = max(1, (int) ceil(($tsOut - $tsIn) / 86400));
+                    $now = time();
+
+                    if ($now <= $tsIn) {
+                        $diasUsados = 0;
+                    } elseif ($now >= $tsOut) {
+                        $diasUsados = $totalDias;
+                    } else {
+                        $diasUsados = (int) floor(($now - $tsIn) / 86400);
+                        if ($diasUsados < 0) $diasUsados = 0;
+                        if ($diasUsados > $totalDias) $diasUsados = $totalDias;
+                    }
+
+                    $diasNoUsados = max(0, $totalDias - $diasUsados);
+                    $precioPorDia = $totalDias > 0 ? ((float) $reserva['total'] / $totalDias) : 0.0;
+                    $totalNoOcupado = round($precioPorDia * $diasNoUsados, 2);
+                }
+
+                $stmtDev = $con->prepare("INSERT INTO devolucion (fecha_cancelacion, dias_usados, dias_no_usados, total_no_ocupado, porcentaje_penalidad, monto_penalidad, monto_devuelto, id_reserva, id_usuario, descripcion) VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmtDev->execute([
+                    (int) $diasUsados,
+                    (int) $diasNoUsados,
+                    (float) $totalNoOcupado,
+                    (int) $porcentajePenalidad,
+                    (float) $penalidad,
+                    (float) $reembolso,
+                    (int) $idReserva,
+                    $idUsuario ? (int) $idUsuario : null,
+                    $motivo
+                ]);
+            } catch (\Throwable $e) {
+                // No abortar todo el proceso por un error al insertar devolución, registrar y continuar
+                error_log('Error al registrar devolucion: ' . $e->getMessage());
             }
 
             $con->commit();
