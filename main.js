@@ -1,5 +1,5 @@
 // main.js - Centralizador de inicializaciones y permisos
-document.addEventListener("DOMContentLoaded", () => {
+const runInitializers = () => {
     // Aplicar permisos de usuario
     const tipoUsuario = localStorage.getItem("tipoUsuario");
     const opcionesNav = document.querySelectorAll("[data-rol]");
@@ -30,4 +30,10 @@ document.addEventListener("DOMContentLoaded", () => {
     } else if (urlLower.includes("cliente")) {
         window.inicializarClientes?.();
     }
-});
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', runInitializers);
+} else {
+    runInitializers();
+}

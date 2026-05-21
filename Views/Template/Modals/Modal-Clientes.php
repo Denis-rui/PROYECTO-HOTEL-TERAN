@@ -11,6 +11,16 @@
       </div>
 
       <div class="label-input-modal">
+        <label for="tipo-documento-cliente">Tipo de Documento</label>
+        <select id="tipo-documento-cliente" class="input-modal" required>
+          <option value="">Seleccione</option>
+          <option value="1">DNI</option>
+          <option value="2">RUC</option>
+          <option value="3">PASAPORTE</option>
+        </select>
+      </div>
+
+      <div class="label-input-modal">
         <label for="dni-cliente">DNI / Pasaporte</label>
         <input type="text" id="dni-cliente" class="input-modal" required />
       </div>
@@ -34,26 +44,7 @@
         <label for="reservaciones-cliente">Reservaciones</label>
         <input type="number" id="reservaciones-cliente" class="input-modal" />
       </div>
-
-      <div class="label-input-modal">
-        <label for="metodo-pago-cliente">Método de Pago</label>
-        <select id="metodo-pago-cliente" class="input-modal" required>
-          <option value="">Seleccione</option>
-          <option value="efectivo">Efectivo</option>
-          <option value="tarjeta">Tarjeta</option>
-          <option value="transferencia">Transferencia</option>
-        </select>
-      </div>
-
-      <div class="label-input-modal">
-        <label for="preferencias-cliente">Preferencias</label>
-        <textarea id="preferencias-cliente" class="input-modal" rows="2"></textarea>
-      </div>
-
-      <div class="label-input-modal">
-        <label for="observaciones-cliente">Observaciones</label>
-        <textarea id="observaciones-cliente" class="input-modal" rows="2"></textarea>
-      </div>
+      
 
       <div id="error-exito-modal-cliente" class="div-mensaje-exito-error"></div>
 

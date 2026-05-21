@@ -16,7 +16,7 @@ class ClienteModel extends Model
 
     public function listar($nombre = '')
     {
-        $sql = "SELECT c.id, c.nombre_completo, td.nombre AS id_tipo_documento, c.documento, c.correo_electronico, c.telefono, c.procedencia, c.reservaciones, c.activo, c.observaciones, c.fecha_creacion
+        $sql = "SELECT c.id, c.nombre_completo, td.id AS id_tipo_documento, td.nombre AS tipo_documento_nombre, c.documento, c.correo_electronico, c.telefono, c.reservaciones, c.activo, c.fecha_creacion
                 FROM cliente c
                 INNER JOIN tipo_documento td ON c.id_tipo_documento = td.id
                 WHERE 1=1";
@@ -59,8 +59,8 @@ class ClienteModel extends Model
     public function crearCliente($data)
     {
         $sql = "INSERT INTO cliente
-                (nombre_completo, id_tipo_documento, documento, correo_electronico, telefono, procedencia, reservaciones, metodoPago, observaciones, preferencias, fecha_creacion)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+            (nombre_completo, id_tipo_documento, documento, correo_electronico, telefono, reservaciones, fecha_creacion)
+            VALUES (?, ?, ?, ?, ?, ?, NOW())";
         $stmt = $this->conectar()->prepare($sql);
         return $stmt->execute([
             $data['nombre_completo'] ?? $data['nombre'] ?? '',
@@ -68,9 +68,7 @@ class ClienteModel extends Model
             $data['documento'] ?? '',
             $data['correo_electronico'] ?? $data['gmail'] ?? '',
             $data['telefono'] ?? '',
-            $data['procedencia'] ?? $data['nacionalidad'] ?? '',
-            $data['reservaciones'] ?? 0,
-            $data['observaciones'] ?? null
+            $data['reservaciones'] ?? 0
         ]);
     }
 
@@ -82,9 +80,7 @@ class ClienteModel extends Model
                 documento = ?, 
                 correo_electronico = ?, 
                 telefono = ?, 
-                procedencia = ?, 
-                reservaciones = ?,
-                observaciones = ?,
+                reservaciones = ?
                 WHERE id = ?";
         $stmt = $this->conectar()->prepare($sql);
         return $stmt->execute([
@@ -93,9 +89,7 @@ class ClienteModel extends Model
             $data['documento'] ?? '',
             $data['correo_electronico'] ?? $data['gmail'] ?? '',
             $data['telefono'] ?? '',
-            $data['procedencia'] ?? $data['nacionalidad'] ?? '',
             $data['reservaciones'] ?? 0,
-            $data['observaciones'] ?? null,
             $data['id']
         ]);
     }

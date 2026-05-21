@@ -22,13 +22,15 @@ const configurarEventosClientes = () => {
         const fila = botonEditar.closest("tr");
         const datos = {
           id: id,
-          nombre: fila.cells[1].innerText,
-          documento: fila.cells[2].innerText,
-          gmail: fila.cells[3].innerText,
-          telefono: fila.cells[4].innerText,
-          nacionalidad: fila.cells[5].innerText,
-          metodoPago: fila.cells[7].innerText
+          id_tipo_documento: botonEditar.dataset.tipoDocumento || "",
+          nombre: fila.cells[1]?.innerText.trim() || "",
+          documento: fila.cells[3]?.innerText.trim() || "",
+          gmail: fila.cells[4]?.innerText.trim() || "",
+          telefono: fila.cells[5]?.innerText.trim() || "",
+          nacionalidad: "",
+          reservaciones: Number((fila.cells[6]?.innerText.trim() || "0")),
         };
+
         if (window.abrirModalCliente) {
           window.abrirModalCliente("editar", datos);
         }

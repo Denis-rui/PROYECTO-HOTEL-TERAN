@@ -4,6 +4,7 @@ namespace Controllers;
 use Libraries\Core\Controller;
 use Models\DashboardModel;
 use Models\HabitacionModel;
+use Models\ClienteModel;
 
 class ReservaController extends Controller
 {

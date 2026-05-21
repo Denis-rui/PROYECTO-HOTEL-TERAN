@@ -42,6 +42,11 @@ class ClienteController extends Controller
             exit;
         }
 
+        if (empty($datos['id_tipo_documento']) || !is_numeric($datos['id_tipo_documento']) || (int) $datos['id_tipo_documento'] <= 0) {
+            echo json_encode(['exito' => false, 'mensaje' => 'Seleccione un tipo de documento válido']);
+            exit;
+        }
+
         try {
             $ok = $this->model->crearCliente($datos);
             echo json_encode(['exito' => $ok, 'mensaje' => $ok ? 'Cliente creado correctamente' : 'No se pudo crear el cliente']);
@@ -57,6 +62,11 @@ class ClienteController extends Controller
 
         if (empty($datos['id'])) {
             echo json_encode(['exito' => false, 'mensaje' => 'ID requerido']);
+            exit;
+        }
+
+        if (empty($datos['id_tipo_documento']) || !is_numeric($datos['id_tipo_documento']) || (int) $datos['id_tipo_documento'] <= 0) {
+            echo json_encode(['exito' => false, 'mensaje' => 'Seleccione un tipo de documento válido']);
             exit;
         }
 

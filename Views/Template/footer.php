@@ -9,5 +9,6 @@
             <script src="<?= BASE_URL ?>public/js/<?= $js ?>"></script>
         <?php endforeach; ?>
     <?php endif; ?>
+    <script src="<?= BASE_URL ?>main.js"></script>
 </body>
 </html>

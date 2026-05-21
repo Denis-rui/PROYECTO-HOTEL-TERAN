@@ -28,15 +28,13 @@ const limpiarMensajeModalCliente = () => {
 
 const obtenerDatosFormularioCliente = () => ({
   id: document.getElementById("id-cliente").value.trim(),
+  id_tipo_documento: parseInt(document.getElementById("tipo-documento-cliente").value, 10) || "",
   nombre: document.getElementById("nombre-cliente").value.trim(),
   documento: document.getElementById("dni-cliente").value.trim(),
   gmail: document.getElementById("gmail-cliente").value.trim(),
   telefono: document.getElementById("telefono-cliente").value.trim(),
   nacionalidad: document.getElementById("nacionalidad-cliente").value.trim(),
-  reservaciones: Number(document.getElementById("reservaciones-cliente").value),
-  metodoPago: document.getElementById("metodo-pago-cliente").value,
-  preferencias: document.getElementById("preferencias-cliente").value.trim(),
-  observaciones: document.getElementById("observaciones-cliente").value.trim(),
+  reservaciones: Number(document.getElementById("reservaciones-cliente").value)
 });
 
 const validarFormularioCliente = (datos) => {
@@ -49,6 +47,10 @@ const validarFormularioCliente = (datos) => {
 
   if (!reglas.nombre.test(datos.nombre)) {
     return "Nombre inválido";
+  }
+
+  if (!datos.id_tipo_documento) {
+    return "Seleccione un tipo de documento";
   }
 
   if (!reglas.documento.test(datos.documento)) {
@@ -74,6 +76,7 @@ const completarFormularioCliente = (datos = null) => {
     titulo.textContent = "Editar Cliente";
 
     document.getElementById("id-cliente").value = datos.id;
+    document.getElementById("tipo-documento-cliente").value = datos.id_tipo_documento || "";
     document.getElementById("nombre-cliente").value = datos.nombre;
     document.getElementById("dni-cliente").value = datos.documento;
     document.getElementById("gmail-cliente").value = datos.gmail || "";
@@ -81,12 +84,8 @@ const completarFormularioCliente = (datos = null) => {
     document.getElementById("nacionalidad-cliente").value =
       datos.nacionalidad || "";
     document.getElementById("reservaciones-cliente").value =
-      datos.reservaciones || 0;
-    document.getElementById("metodo-pago-cliente").value = datos.metodoPago;
-    document.getElementById("preferencias-cliente").value =
-      datos.preferencias || "";
-    document.getElementById("observaciones-cliente").value =
-      datos.observaciones || "";
+      datos.reservaciones || "";
+    // campos removidos: preferencias y observaciones
 
     return;
   }

@@ -27,9 +27,8 @@
           <th>Nombre</th>
           <th>Tipo Documento</th>
           <th>Documento</th>
-          <th>Correo</th>
+          <th>Correo Electronico</th>
           <th>Telefono</th>
-          <th>Procedencia</th>
           <th>Reservaciones</th>
           <th>Acciones</th>
         </tr>
@@ -40,20 +39,19 @@
             <tr>
               <td><?= $cliente['id'] ?></td>
               <td><?= htmlspecialchars($cliente['nombre_completo'] ?? '') ?></td>
-              <td><?= htmlspecialchars($cliente['id_tipo_documento'] ?? '') ?></td>
+              <td><?= htmlspecialchars($cliente['tipo_documento_nombre'] ?? '') ?></td>
               <td><?= htmlspecialchars($cliente['documento'] ?? '') ?></td>
               <td><?= htmlspecialchars($cliente['correo_electronico'] ?? '') ?></td>
               <td><?= htmlspecialchars($cliente['telefono'] ?? '') ?></td>
-              <td><?= htmlspecialchars($cliente['procedencia'] ?? '') ?></td>
               <td><?= $cliente['reservaciones'] ?? 0 ?></td>
               <td>
-                <button type="button" class="btnEditarCliente" data-id="<?= $cliente['id'] ?>">✏️</button>
+                <button type="button" class="btnEditarCliente" data-id="<?= $cliente['id'] ?>" data-tipo-documento="<?= $cliente['id_tipo_documento'] ?? '' ?>">✏️</button>
                 <button type="button" class="btnEliminarCliente" data-id="<?= $cliente['id'] ?>">🗑️</button>
               </td>
             </tr>
           <?php endforeach; ?>
         <?php else: ?>
-          <tr><td colspan="9" style="text-align:center">No se encontraron clientes.</td></tr>
+          <tr><td colspan="8" style="text-align:center">No se encontraron clientes.</td></tr>
         <?php endif; ?>
       </tbody>
     </table>
