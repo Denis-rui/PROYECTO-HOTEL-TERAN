@@ -74,7 +74,7 @@ const guardarCambiosReserva = async () => {
   const datosReserva = obtenerDatosReservaDesdeFormularioPago();
 
   try {
-    const res = await fetch(BASE_URL + "?url=Reserva/actualizar", {
+    const res = await fetch(BASE_URL + "Reserva/actualizar", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(datosReserva),
@@ -431,7 +431,7 @@ const configurarEventosPago = () => {
 
         const url =
           BASE_URL +
-          (esReservaNueva ? "?url=Reserva/registrar" : "?url=Reserva/pago");
+          (esReservaNueva ? "Reserva/registrar" : "Reserva/pago");
 
         const fetchPayload = esReservaNueva
           ? {
@@ -507,7 +507,7 @@ const configurarEventosPago = () => {
           try {
             const comprobanteRes = await fetch(
               BASE_URL +
-                `?url=Comprobante/obtenerPorPago/${encodeURIComponent(resultado.pago_id)}`,
+                `Comprobante/obtenerPorPago/${encodeURIComponent(resultado.pago_id)}`,
             );
             const comprobante = await comprobanteRes.json();
             if (comprobante) {
@@ -538,7 +538,7 @@ window.abrirModalPago = async (datosReserva = {}) => {
     try {
       const res = await fetch(
         BASE_URL +
-          `?url=Reserva/obtener/${encodeURIComponent(datosReserva.idReserva)}`,
+          `Reserva/obtener/${encodeURIComponent(datosReserva.idReserva)}`,
       );
       const respuesta = await res.json();
       const reserva = respuesta?.reserva || respuesta;

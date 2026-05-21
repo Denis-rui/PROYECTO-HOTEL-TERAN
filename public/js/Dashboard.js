@@ -48,7 +48,7 @@ const renderizarNotificacionesCheckout = (datos) => {
 window.inicializarDashboard = () => {
   const cargar = async () => {
     try {
-      const res = await fetch(BASE_URL + "?url=Reserva/notificaciones");
+      const res = await fetch(BASE_URL + "Reserva/notificaciones");
       const datos = await res.json();
       renderizarNotificacionesCheckout(datos);
     } catch (error) {
@@ -66,7 +66,7 @@ document.addEventListener("click", (e) => {
   const btn = e.target.closest(".boton-checkout-dashboard");
   if (!btn) return;
 
-  fetch(BASE_URL + "?url=Reserva/checkout", {
+  fetch(BASE_URL + "Reserva/checkout", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id_reserva: btn.dataset.id }),

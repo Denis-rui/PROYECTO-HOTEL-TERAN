@@ -15,7 +15,7 @@ class LoginController extends Controller
     public function entrar($params = '')
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: ' . BASE_URL . '?url=Login/index');
+            header('Location: ' . BASE_URL . 'Login/index');
             exit();
         }
 
@@ -37,11 +37,11 @@ class LoginController extends Controller
             $_SESSION['nombreUsuario'] = $user['nombre_usuario'];
             $_SESSION['rol']           = $user['rol'];
             $_SESSION['id_usuario']    = $user['id'];
-            header('Location: ' . BASE_URL . '?url=Dashboard/index');
+            header('Location: ' . BASE_URL . 'Dashboard/index');
             exit();
         }
 
-        header('Location: ' . BASE_URL . '?url=Login/index&error=1');
+        header('Location: ' . BASE_URL . 'Login/index&error=1');
         exit();
     }
 
@@ -49,7 +49,7 @@ class LoginController extends Controller
     public function salir($params = '')
     {
         session_destroy();
-        header('Location: ' . BASE_URL . '?url=Login/index');
+        header('Location: ' . BASE_URL . 'Login/index');
         exit();
     }
 }

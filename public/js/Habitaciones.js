@@ -18,7 +18,7 @@ window.actualizarHabitaciones = (e) => {
 
     const params = new URLSearchParams(new FormData(form)).toString();
 
-    fetch(`${BASE_URL}?url=Habitacion/buscar&html=1&${params}`, {
+    fetch(`${BASE_URL}Habitacion/buscar&html=1&${params}`, {
       headers: { "X-Requested-With": "XMLHttpRequest" },
     })
       .then((res) => res.text())
@@ -66,7 +66,7 @@ window.cambiarEstado = async (id, nuevoEstado) => {
       motivo: motivo
     };
 
-    const res = await fetch(`${BASE_URL}?url=Habitacion/actualizarEstado`, {
+    const res = await fetch(`${BASE_URL}Habitacion/actualizarEstado`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

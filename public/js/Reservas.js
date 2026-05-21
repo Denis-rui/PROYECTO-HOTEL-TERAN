@@ -214,7 +214,7 @@ const configurarEventosReservas = () => {
 
 const ejecutarAccionReserva = async (accion, datos) => {
   try {
-    const res = await fetch(BASE_URL + "?url=Reserva/" + accion, {
+    const res = await fetch(BASE_URL + "Reserva/" + accion, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(datos),

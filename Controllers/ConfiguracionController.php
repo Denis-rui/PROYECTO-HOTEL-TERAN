@@ -10,7 +10,7 @@ class ConfiguracionController extends Controller
     public function index($params = '')
     {
         if (!isset($_SESSION['usuario'])) {
-            header('Location: ' . BASE_URL . '?url=Login/index');
+            header('Location: ' . BASE_URL . 'Login/index');
             exit();
         }
         $data['page_title'] = "Configuración del Hotel";
@@ -60,7 +60,7 @@ class ConfiguracionController extends Controller
             TipoHabitacion::create(['tipo' => $tipo, 'precio_base' => $precio]);
         }
 
-        header('Location: ' . BASE_URL . '?url=Configuracion/index&exito=1');
+        header('Location: ' . BASE_URL . 'Configuracion/index&exito=1');
     }
 
     public function obtener($params = '')

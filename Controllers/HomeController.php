@@ -8,10 +8,10 @@ class HomeController extends Controller
     public function index($params = '')
     {
         if (isset($_SESSION['usuario'])) {
-            header('Location: ' . BASE_URL . '?url=Dashboard/index');
+            header('Location: ' . BASE_URL . 'Dashboard/index');
             exit();
         } else {
-            header('Location: ' . BASE_URL . '?url=Login/index');
+            header('Location: ' . BASE_URL . 'Login/index');
             exit();
         }
     }
