@@ -1,7 +1,7 @@
 window.inicializarConfiguraciones = () => {
   const formulario = document.getElementById("formulario");
 
-  fetch(BASE_URL + "?url=Configuracion/obtener")
+  fetch(BASE_URL + "Configuracion/obtener")
     .then((res) => res.json())
     .then((hotel) => {
       document.getElementById("nombre").value    = hotel.nombre        ?? "";
@@ -40,7 +40,7 @@ window.inicializarConfiguraciones = () => {
       porcentaje_penalidad: document.getElementById("porcentaje_penalidad").value,
     };
 
-    fetch(BASE_URL + "?url=Configuracion/actualizar", {
+    fetch(BASE_URL + "Configuracion/actualizar", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(datos),
@@ -142,7 +142,7 @@ window.inicializarConfiguraciones = () => {
     body.append("tipo",        tipo);
     body.append("precio_base", precio);
 
-    const res = await fetch(BASE_URL + "?url=Configuracion/guardarTipo", { method: "POST", body });
+    const res = await fetch(BASE_URL + "Configuracion/guardarTipo", { method: "POST", body });
 
     if (res.ok) {
       modal.style.display = "none";

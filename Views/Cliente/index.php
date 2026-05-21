@@ -1,3 +1,4 @@
+<?php $clientes = $data['clientes'] ?? []; ?>
 <section class="usuarios">
   <header class="header-usuarios">
     <h2>Clientes</h2>

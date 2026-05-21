@@ -2,18 +2,10 @@
 namespace Models;
 
 use Models\Entities\Cliente;
-use Libraries\Core\Model;
-use PDO;
+use Illuminate\Database\Capsule\Manager as DB;
 
-class ClienteModel extends Model
+class ClienteModel
 {
-    protected $table = 'cliente';
-
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
     public function listar($nombre = '')
     {
         $sql = "SELECT c.id, c.nombre_completo, td.id AS id_tipo_documento, td.nombre AS tipo_documento_nombre, c.documento, c.correo_electronico, c.telefono, c.reservaciones, c.activo, c.fecha_creacion
@@ -22,20 +14,21 @@ class ClienteModel extends Model
                 WHERE 1=1";
         $params = [];
         if (!empty($nombre)) {
-            $sql .= " AND nombre_completo LIKE ?";
-            $params[] = "%$nombre%";
+            $query->where('c.nombre_completo', 'like', "%{$nombre}%");
         }
-        $sql .= " ORDER BY id ASC";
-        $stmt = $this->conectar()->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return $query->orderBy('c.id', 'asc')
+            ->get()
+            ->map(fn($item) => (array) $item)
+            ->toArray();
     }
 
     public function obtenerClientes()
     {
         return $this->listar();
     }
-// va a servir para llamr a los clientes desde la reserva, para mostrar un listado de clientes y poder seleccionar uno
+
+    // va a servir para llamar a los clientes desde la reserva, para mostrar un listado de clientes y poder seleccionar uno
     public function obtenerClientesParaReserva($textoBusqueda = '')
     {
         $textoBusqueda = trim((string) $textoBusqueda);
@@ -96,8 +89,16 @@ class ClienteModel extends Model
 
     public function eliminarCliente($id)
     {
-        $sql = "DELETE FROM cliente WHERE id = ?";
-        $stmt = $this->conectar()->prepare($sql);
-        return $stmt->execute([$id]);
+        try {
+            $cliente = Cliente::find($id);
+            if (!$cliente) {
+                return false;
+            }
+            return $cliente->delete();
+        } catch (\Throwable $e) {
+            error_log('Error al eliminar cliente: ' . $e->getMessage());
+            throw $e;
+        }
     }
 }
+

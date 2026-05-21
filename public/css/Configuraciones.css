@@ -69,6 +69,7 @@ hr {
 }
 
 /* ------ inputs ----------*/
+/* ------ inputs ----------*/
 .form-input,
 .form-select,
 .form-textarea {
@@ -80,6 +81,15 @@ hr {
   font-size: 14px;
   transition: all 0.3s ease;
   outline: none;
+  background-color: #ffffff;  /* ← agregado */
+  color: #333333;              /* ← agregado */
+  color-scheme: light;
+}
+
+.form-input::selection,
+.form-textarea::selection {
+  background-color: #c5d9b8;
+  color: #2d5f2d;
 }
 
 /* efectos */
@@ -88,6 +98,8 @@ hr {
 .form-textarea:focus {
   border-color: #8fa878;
   box-shadow: 0 0 0 2px rgba(143, 168, 120, 0.2);
+  background-color: #ffffff !important;
+  color: #333333 !important;
 }
 
 /*------ descripcion ----- */

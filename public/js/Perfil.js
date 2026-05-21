@@ -31,7 +31,7 @@ document.getElementById('btnGuardarPerfil').addEventListener('click', async () =
   const form = document.getElementById('formPerfilPersonal');
   const body = new FormData(form);
 
-  const res  = await fetch(BASE_URL + '?url=Perfil/actualizarPerfil', { method: 'POST', body });
+  const res  = await fetch(BASE_URL + 'Perfil/actualizarPerfil', { method: 'POST', body });
   const json = await res.json();
 
   mostrarAlerta(json.message, json.success);
@@ -62,7 +62,7 @@ document.getElementById('btnCambiarClave').addEventListener('click', async () =>
     const form = document.getElementById('formCambiarClave');
     const body = new FormData(form);
 
-    const res  = await fetch(BASE_URL + '?url=Perfil/cambiarClave', { method: 'POST', body });
+    const res  = await fetch(BASE_URL + 'Perfil/cambiarClave', { method: 'POST', body });
     const json = await res.json();
 
     mostrarAlerta(json.message, json.success);

@@ -11,7 +11,7 @@ class ReservaController extends Controller
     public function index($params = '')
     {
         if (!isset($_SESSION['usuario'])) {
-            header('Location: ' . BASE_URL . '?url=Login/index');
+            header('Location: ' . BASE_URL . 'Login/index');
             exit();
         }
         $data['page_title'] = "Gestión de Reservas";
@@ -30,7 +30,8 @@ class ReservaController extends Controller
     {
         header('Content-Type: application/json');
         $datos     = json_decode(file_get_contents('php://input'), true);
-        $resultado = $this->model->registrarReserva($datos, $_SESSION['id_usuario'] ?? null);
+        $modeloReserva = new ReservaNuevaModel();
+        $resultado = $modeloReserva->registrarReserva($datos, $_SESSION['id_usuario'] ?? null);
         echo json_encode($resultado);
     }
 
@@ -46,7 +47,8 @@ class ReservaController extends Controller
     {
         header('Content-Type: application/json');
         $datos     = json_decode(file_get_contents('php://input'), true);
-        $resultado = $this->model->registrarPago(
+        $modeloPago = new PagoModel();
+        $resultado = $modeloPago->registrarPago(
             (int) ($datos['id_reserva']    ?? 0),
             (float) ($datos['monto']       ?? 0),
             (int) ($datos['id_metodo_pago'] ?? 0),
@@ -109,15 +111,16 @@ class ReservaController extends Controller
     public function notificaciones($params = '')
     {
         header('Content-Type: application/json');
-        echo json_encode($this->model->obtenerNotificacionesCheckout());
+        $notificacionModel = new NotificacionModel();
+        echo json_encode($notificacionModel->obtenerNotificacionesCheckout());
     }
 
     public function calcularTotal($params = '')
     {
         header('Content-Type: application/json');
         $datos     = json_decode(file_get_contents('php://input'), true);
-        $habitacionModel = new HabitacionModel();
-        $resultado = $habitacionModel->calcularTotalReserva(
+        $reporteOcupacionModel = new ReporteOcupacionModel();
+        $resultado = $reporteOcupacionModel->calcularTotalReserva(
             (int) ($datos['id_habitacion'] ?? 0),
             $datos['check_in']  ?? '',
             $datos['check_out'] ?? ''

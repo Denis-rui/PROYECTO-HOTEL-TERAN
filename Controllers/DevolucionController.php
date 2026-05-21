@@ -8,7 +8,7 @@ class DevolucionController extends Controller
     public function index($params = '')
     {
         if (!isset($_SESSION['usuario'])) {
-            header('Location: ' . BASE_URL . '?url=Login/index');
+            header('Location: ' . BASE_URL . 'Login/index');
             exit();
         }
 
