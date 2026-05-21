@@ -8,8 +8,8 @@ class Reserva extends Eloquent
     protected $table = 'reserva';
     public $timestamps = false;
     protected $fillable = [
-        'id_cliente', 'check_in', 'check_out', 'total', 'estado',
-        'codigo_reserva', 'id_usuario', 'observaciones', 'check_in_real', 'check_out_real',
+        'id_cliente' , 'total', 'estado',
+        'codigo_reserva', 'id_usuario', 'observaciones',
         'minutos_demora_checkout', 'cargo_checkout_tarde'
     ];
 
