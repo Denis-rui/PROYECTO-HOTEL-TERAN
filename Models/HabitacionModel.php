@@ -1,8 +1,6 @@
 <?php
 namespace Models;
-
-use PDO;
-
+ 
 // Importamos la clase base de modelos y manejador de BD de Laravel
 use Illuminate\Database\Eloquent\Model as Eloquent;
 use Illuminate\Database\Capsule\Manager as DB;
