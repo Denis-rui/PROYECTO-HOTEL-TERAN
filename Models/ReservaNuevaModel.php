@@ -2,7 +2,6 @@
 namespace Models;
 
 use Illuminate\Database\Capsule\Manager as DB;
-use Libraries\Core\Model;
 use Models\ComprobanteModel;
 use Models\HabitacionModel;
 use Models\Entities\Pago;
@@ -10,7 +9,7 @@ use Models\Entities\Reserva;
 use Models\Entities\ReservaHabitacion;
 use Models\ReporteOcupacionModel;
 
-class ReservaNuevaModel extends Model
+class ReservaNuevaModel
 {
     private function obtenerDiasEstadia($checkIn, $checkOut)
     {

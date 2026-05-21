@@ -2,11 +2,10 @@
 namespace Models;
 
 use Illuminate\Database\Capsule\Manager as DB;
-use Libraries\Core\Model;
 use Models\ComprobanteModel;
 use Models\Entities\Pago;
 
-class PagoModel extends Model
+class PagoModel
 {
     public function registrarPago($idReserva, $monto, $idMetodoPago, $descripcion = '', $fechaPago = null, $idUsuario = null)
     {

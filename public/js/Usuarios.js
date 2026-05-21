@@ -114,6 +114,7 @@ window.actualizarUsuarioExistente = (datosUsuario) => {
     telefono: datosUsuario.telefono,
     dni: datosUsuario.dni,
     fecha_nacimiento: datosUsuario.fecha_nacimiento,
+    contrasenia: datosUsuario.password,
     rol: datosUsuario.rol,
   };
 

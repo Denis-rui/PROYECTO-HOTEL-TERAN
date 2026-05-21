@@ -6,6 +6,17 @@ use Models\Entities\Usuario;
 
 class UsuarioModel
 {
+    private function normalizarContrasenia(?string $contrasenia): ?string
+    {
+        $contrasenia = trim((string) $contrasenia);
+
+        if ($contrasenia === '') {
+            return null;
+        }
+
+        return md5($contrasenia);
+    }
+
     private function validarMayorEdad(?string $fechaNacimiento): void
     {
         if (empty($fechaNacimiento)) {
@@ -156,7 +167,7 @@ class UsuarioModel
             'telefono'         => $datos['telefono']         ?? '',
             'dni'              => $datos['dni']              ?? '',
             'fecha_nacimiento' => $datos['fecha_nacimiento'] ?? null,
-            'contrasenia'      => password_hash($datos['contrasenia'] ?? '', PASSWORD_DEFAULT),
+            'contrasenia'      => $this->normalizarContrasenia($datos['contrasenia'] ?? '') ?? md5(''),
             'estado'           => 1,
             'id_rol'           => $rolId,
         ];
@@ -186,9 +197,10 @@ class UsuarioModel
         }
 
 
-        // Para cambio de contraseña
-        if (!empty($datos['contrasenia'])) {
-            $user->contrasenia = $datos['contrasenia'];
+        $nuevaContrasenia = $this->normalizarContrasenia($datos['contrasenia'] ?? $datos['password'] ?? null);
+
+        if ($nuevaContrasenia !== null) {
+            $user->contrasenia = $nuevaContrasenia;
         }
 
         return $user->save();
@@ -224,6 +236,12 @@ class UsuarioModel
         $user->fecha_nacimiento = $fechaNacimiento;
 
         $user->id_rol          = $rolId;
+
+        $nuevaContrasenia = $this->normalizarContrasenia($datos['contrasenia'] ?? $datos['password'] ?? null);
+
+        if ($nuevaContrasenia !== null) {
+            $user->contrasenia = $nuevaContrasenia;
+        }
 
         return $user->save();
     }

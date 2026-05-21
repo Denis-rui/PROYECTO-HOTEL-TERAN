@@ -84,14 +84,23 @@ class PerfilController extends Controller
 
         $userRaw = $this->usuarioModel->obtenerUsuarios($_SESSION['usuario']);
 
-        if (!$userRaw || md5($claveActual) !== $userRaw['contrasenia']) {
+        $contraseniaGuardada = $userRaw['contrasenia'] ?? '';
+        $claveActualValida =
+            is_string($contraseniaGuardada)
+            && (
+                password_verify($claveActual, $contraseniaGuardada)
+                || hash_equals($contraseniaGuardada, md5($claveActual))
+                || hash_equals($contraseniaGuardada, $claveActual)
+            );
+
+        if (!$userRaw || !$claveActualValida) {
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'message' => 'La contraseña actual es incorrecta']);
             exit();
         }
 
         $ok = $this->usuarioModel->updateByNombreUsuario($_SESSION['usuario'], [
-            'contrasenia' => md5($claveNueva),
+            'contrasenia' => $claveNueva,
         ]);
 
         header('Content-Type: application/json');

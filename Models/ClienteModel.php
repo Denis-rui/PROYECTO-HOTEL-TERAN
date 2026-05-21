@@ -2,40 +2,44 @@
 namespace Models;
 
 use Models\Entities\Cliente;
-use Libraries\Core\Model;
-use PDO;
+use Illuminate\Database\Capsule\Manager as DB;
 
-class ClienteModel extends Model
+class ClienteModel
 {
-    protected $table = 'cliente';
-
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
     public function listar($nombre = '')
     {
-        $sql = "SELECT c.id, c.nombre_completo, td.nombre AS id_tipo_documento, c.documento, c.correo_electronico, c.telefono, c.procedencia, c.reservaciones, c.activo, c.observaciones, c.fecha_creacion
-                FROM cliente c
-                INNER JOIN tipo_documento td ON c.id_tipo_documento = td.id
-                WHERE 1=1";
-        $params = [];
+        $query = DB::table('cliente as c')
+            ->join('tipo_documento as td', 'c.id_tipo_documento', '=', 'td.id')
+            ->select([
+                'c.id',
+                'c.nombre_completo',
+                'td.nombre as id_tipo_documento',
+                'c.documento',
+                'c.correo_electronico',
+                'c.telefono',
+                'c.procedencia',
+                'c.reservaciones',
+                'c.activo',
+                'c.observaciones',
+                'c.fecha_creacion'
+            ]);
+
         if (!empty($nombre)) {
-            $sql .= " AND nombre_completo LIKE ?";
-            $params[] = "%$nombre%";
+            $query->where('c.nombre_completo', 'like', "%{$nombre}%");
         }
-        $sql .= " ORDER BY id ASC";
-        $stmt = $this->conectar()->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return $query->orderBy('c.id', 'asc')
+            ->get()
+            ->map(fn($item) => (array) $item)
+            ->toArray();
     }
 
     public function obtenerClientes()
     {
         return $this->listar();
     }
-// va a servir para llamr a los clientes desde la reserva, para mostrar un listado de clientes y poder seleccionar uno
+
+    // va a servir para llamar a los clientes desde la reserva, para mostrar un listado de clientes y poder seleccionar uno
     public function obtenerClientesParaReserva($textoBusqueda = '')
     {
         $textoBusqueda = trim((string) $textoBusqueda);
@@ -58,52 +62,62 @@ class ClienteModel extends Model
 
     public function crearCliente($data)
     {
-        $sql = "INSERT INTO cliente
-                (nombre_completo, id_tipo_documento, documento, correo_electronico, telefono, procedencia, reservaciones, metodoPago, observaciones, preferencias, fecha_creacion)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
-        $stmt = $this->conectar()->prepare($sql);
-        return $stmt->execute([
-            $data['nombre_completo'] ?? $data['nombre'] ?? '',
-            $data['id_tipo_documento'] ?? '',
-            $data['documento'] ?? '',
-            $data['correo_electronico'] ?? $data['gmail'] ?? '',
-            $data['telefono'] ?? '',
-            $data['procedencia'] ?? $data['nacionalidad'] ?? '',
-            $data['reservaciones'] ?? 0,
-            $data['observaciones'] ?? null
-        ]);
+        try {
+            $cliente = Cliente::create([
+                'nombre_completo'    => $data['nombre_completo']    ?? $data['nombre'] ?? '',
+                'id_tipo_documento'  => !empty($data['id_tipo_documento']) ? (int) $data['id_tipo_documento'] : null,
+                'documento'          => $data['documento']          ?? '',
+                'correo_electronico' => $data['correo_electronico'] ?? $data['gmail'] ?? '',
+                'telefono'           => $data['telefono']           ?? '',
+                'procedencia'        => $data['procedencia']        ?? $data['nacionalidad'] ?? '',
+                'reservaciones'      => (int) ($data['reservaciones'] ?? 0),
+                'activo'             => 1,
+                'observaciones'      => $data['observaciones']      ?? null,
+                'fecha_creacion'     => date('Y-m-d H:i:s')
+            ]);
+            return $cliente !== null;
+        } catch (\Throwable $e) {
+            error_log('Error al crear cliente: ' . $e->getMessage());
+            throw $e;
+        }
     }
 
     public function actualizarCliente($data)
     {
-        $sql = "UPDATE cliente SET
-                nombre_completo = ?, 
-                id_tipo_documento = ?,
-                documento = ?, 
-                correo_electronico = ?, 
-                telefono = ?, 
-                procedencia = ?, 
-                reservaciones = ?,
-                observaciones = ?,
-                WHERE id = ?";
-        $stmt = $this->conectar()->prepare($sql);
-        return $stmt->execute([
-            $data['nombre_completo'] ?? $data['nombre'] ?? '',
-            $data['id_tipo_documento'] ?? '',
-            $data['documento'] ?? '',
-            $data['correo_electronico'] ?? $data['gmail'] ?? '',
-            $data['telefono'] ?? '',
-            $data['procedencia'] ?? $data['nacionalidad'] ?? '',
-            $data['reservaciones'] ?? 0,
-            $data['observaciones'] ?? null,
-            $data['id']
-        ]);
+        try {
+            $cliente = Cliente::find($data['id']);
+            if (!$cliente) {
+                return false;
+            }
+
+            return $cliente->update([
+                'nombre_completo'    => $data['nombre_completo']    ?? $data['nombre'] ?? $cliente->nombre_completo,
+                'id_tipo_documento'  => !empty($data['id_tipo_documento']) ? (int) $data['id_tipo_documento'] : $cliente->id_tipo_documento,
+                'documento'          => $data['documento']          ?? $cliente->documento,
+                'correo_electronico' => $data['correo_electronico'] ?? $data['gmail'] ?? $cliente->correo_electronico,
+                'telefono'           => $data['telefono']           ?? $cliente->telefono,
+                'procedencia'        => $data['procedencia']        ?? $data['nacionalidad'] ?? $cliente->procedencia,
+                'reservaciones'      => (int) ($data['reservaciones'] ?? $cliente->reservaciones),
+                'observaciones'      => $data['observaciones']      ?? $cliente->observaciones,
+            ]);
+        } catch (\Throwable $e) {
+            error_log('Error al actualizar cliente: ' . $e->getMessage());
+            throw $e;
+        }
     }
 
     public function eliminarCliente($id)
     {
-        $sql = "DELETE FROM cliente WHERE id = ?";
-        $stmt = $this->conectar()->prepare($sql);
-        return $stmt->execute([$id]);
+        try {
+            $cliente = Cliente::find($id);
+            if (!$cliente) {
+                return false;
+            }
+            return $cliente->delete();
+        } catch (\Throwable $e) {
+            error_log('Error al eliminar cliente: ' . $e->getMessage());
+            throw $e;
+        }
     }
 }
+

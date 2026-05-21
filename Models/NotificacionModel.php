@@ -2,10 +2,9 @@
 namespace Models;
 
 use Illuminate\Database\Capsule\Manager as DB;
-use Libraries\Core\Model;
 use Models\Entities\Notificacion;
 
-class NotificacionModel extends Model
+class NotificacionModel
 {
     public function crear($tipo, $titulo, $mensaje, $idReserva = null, $idHabitacion = null, $idCliente = null, $prioridad = 'media')
     {

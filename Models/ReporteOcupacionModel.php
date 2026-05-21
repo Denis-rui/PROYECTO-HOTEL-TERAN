@@ -2,9 +2,8 @@
 namespace Models;
 
 use Illuminate\Database\Capsule\Manager as DB;
-use Libraries\Core\Model;
 
-class ReporteOcupacionModel extends Model
+class ReporteOcupacionModel
 {
     private function normalizarFecha($fecha)
     {
