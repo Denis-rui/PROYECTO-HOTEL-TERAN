@@ -1,7 +1,6 @@
 <?php
 namespace Models;
 use Illuminate\Database\Capsule\Manager as DB;
-use Libraries\Core\Model;
 use Models\Entities\Devolucion;
 use Models\Entities\Habitacion;
 use Models\Entities\Hotel;
@@ -14,15 +13,11 @@ use Models\ReporteOcupacionModel;
 use Models\ReservaNuevaModel;
 use PDO;
 
-class ReservaModel extends Model
+class ReservaModel
 {
     protected $table = 'reserva';
     private const ESTADOS_ACTIVOS = ['pendiente', 'confirmada', 'checkin_realizado', 'en_estadia', 'checkout_pendiente'];
 
-    public function __construct()
-    {
-        parent::__construct();
-    }
 
     private function obtenerDiasEstadia($checkIn, $checkOut)
     {

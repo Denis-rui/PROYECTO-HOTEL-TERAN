@@ -1,17 +1,12 @@
 <?php
 namespace Models;
 
-use Libraries\Core\Model;
 use Models\Entities\Devolucion;
 
-class DevolucionModel extends Model
+class DevolucionModel
 {
     protected $table = 'devolucion';
 
-    public function __construct()
-    {
-        parent::__construct();
-    }
 
     public function listar($busqueda = '')
     {

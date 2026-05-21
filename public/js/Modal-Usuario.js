@@ -132,6 +132,14 @@ const validarFormularioUsuario = (datosUsuario) => {
     return "Contrasena invalida. Minimo 5 caracteres.";
   }
 
+  if (
+    modoFormularioUsuario === "editar" &&
+    datosUsuario.password &&
+    !reglas.password.test(datosUsuario.password)
+  ) {
+    return "Contrasena invalida. Minimo 5 caracteres.";
+  }
+
   return "";
 };
 
