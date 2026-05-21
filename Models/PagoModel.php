@@ -37,6 +37,7 @@ class PagoModel
                 'descripcion' => $descripcion,
                 'fecha_pago' => $fecha,
                 'id_metodo_pago' => (int) $idMetodoPago,
+                'id_usuario' => $idUsuario ?? ($_SESSION['id_usuario'] ?? null),
             ]);
 
             if (!$pago) {
@@ -48,7 +49,7 @@ class PagoModel
                 $pago,
                 $reserva,
                 $habitaciones,
-                (int) ($idUsuario ?? $reserva['id_usuario'] ?? 1)
+                $idUsuario ?? ($reserva['id_usuario'] ?? ($_SESSION['id_usuario'] ?? null))
             );
 
             if (!$comprobante) {

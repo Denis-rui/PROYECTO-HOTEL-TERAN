@@ -156,7 +156,7 @@ class ReservaNuevaModel
                 'total'          => $totalCalculado,
                 'estado'         => $reserva['estado'] ?? 'confirmada',
                 'codigo_reserva' => $reserva['codigoReserva'] ?? $this->generarCodigoReserva(),
-                'id_usuario'     => $reserva['usuario'] ?? 1,
+                'id_usuario'     => $idUsuario ?? ($reserva['usuario'] ?? ($_SESSION['id_usuario'] ?? null)),
                 'observaciones'  => $reserva['observaciones'] ?? null,
             ]);
 
@@ -197,6 +197,7 @@ class ReservaNuevaModel
                     'descripcion' => $pagoInicial['descripcion'] ?? 'Pago inicial',
                     'fecha_pago' => $pagoInicial['fecha_pago'] ?? date('Y-m-d H:i:s'),
                     'id_metodo_pago' => (int) ($pagoInicial['id_metodo_pago'] ?? 0),
+                    'id_usuario' => $idUsuario ?? ($_SESSION['id_usuario'] ?? null),
                 ]);
 
                 if (!$pago) {
@@ -207,7 +208,7 @@ class ReservaNuevaModel
                     $pago,
                     ['total' => $totalCalculado],
                     $habitacionesNormalizadas,
-                    (int) ($idUsuario ?? $reservaCreada->id_usuario ?? 1)
+                    $idUsuario ?? ($reservaCreada->id_usuario ?? ($_SESSION['id_usuario'] ?? null))
                 );
 
                 if (!$comprobante) {
