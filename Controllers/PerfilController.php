@@ -17,14 +17,14 @@ class PerfilController extends Controller
     public function index($params = '')
     {
         if(!isset($_SESSION['usuario'])){
-            header('Location: ' . BASE_URL . '?url=Login/index');
+            header('Location: ' . BASE_URL . 'Login/index');
             exit();
         }
 
         $perfil = $this->usuarioModel->read($_SESSION['usuario']);
 
         if (!$perfil){
-            header('Location: ' . BASE_URL . '?url=Login/index');
+            header('Location: ' . BASE_URL . 'Login/index');
             exit();
         }
 

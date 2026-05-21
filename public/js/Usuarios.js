@@ -13,7 +13,7 @@ const obtenerDatosUsuarioDesdeBoton = (boton) => ({
 const eliminarUsuarioPorId = (idUsuario) => {
   if (!confirm("¿Estás seguro de eliminar este usuario?")) return;
 
-  fetch(BASE_URL + "?url=Usuario/eliminar", {
+  fetch(BASE_URL + "Usuario/eliminar", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ accion: "eliminar", id: idUsuario }),
@@ -79,7 +79,7 @@ window.registrarUsuarioNuevo = (datosUsuario) => {
     rol: datosUsuario.rol,
   };
 
-  return fetch(BASE_URL + "?url=Usuario/crear", {
+  return fetch(BASE_URL + "Usuario/crear", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(datos),
@@ -118,7 +118,7 @@ window.actualizarUsuarioExistente = (datosUsuario) => {
     rol: datosUsuario.rol,
   };
 
-  return fetch(BASE_URL + "?url=Usuario/actualizarAdmin", {
+  return fetch(BASE_URL + "Usuario/actualizarAdmin", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(datos),

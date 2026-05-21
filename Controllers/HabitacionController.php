@@ -8,7 +8,7 @@ class HabitacionController extends Controller
     public function index($params = '')
     {
         if (!isset($_SESSION['usuario'])) {
-            header('Location: ' . BASE_URL . '?url=Login/index');
+            header('Location: ' . BASE_URL . 'Login/index');
             exit();
         }
 
@@ -54,7 +54,7 @@ class HabitacionController extends Controller
                 header('Content-Type: application/json');
                 echo json_encode(['exito' => $ok]);
             } else {
-                header('Location: ' . BASE_URL . '?url=Habitacion/index');
+                header('Location: ' . BASE_URL . 'Habitacion/index');
             }
         }
     }
