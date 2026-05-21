@@ -65,6 +65,7 @@ class ConfiguracionController extends Controller
 
     public function obtener($params = '')
     {
+        ob_clean();
         header('Content-Type: application/json');
         echo json_encode($this->model->find());
         exit();
