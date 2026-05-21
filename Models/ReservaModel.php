@@ -547,7 +547,7 @@ class ReservaModel
                     'monto_penalidad' => (float) $penalidad,
                     'monto_devuelto' => (float) $reembolso,
                     'id_reserva' => (int) $idReserva,
-                    'id_usuario' => $idUsuario ? (int) $idUsuario : null,
+                    'id_usuario' => $idUsuario ? (int) $idUsuario : ($_SESSION['id_usuario'] ?? null),
                     'descripcion' => $motivo,
                 ]);
             } catch (\Throwable $e) {
@@ -706,7 +706,14 @@ class ReservaModel
             $habitacionModel = new HabitacionModel();
             $nuevoTotal = $reporteOcupacionModel->calcularTotalReserva($idHabitacionPrincipal, $checkIn, $nuevoCheckOut);
 
-            $reservaActual->check_out = $nuevoCheckOut;
+            $reservaHabitacion = $reservaActual->reservaHabitacion->first();
+            if (!$reservaHabitacion) {
+                return ['exito' => false, 'mensaje' => 'No se encontró la habitación asociada a la reserva.'];
+            }
+
+            $reservaHabitacion->check_out = $nuevoCheckOut;
+            $reservaHabitacion->save();
+
             $reservaActual->total = $nuevoTotal;
             $reservaActual->estado = 'en_estadia';
             $ok = $reservaActual->save();
