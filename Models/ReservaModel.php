@@ -11,7 +11,6 @@ use Models\PagoModel;
 use Models\NotificacionModel;
 use Models\ReporteOcupacionModel;
 use Models\ReservaNuevaModel;
-use PDO;
 
 class ReservaModel
 {
