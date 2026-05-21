@@ -5,7 +5,7 @@ use Models\Entities\Hotel;
 
 class HotelModel
 {
-    public function find($id){
+    public function find($id=1){
         $hotel = Hotel::find($id);
         return $hotel ? $hotel->toArray() : [];
     }
