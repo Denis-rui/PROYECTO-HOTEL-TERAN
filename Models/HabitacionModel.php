@@ -1,7 +1,6 @@
 <?php
 namespace Models;
 
-use Libraries\Core\Model;
 use PDO;
 
 // Importamos la clase base de modelos y manejador de BD de Laravel
