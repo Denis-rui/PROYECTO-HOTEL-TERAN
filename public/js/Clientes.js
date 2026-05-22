@@ -14,15 +14,23 @@ const configurarEventosClientes = () => {
   }
 
   if (inputBuscar) {
-    let temporizadorBusqueda = null;
-    inputBuscar.addEventListener("keyup", () => {
-      const form = inputBuscar.closest("form");
-      if (!form) return;
-      if (temporizadorBusqueda) clearTimeout(temporizadorBusqueda);
+    const form = inputBuscar.closest("form");
+    if (form) {
+      form.addEventListener("submit", (e) => e.preventDefault());
+    }
 
-      temporizadorBusqueda = setTimeout(() => {
-        form.submit();
-      }, 400);
+    inputBuscar.addEventListener("input", () => {
+      const texto = inputBuscar.value.trim().toLowerCase();
+      const filas = cuerpoTabla
+        ? cuerpoTabla.querySelectorAll("tr")
+        : [];
+
+      filas.forEach((fila) => {
+        const nombre = fila.cells[1]?.innerText.trim().toLowerCase() || "";
+        const documento = fila.cells[3]?.innerText.trim().toLowerCase() || "";
+        const coincide = nombre.includes(texto) || documento.includes(texto);
+        fila.style.display = coincide ? "" : "none";
+      });
     });
   }
 
