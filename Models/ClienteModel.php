@@ -2,26 +2,39 @@
 namespace Models;
 
 use Models\Entities\Cliente;
+use Illuminate\Database\Eloquent\Model as Eloquent;
 use Illuminate\Database\Capsule\Manager as DB;
 
 class ClienteModel
 {
     public function listar($nombre = '')
     {
-        $sql = "SELECT c.id, c.nombre_completo, td.id AS id_tipo_documento, td.nombre AS tipo_documento_nombre, c.documento, c.correo_electronico, c.telefono, c.procedencia, c.observaciones, c.reservaciones, c.activo, c.fecha_creacion
-                FROM cliente c
-                INNER JOIN tipo_documento td ON c.id_tipo_documento = td.id
-                WHERE c.activo = 1";
-        $params = [];
+        $query = DB::table('cliente as c')
+            ->join('tipo_documento as td', 'c.id_tipo_documento', '=', 'td.id')
+            ->select(
+                'c.id',
+                'c.nombre_completo',
+                'td.id as id_tipo_documento',
+                'td.nombre as tipo_documento_nombre',
+                'c.documento',
+                'c.correo_electronico',
+                'c.telefono',
+                'c.procedencia',
+                'c.observaciones',
+                'c.reservaciones',
+                'c.activo',
+                'c.fecha_creacion'
+            )
+            ->where('c.activo', 1);
+
         if (!empty($nombre)) {
-            $sql .= " AND nombre_completo LIKE ?";
-            $params[] = "%$nombre%";
+            $query->where(function($q) use ($nombre) {
+                $q->where('c.nombre_completo', 'LIKE', "%$nombre%")
+                  ->orWhere('c.documento', 'LIKE', "%$nombre%");
+            });
         }
 
-        return $query->orderBy('c.id', 'asc')
-            ->get()
-            ->map(fn($item) => (array) $item)
-            ->toArray();
+        return $query->orderBy('c.id', 'ASC')->get()->toArray();
     }
 
     public function obtenerClientes()
@@ -52,51 +65,50 @@ class ClienteModel
 
     public function crearCliente($data)
     {
-        $sql = "INSERT INTO cliente
-            (nombre_completo, id_tipo_documento, documento, correo_electronico, procedencia, telefono, observaciones, reservaciones, activo, fecha_creacion)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())";
-        $stmt = $this->conectar()->prepare($sql);
-        return $stmt->execute([
-            $data['nombre_completo'] ?? $data['nombre'] ?? '',
-            $data['id_tipo_documento'] ?? '',
-            $data['documento'] ?? '',
-            $data['correo_electronico'] ?? $data['gmail'] ?? '',
-            $data['procedencia'] ?? '',
-            $data['telefono'] ?? '',
-            $data['observaciones'] ?? '',
-            0
-        ]);
+        try {
+            return Cliente::create([
+                'nombre_completo' => $data['nombre_completo'] ?? $data['nombre'] ?? '',
+                'id_tipo_documento' => $data['id_tipo_documento'] ?? '',
+                'documento' => $data['documento'] ?? '',
+                'correo_electronico' => $data['correo_electronico'] ?? $data['gmail'] ?? '',
+                'procedencia' => $data['procedencia'] ?? '',
+                'telefono' => $data['telefono'] ?? '',
+                'observaciones' => $data['observaciones'] ?? '',
+                'reservaciones' => 0,
+                'activo' => 1
+            ]);
+        } catch (\Exception $e) {
+            throw new \Exception('Error al crear cliente: ' . $e->getMessage());
+        }
     }
 
     public function actualizarCliente($data)
     {
-        $sql = "UPDATE cliente SET
-                nombre_completo = ?, 
-                id_tipo_documento = ?,
-                documento = ?, 
-                correo_electronico = ?,
-                procedencia = ?,
-                telefono = ?, 
-                observaciones = ?
-                WHERE id = ?";
-        $stmt = $this->conectar()->prepare($sql);
-        return $stmt->execute([
-            $data['nombre_completo'] ?? $data['nombre'] ?? '',
-            $data['id_tipo_documento'] ?? '',
-            $data['documento'] ?? '',
-            $data['correo_electronico'] ?? $data['gmail'] ?? '',
-            $data['procedencia'] ?? '',
-            $data['telefono'] ?? '',
-            $data['observaciones'] ?? '',
-            $data['id']
-        ]);
+        try {
+            $cliente = Cliente::findOrFail($data['id']);
+            $cliente->update([
+                'nombre_completo' => $data['nombre_completo'] ?? $data['nombre'] ?? '',
+                'id_tipo_documento' => $data['id_tipo_documento'] ?? '',
+                'documento' => $data['documento'] ?? '',
+                'correo_electronico' => $data['correo_electronico'] ?? $data['gmail'] ?? '',
+                'procedencia' => $data['procedencia'] ?? '',
+                'telefono' => $data['telefono'] ?? '',
+                'observaciones' => $data['observaciones'] ?? ''
+            ]);
+            return true;
+        } catch (\Exception $e) {
+            throw new \Exception('Error al actualizar cliente: ' . $e->getMessage());
+        }
     }
 
     public function eliminarCliente($id)
     {
-        $sql = "DELETE FROM cliente WHERE id = ?";
-        $stmt = $this->conectar()->prepare($sql);
-        return $stmt->execute([$id]);
+        try {
+            $cliente = Cliente::findOrFail($id);
+            $cliente->update(['activo' => 0]);
+            return true;
+        } catch (\Exception $e) {
+            throw new \Exception('Error al inhabilitar cliente: ' . $e->getMessage());
+        }
     }
 }
-
