@@ -4,10 +4,7 @@ namespace Controllers;
 use Libraries\Core\Controller;
 use Models\DashboardModel;
 use Models\HabitacionModel;
-use Models\PagoModel;
-use Models\NotificacionModel;
-use Models\ReservaNuevaModel;
-use Models\ReporteOcupacionModel;
+use Models\ClienteModel;
 
 class ReservaController extends Controller
 {

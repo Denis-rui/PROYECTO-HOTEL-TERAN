@@ -1,17 +1,5 @@
 let modoFormularioCliente = "nuevo";
 
-const obtenerContenedorModalCliente = () => {
-  let contenedor = document.getElementById("contenedor-modal-cliente");
-
-  if (!contenedor) {
-    contenedor = document.createElement("div");
-    contenedor.id = "contenedor-modal-cliente";
-    document.body.appendChild(contenedor);
-  }
-
-  return contenedor;
-};
-
 const mostrarMensajeModalCliente = (mensaje, tipo = "error") => {
   const elemento = document.getElementById("error-exito-modal-cliente");
   if (!elemento) return;
@@ -28,39 +16,59 @@ const limpiarMensajeModalCliente = () => {
 
 const obtenerDatosFormularioCliente = () => ({
   id: document.getElementById("id-cliente").value.trim(),
+  id_tipo_documento: parseInt(document.getElementById("tipo-documento-cliente").value, 10) || "",
   nombre: document.getElementById("nombre-cliente").value.trim(),
   documento: document.getElementById("dni-cliente").value.trim(),
   gmail: document.getElementById("gmail-cliente").value.trim(),
   telefono: document.getElementById("telefono-cliente").value.trim(),
-  nacionalidad: document.getElementById("nacionalidad-cliente").value.trim(),
-  reservaciones: Number(document.getElementById("reservaciones-cliente").value),
-  metodoPago: document.getElementById("metodo-pago-cliente").value,
-  preferencias: document.getElementById("preferencias-cliente").value.trim(),
+  procedencia: document.getElementById("procedencia-cliente").value.trim(),
   observaciones: document.getElementById("observaciones-cliente").value.trim(),
+  reservaciones: 0
 });
 
 const validarFormularioCliente = (datos) => {
-  const reglas = {
-    nombre: /^[a-zA-ZÀ-ÿ\s]{3,}$/,
-    documento: /^\d{8}$/,
-    gmail: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-    telefono: /^\d{9}$/,
-  };
-
-  if (!reglas.nombre.test(datos.nombre)) {
-    return "Nombre inválido";
+  if (!datos.nombre || datos.nombre.length < 3) {
+    return "El nombre es obligatorio y debe tener al menos 3 caracteres";
   }
 
-  if (!reglas.documento.test(datos.documento)) {
-    return "DNI inválido (8 dígitos)";
+  if (/\d/.test(datos.nombre)) {
+    return "El nombre no puede contener numeros";
   }
 
-  if (datos.gmail && !reglas.gmail.test(datos.gmail)) {
-    return "Correo inválido";
+  if (!datos.id_tipo_documento) {
+    return "Seleccione un tipo de documento valido";
   }
 
-  if (!reglas.telefono.test(datos.telefono)) {
-    return "Teléfono inválido (9 dígitos)";
+  if (!datos.documento || datos.documento.length === 0) {
+    return "El documento es obligatorio";
+  }
+
+  if (!/^\d+$/.test(datos.documento)) {
+    return "El documento solo puede contener numeros";
+  }
+
+  if (!datos.gmail || datos.gmail.length === 0) {
+    return "El correo electronico es obligatorio";
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datos.gmail)) {
+    return "Correo electronico no valido";
+  }
+
+  if (!datos.telefono || datos.telefono.length === 0) {
+    return "El telefono es obligatorio";
+  }
+
+  if (!/^\d+$/.test(datos.telefono)) {
+    return "El telefono solo puede contener numeros";
+  }
+
+  if (datos.telefono.length < 7 || datos.telefono.length > 15) {
+    return "El telefono debe tener entre 7 y 15 digitos";
+  }
+
+  if (!datos.procedencia || datos.procedencia.length === 0) {
+    return "La procedencia es obligatoria";
   }
 
   return "";
@@ -68,30 +76,30 @@ const validarFormularioCliente = (datos) => {
 
 const completarFormularioCliente = (datos = null) => {
   const titulo = document.getElementById("titulo-modal-cliente");
+  const formElement = document.getElementById("form-nuevo-editar-cliente");
   if (!titulo) return;
 
   if (modoFormularioCliente === "editar" && datos) {
     titulo.textContent = "Editar Cliente";
 
     document.getElementById("id-cliente").value = datos.id;
-    document.getElementById("nombre-cliente").value = datos.nombre;
-    document.getElementById("dni-cliente").value = datos.documento;
+    document.getElementById("tipo-documento-cliente").value = datos.id_tipo_documento || "";
+    document.getElementById("nombre-cliente").value = datos.nombre || "";
+    document.getElementById("dni-cliente").value = datos.documento || "";
     document.getElementById("gmail-cliente").value = datos.gmail || "";
     document.getElementById("telefono-cliente").value = datos.telefono || "";
-    document.getElementById("nacionalidad-cliente").value =
-      datos.nacionalidad || "";
-    document.getElementById("reservaciones-cliente").value =
-      datos.reservaciones || 0;
-    document.getElementById("metodo-pago-cliente").value = datos.metodoPago;
-    document.getElementById("preferencias-cliente").value =
-      datos.preferencias || "";
-    document.getElementById("observaciones-cliente").value =
-      datos.observaciones || "";
-
+    document.getElementById("procedencia-cliente").value = datos.procedencia || "";
+    document.getElementById("reservaciones-cliente").value = datos.reservaciones || "0";
+    document.getElementById("observaciones-cliente").value = datos.observaciones || "";
     return;
   }
 
   titulo.textContent = "Nuevo Cliente";
+  if (formElement) {
+    formElement.reset();
+    document.getElementById("reservaciones-cliente").value = "0";
+    document.getElementById("id-cliente").value = "";
+  }
 };
 
 const manejarEnvioFormularioCliente = async (e) => {
@@ -107,57 +115,15 @@ const manejarEnvioFormularioCliente = async (e) => {
   }
 
   try {
-    const ensureClientesJsLoaded = () => new Promise((resolve, reject) => {
-      if (typeof window.registrarClienteNuevo === 'function' && typeof window.actualizarClienteExistente === 'function') {
-        return resolve();
-      }
-
-      const scriptId = 'dynamic-clientes-js';
-      if (document.getElementById(scriptId)) {
-        // already loading; wait a bit for it to be available
-        const checkInterval = setInterval(() => {
-          if (typeof window.registrarClienteNuevo === 'function' && typeof window.actualizarClienteExistente === 'function') {
-            clearInterval(checkInterval);
-            resolve();
-          }
-        }, 200);
-        // timeout
-        setTimeout(() => {
-          clearInterval(checkInterval);
-          if (typeof window.registrarClienteNuevo === 'function' && typeof window.actualizarClienteExistente === 'function') {
-            resolve();
-          } else {
-            reject(new Error('No se pudo cargar Clientes.js'));
-          }
-        }, 5000);
-        return;
-      }
-
-      const script = document.createElement('script');
-      script.id = scriptId;
-      script.src = BASE_URL + 'public/js/Clientes.js';
-      script.async = true;
-      script.onload = () => {
-        if (typeof window.registrarClienteNuevo === 'function' || typeof window.actualizarClienteExistente === 'function') {
-          resolve();
-        } else {
-          reject(new Error('Clientes.js cargado pero funciones no expuestas'));
-        }
-      };
-      script.onerror = () => reject(new Error('Error al cargar Clientes.js'));
-      document.body.appendChild(script);
-    });
-
-    // Ensure Clientes.js is available if needed
-    try {
-      await ensureClientesJsLoaded();
-    } catch (err) {
-      throw new Error('No se pudo cargar el módulo de clientes: ' + err.message);
-    }
-
     if (modoFormularioCliente === "editar") {
+      if (typeof window.actualizarClienteExistente !== "function") {
+        throw new Error("No se encontro la funcion para actualizar clientes");
+      }
       await window.actualizarClienteExistente(datos);
     } else {
+      if (typeof window.registrarClienteNuevo !== "function") {
+        throw new Error("No se encontro la funcion para registrar clientes");
+      }
       await window.registrarClienteNuevo(datos);
     }
 
@@ -170,8 +136,8 @@ const manejarEnvioFormularioCliente = async (e) => {
 const configurarEventosModalCliente = () => {
   const form = document.getElementById("form-nuevo-editar-cliente");
   const btnCancelar = document.getElementById("btn-cancelar-cliente");
+  if (!form || !btnCancelar) return;
 
-  // Remove existing listeners before adding new ones
   form.removeEventListener("submit", manejarEnvioFormularioCliente);
   btnCancelar.removeEventListener("click", cerrarModalCliente);
 
@@ -184,7 +150,6 @@ const abrirModalCliente = (modo, datos = null) => {
   const contenedor = document.getElementById("contenedor-modal-cliente");
   if (!contenedor) return;
 
-  // Use flex so the modal background centers the dialog (.modal-cliente is a flex container)
   contenedor.style.display = "flex";
   completarFormularioCliente(datos);
   configurarEventosModalCliente();

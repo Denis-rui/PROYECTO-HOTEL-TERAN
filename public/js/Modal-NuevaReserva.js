@@ -380,8 +380,9 @@ const quitarHabitacionSeleccionada = (idHabitacion) => {
 const cargarClientes = (texto = "") => {
   const estado = obtenerEstadoModalReserva();
   const mensajeBusquedaCliente = estado.elementos?.mensajeBusquedaCliente;
+  const textoBusqueda = String(texto || "").trim();
 
-  return fetch(BASE_URL + `Cliente/buscar&q=${encodeURIComponent(texto)}`)
+  return fetch(BASE_URL + `Cliente/buscar&q=${encodeURIComponent(textoBusqueda)}`)
     .then((res) => res.json())
     .then((respuesta) => {
       if (respuesta.error) {
@@ -393,8 +394,15 @@ const cargarClientes = (texto = "") => {
       renderizarClientes();
 
       if (mensajeBusquedaCliente) {
+        const clienteInhabilitado = respuesta.cliente_inhabilitado || null;
+        if (textoBusqueda !== "" && clienteInhabilitado) {
+          mensajeBusquedaCliente.textContent =
+            "Este cliente ya existe en la base de datos pero esta inhabilitado. Si desea hacer una reserva, habilitelo desde el modulo de clientes.";
+          return;
+        }
+
         mensajeBusquedaCliente.textContent =
-          texto !== "" && estado.clientes.length === 0
+          textoBusqueda !== "" && estado.clientes.length === 0
             ? "No se encontraron clientes."
             : "Selecciona un cliente de la lista.";
       }

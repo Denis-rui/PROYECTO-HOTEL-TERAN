@@ -1,4 +1,15 @@
-<?php $clientes = $data['clientes'] ?? []; ?>
+<?php
+$clientes = $data['clientes'] ?? [];
+$obtenerCampoCliente = static function ($cliente, string $campo, $defecto = '') {
+  if (is_array($cliente)) {
+    return $cliente[$campo] ?? $defecto;
+  }
+  if (is_object($cliente)) {
+    return $cliente->$campo ?? $defecto;
+  }
+  return $defecto;
+};
+?>
 <section class="usuarios">
   <header class="header-usuarios">
     <h2>Clientes</h2>
@@ -14,7 +25,7 @@
         id="inputBuscarCliente"
         name="nombre"
         type="text"
-        placeholder="🔍 Buscar cliente"
+        placeholder="&#128269; Buscar cliente"
         value="<?= htmlspecialchars($_GET['nombre'] ?? '') ?>"
       />
     </form>
@@ -28,38 +39,47 @@
           <th>Nombre</th>
           <th>Tipo Documento</th>
           <th>Documento</th>
-          <th>Correo</th>
-          <th>Telefono</th>
+          <th>Correo Electronico</th>
           <th>Procedencia</th>
+          <th>Telefono</th>
           <th>Reservaciones</th>
+          <th>Observaciones</th>
           <th>Acciones</th>
         </tr>
       </thead>
       <tbody id="tabla-clientes-body">
         <?php if (!empty($clientes)): ?>
           <?php foreach ($clientes as $cliente): ?>
-            <tr>
-              <td><?= $cliente['id'] ?></td>
-              <td><?= htmlspecialchars($cliente['nombre_completo'] ?? '') ?></td>
-              <td><?= htmlspecialchars($cliente['id_tipo_documento'] ?? '') ?></td>
-              <td><?= htmlspecialchars($cliente['documento'] ?? '') ?></td>
-              <td><?= htmlspecialchars($cliente['correo_electronico'] ?? '') ?></td>
-              <td><?= htmlspecialchars($cliente['telefono'] ?? '') ?></td>
-              <td><?= htmlspecialchars($cliente['procedencia'] ?? '') ?></td>
-              <td><?= $cliente['reservaciones'] ?? 0 ?></td>
-              <td>
-                <button type="button" class="btnEditarCliente" data-id="<?= $cliente['id'] ?>">✏️</button>
-                <button type="button" class="btnEliminarCliente" data-id="<?= $cliente['id'] ?>">🗑️</button>
+            <?php $idCliente = (int) $obtenerCampoCliente($cliente, 'id', 0); ?>
+            <?php $estaActivo = (int) $obtenerCampoCliente($cliente, 'activo', 0) === 1; ?>
+            <?php $estiloFila = $estaActivo ? 'background-color:#dff3e3;' : 'background-color:#d9d9d9;color:#555;'; ?>
+            <tr class="<?= $estaActivo ? 'cliente-activo' : 'cliente-inactivo' ?>" data-activo="<?= $estaActivo ? '1' : '0' ?>">
+              <td style="<?= $estiloFila ?>"><?= $idCliente ?></td>
+              <td style="<?= $estiloFila ?>"><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'nombre_completo', '')) ?></td>
+              <td style="<?= $estiloFila ?>"><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'tipo_documento_nombre', '')) ?></td>
+              <td style="<?= $estiloFila ?>"><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'documento', '')) ?></td>
+              <td style="<?= $estiloFila ?>"><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'correo_electronico', '')) ?></td>
+              <td style="<?= $estiloFila ?>"><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'procedencia', '')) ?></td>
+              <td style="<?= $estiloFila ?>"><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'telefono', '')) ?></td>
+              <td style="<?= $estiloFila ?>"><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'reservaciones', '')) ?></td>
+              <td style="<?= $estiloFila ?>"><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'observaciones', '')) ?></td>
+              <td style="<?= $estiloFila ?>">
+                <button type="button" class="btnVerPerfil" data-id="<?= $idCliente ?>" title="Ver perfil">&#128065;</button>
+                <button type="button" class="btnEditarCliente" data-id="<?= $idCliente ?>" data-tipo-documento="<?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'id_tipo_documento', '')) ?>" title="Editar">&#9998;</button>
+                <?php if ($estaActivo): ?>
+                  <button type="button" class="btnInhabilitarCliente" data-id="<?= $idCliente ?>" title="Inhabilitar">&#128683;</button>
+                <?php else: ?>
+                  <button type="button" class="btnHabilitarCliente" data-id="<?= $idCliente ?>" title="Habilitar">&#9989;</button>
+                <?php endif; ?>
               </td>
             </tr>
           <?php endforeach; ?>
         <?php else: ?>
-          <tr><td colspan="9" style="text-align:center">No se encontraron clientes.</td></tr>
+          <tr><td colspan="10" style="text-align:center">No se encontraron clientes.</td></tr>
         <?php endif; ?>
       </tbody>
     </table>
   </div>
 
-  <!-- INCLUSIÓN DEL MODAL -->
   <?php require_once("Views/Template/Modals/Modal-Clientes.php"); ?>
 </section>

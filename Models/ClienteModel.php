@@ -10,28 +10,29 @@ class ClienteModel
     {
         $query = DB::table('cliente as c')
             ->join('tipo_documento as td', 'c.id_tipo_documento', '=', 'td.id')
-            ->select([
+            ->select(
                 'c.id',
                 'c.nombre_completo',
-                'td.nombre as id_tipo_documento',
+                'td.id as id_tipo_documento',
+                'td.nombre as tipo_documento_nombre',
                 'c.documento',
                 'c.correo_electronico',
                 'c.telefono',
                 'c.procedencia',
+                'c.observaciones',
                 'c.reservaciones',
                 'c.activo',
-                'c.observaciones',
                 'c.fecha_creacion'
-            ]);
+            );
 
         if (!empty($nombre)) {
-            $query->where('c.nombre_completo', 'like', "%{$nombre}%");
+            $query->where(function($q) use ($nombre) {
+                $q->where('c.nombre_completo', 'LIKE', "%$nombre%")
+                  ->orWhere('c.documento', 'LIKE', "%$nombre%");
+            });
         }
 
-        return $query->orderBy('c.id', 'asc')
-            ->get()
-            ->map(fn($item) => (array) $item)
-            ->toArray();
+        return $query->orderBy('c.id', 'ASC')->get()->toArray();
     }
 
     public function obtenerClientes()
@@ -50,74 +51,93 @@ class ClienteModel
                 'nombre_completo as nombre',
                 'correo_electronico as correo',
             ])
+            ->where('activo', 1)
             ->orderBy('nombre_completo', 'asc')
             ->limit(50);
 
         if ($textoBusqueda !== '') {
-            $query->where('nombre_completo', 'like', '%' . $textoBusqueda . '%');
+            $query->where(function ($q) use ($textoBusqueda) {
+                $q->where('nombre_completo', 'like', '%' . $textoBusqueda . '%')
+                  ->orWhere('documento', 'like', '%' . $textoBusqueda . '%');
+            });
         }
 
         return $query->get()->toArray();
     }
 
+    public function buscarClienteInhabilitadoPorDocumento(string $documento): ?array
+    {
+        $documento = trim($documento);
+        if ($documento === '') {
+            return null;
+        }
+
+        $cliente = Cliente::query()
+            ->select(['id', 'nombre_completo as nombre', 'documento', 'activo'])
+            ->where('documento', $documento)
+            ->where('activo', 0)
+            ->first();
+
+        return $cliente ? $cliente->toArray() : null;
+    }
+
     public function crearCliente($data)
     {
         try {
-            $cliente = Cliente::create([
-                'nombre_completo'    => $data['nombre_completo']    ?? $data['nombre'] ?? '',
-                'id_tipo_documento'  => !empty($data['id_tipo_documento']) ? (int) $data['id_tipo_documento'] : null,
-                'documento'          => $data['documento']          ?? '',
+            return Cliente::create([
+                'nombre_completo' => $data['nombre_completo'] ?? $data['nombre'] ?? '',
+                'id_tipo_documento' => $data['id_tipo_documento'] ?? '',
+                'documento' => $data['documento'] ?? '',
                 'correo_electronico' => $data['correo_electronico'] ?? $data['gmail'] ?? '',
-                'telefono'           => $data['telefono']           ?? '',
-                'procedencia'        => $data['procedencia']        ?? $data['nacionalidad'] ?? '',
-                'reservaciones'      => (int) ($data['reservaciones'] ?? 0),
-                'activo'             => 1,
-                'observaciones'      => $data['observaciones']      ?? null,
-                'fecha_creacion'     => date('Y-m-d H:i:s')
+                'procedencia' => $data['procedencia'] ?? '',
+                'telefono' => $data['telefono'] ?? '',
+                'observaciones' => $data['observaciones'] ?? '',
+                'reservaciones' => 0,
+                'activo' => 1
             ]);
-            return $cliente !== null;
-        } catch (\Throwable $e) {
-            error_log('Error al crear cliente: ' . $e->getMessage());
-            throw $e;
+        } catch (\Exception $e) {
+            throw new \Exception('Error al crear cliente: ' . $e->getMessage());
         }
     }
 
     public function actualizarCliente($data)
     {
         try {
-            $cliente = Cliente::find($data['id']);
-            if (!$cliente) {
-                return false;
-            }
-
-            return $cliente->update([
-                'nombre_completo'    => $data['nombre_completo']    ?? $data['nombre'] ?? $cliente->nombre_completo,
-                'id_tipo_documento'  => !empty($data['id_tipo_documento']) ? (int) $data['id_tipo_documento'] : $cliente->id_tipo_documento,
-                'documento'          => $data['documento']          ?? $cliente->documento,
-                'correo_electronico' => $data['correo_electronico'] ?? $data['gmail'] ?? $cliente->correo_electronico,
-                'telefono'           => $data['telefono']           ?? $cliente->telefono,
-                'procedencia'        => $data['procedencia']        ?? $data['nacionalidad'] ?? $cliente->procedencia,
-                'reservaciones'      => (int) ($data['reservaciones'] ?? $cliente->reservaciones),
-                'observaciones'      => $data['observaciones']      ?? $cliente->observaciones,
+            $cliente = Cliente::findOrFail($data['id']);
+            $cliente->update([
+                'nombre_completo' => $data['nombre_completo'] ?? $data['nombre'] ?? '',
+                'id_tipo_documento' => $data['id_tipo_documento'] ?? '',
+                'documento' => $data['documento'] ?? '',
+                'correo_electronico' => $data['correo_electronico'] ?? $data['gmail'] ?? '',
+                'procedencia' => $data['procedencia'] ?? '',
+                'telefono' => $data['telefono'] ?? '',
+                'observaciones' => $data['observaciones'] ?? ''
             ]);
-        } catch (\Throwable $e) {
-            error_log('Error al actualizar cliente: ' . $e->getMessage());
-            throw $e;
+            return true;
+        } catch (\Exception $e) {
+            throw new \Exception('Error al actualizar cliente: ' . $e->getMessage());
         }
     }
 
     public function eliminarCliente($id)
     {
         try {
-            $cliente = Cliente::find($id);
-            if (!$cliente) {
-                return false;
-            }
-            return $cliente->delete();
-        } catch (\Throwable $e) {
-            error_log('Error al eliminar cliente: ' . $e->getMessage());
-            throw $e;
+            $cliente = Cliente::findOrFail($id);
+            $cliente->update(['activo' => 0]);
+            return true;
+        } catch (\Exception $e) {
+            throw new \Exception('Error al inhabilitar cliente: ' . $e->getMessage());
+        }
+    }
+
+    public function habilitarCliente($id)
+    {
+        try {
+            $cliente = Cliente::findOrFail($id);
+            $cliente->update(['activo' => 1]);
+            return true;
+        } catch (\Exception $e) {
+            throw new \Exception('Error al habilitar cliente: ' . $e->getMessage());
         }
     }
 }
-

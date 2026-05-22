@@ -11,12 +11,22 @@
       </div>
 
       <div class="label-input-modal">
-        <label for="dni-cliente">DNI / Pasaporte</label>
+        <label for="tipo-documento-cliente">Tipo de Documento</label>
+        <select id="tipo-documento-cliente" class="input-modal" required>
+          <option value="">Seleccione</option>
+          <option value="1">DNI</option>
+          <option value="2">RUC</option>
+          <option value="3">PASAPORTE</option>
+        </select>
+      </div>
+
+      <div class="label-input-modal">
+        <label for="dni-cliente">Documento</label>
         <input type="text" id="dni-cliente" class="input-modal" required />
       </div>
 
       <div class="label-input-modal">
-        <label for="gmail-cliente">Gmail</label>
+        <label for="gmail-cliente">Correo Electrónico</label>
         <input type="email" id="gmail-cliente" class="input-modal" required />
       </div>
 
@@ -26,33 +36,19 @@
       </div>
 
       <div class="label-input-modal">
-        <label for="nacionalidad-cliente">Nacionalidad</label>
-        <input type="text" id="nacionalidad-cliente" class="input-modal" required />
-      </div>
-
-      <div class="label-input-modal">
-        <label for="reservaciones-cliente">Reservaciones</label>
-        <input type="number" id="reservaciones-cliente" class="input-modal" />
-      </div>
-
-      <div class="label-input-modal">
-        <label for="metodo-pago-cliente">Método de Pago</label>
-        <select id="metodo-pago-cliente" class="input-modal" required>
-          <option value="">Seleccione</option>
-          <option value="efectivo">Efectivo</option>
-          <option value="tarjeta">Tarjeta</option>
-          <option value="transferencia">Transferencia</option>
-        </select>
-      </div>
-
-      <div class="label-input-modal">
-        <label for="preferencias-cliente">Preferencias</label>
-        <textarea id="preferencias-cliente" class="input-modal" rows="2"></textarea>
+        <label for="procedencia-cliente">Procedencia *</label>
+        <input type="text" id="procedencia-cliente" class="input-modal" required />
       </div>
 
       <div class="label-input-modal">
         <label for="observaciones-cliente">Observaciones</label>
-        <textarea id="observaciones-cliente" class="input-modal" rows="2"></textarea>
+        <textarea id="observaciones-cliente" class="input-modal" rows="3" style="resize: vertical;"></textarea>
+      </div>
+
+      <div class="label-input-modal">
+        <label for="reservaciones-cliente">Reservaciones</label>
+        <input type="number" id="reservaciones-cliente" class="input-modal" readonly style="background-color: #e9ecef; cursor: not-allowed;" />
+        <small style="color: #666;">Se calcula automáticamente según check-ins</small>
       </div>
 
       <div id="error-exito-modal-cliente" class="div-mensaje-exito-error"></div>

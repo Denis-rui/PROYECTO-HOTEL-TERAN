@@ -8,8 +8,8 @@ class Cliente extends Eloquent
     protected $table = 'cliente';
     public $timestamps = false;
     protected $fillable = [
-        'nombre_completo','id_tipo_documento', 'documento', 'correo_electronico', 'telefono', 'procedencia',
-        'reservaciones', 'activo', 'observaciones','fecha_creacion'
+        'nombre_completo','id_tipo_documento', 'documento', 'correo_electronico', 'procedencia', 'telefono',
+        'reservaciones', 'observaciones', 'activo','fecha_creacion'
     ];
 
     public function reservas()

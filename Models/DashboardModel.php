@@ -67,12 +67,8 @@ class DashboardModel
             ->whereRaw('DATE(fecha_pago) = CURDATE()')
             ->sum('monto');
 
-        // ── Procedencias únicas de clientes ──
-        $stats['total_procedencias'] = (int) DB::table('cliente')
-            ->whereNotNull('procedencia')
-            ->where('procedencia', '!=', '')
-            ->distinct()
-            ->count('procedencia');
+        // Procedencias eliminadas: mantener valor 0 para compatibilidad de vista
+        $stats['total_procedencias'] = 0;
 
         // ── Estancia mínima en días ──
         $stats['estancia_minima'] = (int) DB::table('reserva_habitacion as rh')
