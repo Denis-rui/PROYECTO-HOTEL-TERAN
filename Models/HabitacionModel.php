@@ -1,6 +1,7 @@
 <?php
 namespace Models;
  
+// Importamos la clase base de modelos y manejador de BD de Laravel.
 use Illuminate\Database\Capsule\Manager as DB;
 use Models\Entities\Habitacion;
 
@@ -225,13 +226,15 @@ class HabitacionModel
                 })
                 ->toArray();
 
-            $filtros['pisos'] = Habitacion::where('activo', 1)
+            $filtros['pisos'] = DB::table('habitacion')
+                ->where('activo', 1)
                 ->distinct()
                 ->orderBy('piso', 'asc')
                 ->pluck('piso')
                 ->toArray();
 
-            $filtros['estados'] = Habitacion::where('activo', 1)
+            $filtros['estados'] = DB::table('habitacion')
+                ->where('activo', 1)
                 ->distinct()
                 ->orderBy('estado', 'asc')
                 ->pluck('estado')

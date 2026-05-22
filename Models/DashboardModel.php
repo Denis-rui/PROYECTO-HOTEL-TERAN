@@ -1,12 +1,11 @@
 <?php
 namespace Models;
 
+// Importamos el Query Builder de Illuminate
 use Illuminate\Database\Capsule\Manager as DB;
 
 class DashboardModel
 {
-    protected $table   = 'habitacion'; // tabla base (no se usa directamente, sólo Eloquent la necesita)
-    public $timestamps = false;
 
         // ESTADÍSTICAS PRINCIPALES DEL DASHBOARD
 
