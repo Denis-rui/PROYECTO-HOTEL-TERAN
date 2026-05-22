@@ -1,17 +1,5 @@
 let modoFormularioCliente = "nuevo";
 
-const obtenerContenedorModalCliente = () => {
-  let contenedor = document.getElementById("contenedor-modal-cliente");
-
-  if (!contenedor) {
-    contenedor = document.createElement("div");
-    contenedor.id = "contenedor-modal-cliente";
-    document.body.appendChild(contenedor);
-  }
-
-  return contenedor;
-};
-
 const mostrarMensajeModalCliente = (mensaje, tipo = "error") => {
   const elemento = document.getElementById("error-exito-modal-cliente");
   if (!elemento) return;
@@ -39,53 +27,46 @@ const obtenerDatosFormularioCliente = () => ({
 });
 
 const validarFormularioCliente = (datos) => {
-  // Validar nombre
   if (!datos.nombre || datos.nombre.length < 3) {
     return "El nombre es obligatorio y debe tener al menos 3 caracteres";
   }
 
-  // Validar que no tenga números
   if (/\d/.test(datos.nombre)) {
-    return "El nombre no puede contener números";
+    return "El nombre no puede contener numeros";
   }
 
-  // Validar tipo de documento
   if (!datos.id_tipo_documento) {
-    return "Seleccione un tipo de documento válido";
+    return "Seleccione un tipo de documento valido";
   }
 
-  // Validar documento
   if (!datos.documento || datos.documento.length === 0) {
     return "El documento es obligatorio";
   }
 
   if (!/^\d+$/.test(datos.documento)) {
-    return "El documento solo puede contener números";
+    return "El documento solo puede contener numeros";
   }
 
-  // Validar correo
   if (!datos.gmail || datos.gmail.length === 0) {
-    return "El correo electrónico es obligatorio";
+    return "El correo electronico es obligatorio";
   }
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datos.gmail)) {
-    return "Correo electrónico no válido";
+    return "Correo electronico no valido";
   }
 
-  // Validar teléfono
   if (!datos.telefono || datos.telefono.length === 0) {
-    return "El teléfono es obligatorio";
+    return "El telefono es obligatorio";
   }
 
   if (!/^\d+$/.test(datos.telefono)) {
-    return "El teléfono solo puede contener números";
+    return "El telefono solo puede contener numeros";
   }
 
   if (datos.telefono.length < 7 || datos.telefono.length > 15) {
-    return "El teléfono debe tener entre 7 y 15 dígitos";
+    return "El telefono debe tener entre 7 y 15 digitos";
   }
 
-  // Validar procedencia
   if (!datos.procedencia || datos.procedencia.length === 0) {
     return "La procedencia es obligatoria";
   }
@@ -110,11 +91,9 @@ const completarFormularioCliente = (datos = null) => {
     document.getElementById("procedencia-cliente").value = datos.procedencia || "";
     document.getElementById("reservaciones-cliente").value = datos.reservaciones || "0";
     document.getElementById("observaciones-cliente").value = datos.observaciones || "";
-
     return;
   }
 
-  // Modo nuevo - limpiar el formulario
   titulo.textContent = "Nuevo Cliente";
   if (formElement) {
     formElement.reset();
@@ -136,57 +115,15 @@ const manejarEnvioFormularioCliente = async (e) => {
   }
 
   try {
-    const ensureClientesJsLoaded = () => new Promise((resolve, reject) => {
-      if (typeof window.registrarClienteNuevo === 'function' && typeof window.actualizarClienteExistente === 'function') {
-        return resolve();
-      }
-
-      const scriptId = 'dynamic-clientes-js';
-      if (document.getElementById(scriptId)) {
-        // already loading; wait a bit for it to be available
-        const checkInterval = setInterval(() => {
-          if (typeof window.registrarClienteNuevo === 'function' && typeof window.actualizarClienteExistente === 'function') {
-            clearInterval(checkInterval);
-            resolve();
-          }
-        }, 200);
-        // timeout
-        setTimeout(() => {
-          clearInterval(checkInterval);
-          if (typeof window.registrarClienteNuevo === 'function' && typeof window.actualizarClienteExistente === 'function') {
-            resolve();
-          } else {
-            reject(new Error('No se pudo cargar Clientes.js'));
-          }
-        }, 5000);
-        return;
-      }
-
-      const script = document.createElement('script');
-      script.id = scriptId;
-      script.src = BASE_URL + 'public/js/Clientes.js';
-      script.async = true;
-      script.onload = () => {
-        if (typeof window.registrarClienteNuevo === 'function' || typeof window.actualizarClienteExistente === 'function') {
-          resolve();
-        } else {
-          reject(new Error('Clientes.js cargado pero funciones no expuestas'));
-        }
-      };
-      script.onerror = () => reject(new Error('Error al cargar Clientes.js'));
-      document.body.appendChild(script);
-    });
-
-    // Ensure Clientes.js is available if needed
-    try {
-      await ensureClientesJsLoaded();
-    } catch (err) {
-      throw new Error('No se pudo cargar el módulo de clientes: ' + err.message);
-    }
-
     if (modoFormularioCliente === "editar") {
+      if (typeof window.actualizarClienteExistente !== "function") {
+        throw new Error("No se encontro la funcion para actualizar clientes");
+      }
       await window.actualizarClienteExistente(datos);
     } else {
+      if (typeof window.registrarClienteNuevo !== "function") {
+        throw new Error("No se encontro la funcion para registrar clientes");
+      }
       await window.registrarClienteNuevo(datos);
     }
 
@@ -199,8 +136,8 @@ const manejarEnvioFormularioCliente = async (e) => {
 const configurarEventosModalCliente = () => {
   const form = document.getElementById("form-nuevo-editar-cliente");
   const btnCancelar = document.getElementById("btn-cancelar-cliente");
+  if (!form || !btnCancelar) return;
 
-  // Remove existing listeners before adding new ones
   form.removeEventListener("submit", manejarEnvioFormularioCliente);
   btnCancelar.removeEventListener("click", cerrarModalCliente);
 
@@ -213,7 +150,6 @@ const abrirModalCliente = (modo, datos = null) => {
   const contenedor = document.getElementById("contenedor-modal-cliente");
   if (!contenedor) return;
 
-  // Use flex so the modal background centers the dialog (.modal-cliente is a flex container)
   contenedor.style.display = "flex";
   completarFormularioCliente(datos);
   configurarEventosModalCliente();

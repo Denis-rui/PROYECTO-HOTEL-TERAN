@@ -2,7 +2,6 @@
 namespace Models;
 
 use Models\Entities\Cliente;
-use Illuminate\Database\Eloquent\Model as Eloquent;
 use Illuminate\Database\Capsule\Manager as DB;
 
 class ClienteModel
@@ -53,6 +52,7 @@ class ClienteModel
                 'nombre_completo as nombre',
                 'correo_electronico as correo',
             ])
+            ->where('activo', 1)
             ->orderBy('nombre_completo', 'asc')
             ->limit(50);
 
