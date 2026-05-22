@@ -5,6 +5,10 @@ use Libraries\Core\Controller;
 use Models\DashboardModel;
 use Models\HabitacionModel;
 use Models\ClienteModel;
+use Models\PagoModel;
+use Models\NotificacionModel;
+use Models\ReservaNuevaModel;
+use Models\ReporteOcupacionModel;
 
 class ReservaController extends Controller
 {
