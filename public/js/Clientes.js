@@ -20,14 +20,21 @@ const configurarEventosClientes = () => {
     }
 
     inputBuscar.addEventListener("input", () => {
-      const texto = inputBuscar.value.trim().toLowerCase();
+      const normalizarTexto = (valor) =>
+        String(valor || "")
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase()
+          .trim();
+
+      const texto = normalizarTexto(inputBuscar.value);
       const filas = cuerpoTabla
         ? cuerpoTabla.querySelectorAll("tr")
         : [];
 
       filas.forEach((fila) => {
-        const nombre = fila.cells[1]?.innerText.trim().toLowerCase() || "";
-        const documento = fila.cells[3]?.innerText.trim().toLowerCase() || "";
+        const nombre = normalizarTexto(fila.cells[1]?.innerText);
+        const documento = normalizarTexto(fila.cells[3]?.innerText);
         const coincide = nombre.includes(texto) || documento.includes(texto);
         fila.style.display = coincide ? "" : "none";
       });
