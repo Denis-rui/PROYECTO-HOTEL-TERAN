@@ -1,4 +1,15 @@
-<?php $clientes = $data['clientes'] ?? []; ?>
+<?php
+$clientes = $data['clientes'] ?? [];
+$obtenerCampoCliente = static function ($cliente, string $campo, $defecto = '') {
+  if (is_array($cliente)) {
+    return $cliente[$campo] ?? $defecto;
+  }
+  if (is_object($cliente)) {
+    return $cliente->$campo ?? $defecto;
+  }
+  return $defecto;
+};
+?>
 <section class="usuarios">
   <header class="header-usuarios">
     <h2>Clientes</h2>
@@ -14,7 +25,7 @@
         id="inputBuscarCliente"
         name="nombre"
         type="text"
-        placeholder="🔍 Buscar cliente"
+        placeholder="&#128269; Buscar cliente"
         value="<?= htmlspecialchars($_GET['nombre'] ?? '') ?>"
       />
     </form>
@@ -39,20 +50,21 @@
       <tbody id="tabla-clientes-body">
         <?php if (!empty($clientes)): ?>
           <?php foreach ($clientes as $cliente): ?>
+            <?php $idCliente = (int) $obtenerCampoCliente($cliente, 'id', 0); ?>
             <tr>
-              <td><?= $cliente['id'] ?></td>
-              <td><?= htmlspecialchars($cliente['nombre_completo'] ?? '') ?></td>
-              <td><?= htmlspecialchars($cliente['tipo_documento_nombre'] ?? '') ?></td>
-              <td><?= htmlspecialchars($cliente['documento'] ?? '') ?></td>
-              <td><?= htmlspecialchars($cliente['correo_electronico'] ?? '') ?></td>
-              <td><?= htmlspecialchars($cliente['procedencia'] ?? '') ?></td>
-              <td><?= htmlspecialchars($cliente['telefono'] ?? '') ?></td>
-              <td><?= htmlspecialchars($cliente['reservaciones'] ?? '') ?></td>
-              <td><?= htmlspecialchars($cliente['observaciones'] ?? '') ?></td>
+              <td><?= $idCliente ?></td>
+              <td><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'nombre_completo', '')) ?></td>
+              <td><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'tipo_documento_nombre', '')) ?></td>
+              <td><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'documento', '')) ?></td>
+              <td><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'correo_electronico', '')) ?></td>
+              <td><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'procedencia', '')) ?></td>
+              <td><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'telefono', '')) ?></td>
+              <td><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'reservaciones', '')) ?></td>
+              <td><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'observaciones', '')) ?></td>
               <td>
-                <button type="button" class="btnVerPerfil" data-id="<?= $cliente['id'] ?>" title="Ver perfil">👁️</button>
-                <button type="button" class="btnEditarCliente" data-id="<?= $cliente['id'] ?>" data-tipo-documento="<?= $cliente['id_tipo_documento'] ?? '' ?>" title="Editar">✏️</button>
-                <button type="button" class="btnInhabilitarCliente" data-id="<?= $cliente['id'] ?>" title="Inhabilitar">🚫</button>
+                <button type="button" class="btnVerPerfil" data-id="<?= $idCliente ?>" title="Ver perfil">&#128065;</button>
+                <button type="button" class="btnEditarCliente" data-id="<?= $idCliente ?>" data-tipo-documento="<?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'id_tipo_documento', '')) ?>" title="Editar">&#9998;</button>
+                <button type="button" class="btnInhabilitarCliente" data-id="<?= $idCliente ?>" title="Inhabilitar">&#128683;</button>
               </td>
             </tr>
           <?php endforeach; ?>
@@ -63,6 +75,5 @@
     </table>
   </div>
 
-  <!-- INCLUSIÓN DEL MODAL -->
   <?php require_once("Views/Template/Modals/Modal-Clientes.php"); ?>
 </section>
