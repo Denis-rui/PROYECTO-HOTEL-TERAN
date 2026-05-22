@@ -73,7 +73,7 @@ const configurarEventosClientes = () => {
       if (botonInhabilitar) {
         if (confirm("¿Está seguro de que desea inhabilitar este cliente?")) {
           try {
-            const res = await fetch(BASE_URL + "?url=Cliente/eliminar", {
+            const res = await fetch(BASE_URL + "Cliente/eliminar", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ id: botonInhabilitar.dataset.id }),
@@ -161,7 +161,7 @@ window.inicializarClientes = () => {
 
 // Exponer funciones necesarias para el modal
 window.registrarClienteNuevo = async (datos) => {
-  const res = await fetch(BASE_URL + "?url=Cliente/registrar", {
+  const res = await fetch(BASE_URL + "Cliente/registrar", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(datos),
@@ -175,7 +175,7 @@ window.registrarClienteNuevo = async (datos) => {
 };
 
 window.actualizarClienteExistente = async (datos) => {
-  const res = await fetch(BASE_URL + "?url=Cliente/actualizar", {
+  const res = await fetch(BASE_URL + "Cliente/actualizar", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(datos),

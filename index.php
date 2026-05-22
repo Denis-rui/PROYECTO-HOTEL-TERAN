@@ -1,5 +1,5 @@
 <?php
-
+ob_start();
 session_start();
 
 // Parsear la URL: ?url=Controller/metodo/param

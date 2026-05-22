@@ -35,7 +35,7 @@ document.addEventListener("submit", async (e) => {
     const dataObj = Object.fromEntries(formData.entries());
 
     try {
-      const res = await fetch(BASE_URL + "?url=Habitacion/registrar", {
+      const res = await fetch(BASE_URL + "Habitacion/registrar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataObj),

@@ -381,7 +381,7 @@ const cargarClientes = (texto = "") => {
   const estado = obtenerEstadoModalReserva();
   const mensajeBusquedaCliente = estado.elementos?.mensajeBusquedaCliente;
 
-  return fetch(BASE_URL + `?url=Cliente/buscar&q=${encodeURIComponent(texto)}`)
+  return fetch(BASE_URL + `Cliente/buscar&q=${encodeURIComponent(texto)}`)
     .then((res) => res.json())
     .then((respuesta) => {
       if (respuesta.error) {
@@ -520,7 +520,7 @@ const cargarHabitacionesDisponibles = () => {
     params.append("piso", filtroPisoReserva.value);
 
   return fetch(
-    BASE_URL + `?url=Habitacion/disponiblesPorRango&${params.toString()}`,
+    BASE_URL + `Habitacion/disponiblesPorRango&${params.toString()}`,
   )
     .then((res) => res.json())
     .then((respuesta) => {
@@ -551,7 +551,7 @@ const cargarFiltrosHabitacion = () => {
   const filtroTipoReserva = estado.elementos?.filtroTipoReserva;
   const filtroPisoReserva = estado.elementos?.filtroPisoReserva;
 
-  return fetch(BASE_URL + "?url=Habitacion/obtenerFiltros")
+  return fetch(BASE_URL + "Habitacion/obtenerFiltros")
     .then((res) => res.json())
     .then((data) => {
       if (filtroTipoReserva && data.tipos) {
@@ -729,7 +729,7 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
   if (modo === "editar" && datos?.id) {
     try {
       const respuesta = await fetch(
-        BASE_URL + `?url=Reserva/obtener/${encodeURIComponent(datos.id)}`,
+        BASE_URL + `Reserva/obtener/${encodeURIComponent(datos.id)}`,
       );
       const reserva = await respuesta.json();
       const datosReserva = reserva?.id ? reserva : datos;

@@ -30,7 +30,7 @@ const configurarEventosDevoluciones = () => {
       if (btnEliminar) {
         if (confirm("¿Está seguro de eliminar esta devolución?")) {
           try {
-            const res = await fetch(BASE_URL + "?url=Devolucion/eliminar", {
+            const res = await fetch(BASE_URL + "Devolucion/eliminar", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ id: btnEliminar.dataset.id }),
@@ -109,8 +109,8 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     const url = id
-      ? BASE_URL + "?url=Devolucion/actualizar"
-      : BASE_URL + "?url=Devolucion/registrar";
+      ? BASE_URL + "Devolucion/actualizar"
+      : BASE_URL + "Devolucion/registrar";
 
     try {
       const res = await fetch(url, {
