@@ -17,20 +17,20 @@
         <div class="tarjeta-habitacion <?= $claseEstado ?>">
             <div class="habitacion-cabecera">
                 <div class="habitacion-numero"><?= htmlspecialchars($hab["numero_habitacion"]); ?></div>
-                <button
-                    class="btn-editar-habitacion"
-                    title="Editar habitación"
-                    onclick="editarHabitacion(
-                        <?= (int) $hab['id'] ?>,
-                        '<?= htmlspecialchars($hab['numero_habitacion'], ENT_QUOTES) ?>',
-                        <?= (int) $hab['piso'] ?>,
-                        <?= (int) $hab['id_tipo_habitacion'] ?>,
-                        <?= (int) $hab['capacidad'] ?>,
-                        '<?= htmlspecialchars($hab['estado'], ENT_QUOTES) ?>',
-                        '<?= htmlspecialchars($hab['descripcion'] ?? '', ENT_QUOTES) ?>'
-                    )">
-                    ✏️
-                </button>
+                <div class="habitacion-cabecera-botones">
+                    <button
+                        class="btn-editar-habitacion"
+                        title="Editar habitación"
+                        onclick="editarHabitacion(this, <?= (int) $hab['id'] ?>, '<?= htmlspecialchars($hab['numero_habitacion'], ENT_QUOTES) ?>', <?= (int) $hab['piso'] ?>, <?= (int) $hab['id_tipo_habitacion'] ?>, <?= (int) $hab['capacidad'] ?>, '<?= htmlspecialchars($hab['descripcion'] ?? '', ENT_QUOTES) ?>')">
+                        ✏️
+                    </button>
+                    <button
+                        class="btn-eliminar-habitacion"
+                        title="Eliminar habitación"
+                        onclick="eliminarHabitacion(<?= (int) $hab['id'] ?>, '<?= htmlspecialchars($hab['numero_habitacion'], ENT_QUOTES) ?>')">
+                        🗑️
+                    </button>
+                </div>
             </div>
             <div class="habitacion-tipo"><?= htmlspecialchars($hab['tipo_nombre']); ?> · Cap. <?= htmlspecialchars($hab['capacidad']); ?></div>
             <div class="habitacion-precio">S/ <?= number_format($hab['precio'], 0); ?> / Dia</div>
@@ -48,8 +48,6 @@
                     <option value="Mantenimiento">Mantenimiento</option>
                     <option value="Reservada">Reservada</option>
                 </select>
-
-
             </div>
         </div>
     <?php endforeach; ?>
