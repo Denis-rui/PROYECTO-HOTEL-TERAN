@@ -11,23 +11,24 @@ const runInitializers = () => {
     });
 
     // Detectar pagina actual y llamar a su inicializador si existe
-    const currentUrl = new URLSearchParams(window.location.search).get('url') || '';
-    const urlLower = currentUrl.toLowerCase();
+    const currentUrl = new URLSearchParams(window.location.search).get("url") || "";
+    const pathName = window.location.pathname || "";
+    const rutaDetectada = `${currentUrl} ${pathName}`.toLowerCase();
 
-    if (urlLower.includes("usuario")) {
+    if (rutaDetectada.includes("usuario")) {
         window.inicializarUsuarios?.();
-    } else if (urlLower.includes("configuracion")) {
+    } else if (rutaDetectada.includes("configuracion")) {
         window.inicializarConfiguraciones?.();
-    } else if (urlLower.includes("dashboard")) {
+    } else if (rutaDetectada.includes("dashboard")) {
         window.inicializarDashboard?.();
         window.configurarBtnNuevaReserva?.();
-    } else if (urlLower.includes("reserva")) {
+    } else if (rutaDetectada.includes("reserva")) {
         window.inicializarReservas?.();
         window.configurarBtnNuevaReserva?.();
-    } else if (urlLower.includes("habitacion")) {
+    } else if (rutaDetectada.includes("habitacion")) {
         window.configurarBtnNuevaHabitacion?.();
         window.actualizarHabitaciones?.();
-    } else if (urlLower.includes("cliente")) {
+    } else if (rutaDetectada.includes("cliente")) {
         window.inicializarClientes?.();
     }
 };
