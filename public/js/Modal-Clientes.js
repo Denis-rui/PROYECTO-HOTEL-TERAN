@@ -33,36 +33,61 @@ const obtenerDatosFormularioCliente = () => ({
   documento: document.getElementById("dni-cliente").value.trim(),
   gmail: document.getElementById("gmail-cliente").value.trim(),
   telefono: document.getElementById("telefono-cliente").value.trim(),
-  nacionalidad: document.getElementById("nacionalidad-cliente").value.trim(),
-  reservaciones: Number(document.getElementById("reservaciones-cliente").value)
+  procedencia: document.getElementById("procedencia-cliente").value.trim(),
+  observaciones: document.getElementById("observaciones-cliente").value.trim(),
+  reservaciones: 0
 });
 
 const validarFormularioCliente = (datos) => {
-  const reglas = {
-    nombre: /^[a-zA-ZÀ-ÿ\s]{3,}$/,
-    documento: /^\d{8}$/,
-    gmail: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-    telefono: /^\d{9}$/,
-  };
-
-  if (!reglas.nombre.test(datos.nombre)) {
-    return "Nombre inválido";
+  // Validar nombre
+  if (!datos.nombre || datos.nombre.length < 3) {
+    return "El nombre es obligatorio y debe tener al menos 3 caracteres";
   }
 
+  // Validar que no tenga números
+  if (/\d/.test(datos.nombre)) {
+    return "El nombre no puede contener números";
+  }
+
+  // Validar tipo de documento
   if (!datos.id_tipo_documento) {
-    return "Seleccione un tipo de documento";
+    return "Seleccione un tipo de documento válido";
   }
 
-  if (!reglas.documento.test(datos.documento)) {
-    return "DNI inválido (8 dígitos)";
+  // Validar documento
+  if (!datos.documento || datos.documento.length === 0) {
+    return "El documento es obligatorio";
   }
 
-  if (datos.gmail && !reglas.gmail.test(datos.gmail)) {
-    return "Correo inválido";
+  if (!/^\d+$/.test(datos.documento)) {
+    return "El documento solo puede contener números";
   }
 
-  if (!reglas.telefono.test(datos.telefono)) {
-    return "Teléfono inválido (9 dígitos)";
+  // Validar correo
+  if (!datos.gmail || datos.gmail.length === 0) {
+    return "El correo electrónico es obligatorio";
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datos.gmail)) {
+    return "Correo electrónico no válido";
+  }
+
+  // Validar teléfono
+  if (!datos.telefono || datos.telefono.length === 0) {
+    return "El teléfono es obligatorio";
+  }
+
+  if (!/^\d+$/.test(datos.telefono)) {
+    return "El teléfono solo puede contener números";
+  }
+
+  if (datos.telefono.length < 7 || datos.telefono.length > 15) {
+    return "El teléfono debe tener entre 7 y 15 dígitos";
+  }
+
+  // Validar procedencia
+  if (!datos.procedencia || datos.procedencia.length === 0) {
+    return "La procedencia es obligatoria";
   }
 
   return "";
@@ -70,6 +95,7 @@ const validarFormularioCliente = (datos) => {
 
 const completarFormularioCliente = (datos = null) => {
   const titulo = document.getElementById("titulo-modal-cliente");
+  const formElement = document.getElementById("form-nuevo-editar-cliente");
   if (!titulo) return;
 
   if (modoFormularioCliente === "editar" && datos) {
@@ -77,20 +103,24 @@ const completarFormularioCliente = (datos = null) => {
 
     document.getElementById("id-cliente").value = datos.id;
     document.getElementById("tipo-documento-cliente").value = datos.id_tipo_documento || "";
-    document.getElementById("nombre-cliente").value = datos.nombre;
-    document.getElementById("dni-cliente").value = datos.documento;
+    document.getElementById("nombre-cliente").value = datos.nombre || "";
+    document.getElementById("dni-cliente").value = datos.documento || "";
     document.getElementById("gmail-cliente").value = datos.gmail || "";
     document.getElementById("telefono-cliente").value = datos.telefono || "";
-    document.getElementById("nacionalidad-cliente").value =
-      datos.nacionalidad || "";
-    document.getElementById("reservaciones-cliente").value =
-      datos.reservaciones || "";
-    // campos removidos: preferencias y observaciones
+    document.getElementById("procedencia-cliente").value = datos.procedencia || "";
+    document.getElementById("reservaciones-cliente").value = datos.reservaciones || "0";
+    document.getElementById("observaciones-cliente").value = datos.observaciones || "";
 
     return;
   }
 
+  // Modo nuevo - limpiar el formulario
   titulo.textContent = "Nuevo Cliente";
+  if (formElement) {
+    formElement.reset();
+    document.getElementById("reservaciones-cliente").value = "0";
+    document.getElementById("id-cliente").value = "";
+  }
 };
 
 const manejarEnvioFormularioCliente = async (e) => {

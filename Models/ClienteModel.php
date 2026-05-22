@@ -16,13 +16,14 @@ class ClienteModel extends Model
 
     public function listar($nombre = '')
     {
-        $sql = "SELECT c.id, c.nombre_completo, td.id AS id_tipo_documento, td.nombre AS tipo_documento_nombre, c.documento, c.correo_electronico, c.telefono, c.reservaciones, c.activo, c.fecha_creacion
+        $sql = "SELECT c.id, c.nombre_completo, td.id AS id_tipo_documento, td.nombre AS tipo_documento_nombre, c.documento, c.correo_electronico, c.telefono, c.procedencia, c.observaciones, c.reservaciones, c.activo, c.fecha_creacion
                 FROM cliente c
                 INNER JOIN tipo_documento td ON c.id_tipo_documento = td.id
-                WHERE 1=1";
+                WHERE c.activo = 1";
         $params = [];
         if (!empty($nombre)) {
-            $sql .= " AND nombre_completo LIKE ?";
+            $sql .= " AND (nombre_completo LIKE ? OR documento LIKE ?)";
+            $params[] = "%$nombre%";
             $params[] = "%$nombre%";
         }
         $sql .= " ORDER BY id ASC";
@@ -59,16 +60,18 @@ class ClienteModel extends Model
     public function crearCliente($data)
     {
         $sql = "INSERT INTO cliente
-            (nombre_completo, id_tipo_documento, documento, correo_electronico, telefono, reservaciones, fecha_creacion)
-            VALUES (?, ?, ?, ?, ?, ?, NOW())";
+            (nombre_completo, id_tipo_documento, documento, correo_electronico, procedencia, telefono, observaciones, reservaciones, activo, fecha_creacion)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())";
         $stmt = $this->conectar()->prepare($sql);
         return $stmt->execute([
             $data['nombre_completo'] ?? $data['nombre'] ?? '',
             $data['id_tipo_documento'] ?? '',
             $data['documento'] ?? '',
             $data['correo_electronico'] ?? $data['gmail'] ?? '',
+            $data['procedencia'] ?? '',
             $data['telefono'] ?? '',
-            $data['reservaciones'] ?? 0
+            $data['observaciones'] ?? '',
+            0
         ]);
     }
 
@@ -78,9 +81,10 @@ class ClienteModel extends Model
                 nombre_completo = ?, 
                 id_tipo_documento = ?,
                 documento = ?, 
-                correo_electronico = ?, 
+                correo_electronico = ?,
+                procedencia = ?,
                 telefono = ?, 
-                reservaciones = ?
+                observaciones = ?
                 WHERE id = ?";
         $stmt = $this->conectar()->prepare($sql);
         return $stmt->execute([
@@ -88,15 +92,16 @@ class ClienteModel extends Model
             $data['id_tipo_documento'] ?? '',
             $data['documento'] ?? '',
             $data['correo_electronico'] ?? $data['gmail'] ?? '',
+            $data['procedencia'] ?? '',
             $data['telefono'] ?? '',
-            $data['reservaciones'] ?? 0,
+            $data['observaciones'] ?? '',
             $data['id']
         ]);
     }
 
     public function eliminarCliente($id)
     {
-        $sql = "DELETE FROM cliente WHERE id = ?";
+        $sql = "UPDATE cliente SET activo = 0 WHERE id = ?";
         $stmt = $this->conectar()->prepare($sql);
         return $stmt->execute([$id]);
     }

@@ -28,8 +28,10 @@
           <th>Tipo Documento</th>
           <th>Documento</th>
           <th>Correo Electronico</th>
+          <th>Procedencia</th>
           <th>Telefono</th>
           <th>Reservaciones</th>
+          <th>Observaciones</th>
           <th>Acciones</th>
         </tr>
       </thead>
@@ -42,16 +44,19 @@
               <td><?= htmlspecialchars($cliente['tipo_documento_nombre'] ?? '') ?></td>
               <td><?= htmlspecialchars($cliente['documento'] ?? '') ?></td>
               <td><?= htmlspecialchars($cliente['correo_electronico'] ?? '') ?></td>
+              <td><?= htmlspecialchars($cliente['procedencia'] ?? '') ?></td>
               <td><?= htmlspecialchars($cliente['telefono'] ?? '') ?></td>
-              <td><?= $cliente['reservaciones'] ?? 0 ?></td>
+              <td><?= htmlspecialchars($cliente['reservaciones'] ?? '') ?></td>
+              <td><?= htmlspecialchars($cliente['observaciones'] ?? '') ?></td>
               <td>
-                <button type="button" class="btnEditarCliente" data-id="<?= $cliente['id'] ?>" data-tipo-documento="<?= $cliente['id_tipo_documento'] ?? '' ?>">✏️</button>
-                <button type="button" class="btnEliminarCliente" data-id="<?= $cliente['id'] ?>">🗑️</button>
+                <button type="button" class="btnVerPerfil" data-id="<?= $cliente['id'] ?>" title="Ver perfil">👁️</button>
+                <button type="button" class="btnEditarCliente" data-id="<?= $cliente['id'] ?>" data-tipo-documento="<?= $cliente['id_tipo_documento'] ?? '' ?>" title="Editar">✏️</button>
+                <button type="button" class="btnInhabilitarCliente" data-id="<?= $cliente['id'] ?>" title="Inhabilitar">🚫</button>
               </td>
             </tr>
           <?php endforeach; ?>
         <?php else: ?>
-          <tr><td colspan="8" style="text-align:center">No se encontraron clientes.</td></tr>
+          <tr><td colspan="10" style="text-align:center">No se encontraron clientes.</td></tr>
         <?php endif; ?>
       </tbody>
     </table>
