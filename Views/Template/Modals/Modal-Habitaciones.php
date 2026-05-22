@@ -1,14 +1,16 @@
 <section>
   <div id="modalHabitacion" class="modal-habitacion" style="display: none;">
     <div class="modal-contenido-habitacion">
-      <!-- BOTÓN CERRAR -->
       <button id="cerrarModalHabitacion" class="boton-cerrar-modal">
         &times;
       </button>
 
-      <h2 class="titulo-modal-habitacion">Nueva Habitación</h2>
+      <h2 id="tituloModalHabitacion" class="titulo-modal-habitacion">Nueva Habitación</h2>
 
       <form id="formNuevaHabitacion">
+        <!-- Campo oculto para modo edición -->
+        <input type="hidden" id="habitacionId" name="id" value="">
+
         <div class="fila-formulario">
           <div class="grupo-formulario">
             <label for="numeroHabitacion">NÚMERO</label>
@@ -57,17 +59,7 @@
           </div>
         </div>
 
-        <div class="fila-formulario">
-          <div class="grupo-formulario">
-            <label for="capacidadHabitacion">CAPACIDAD</label>
-            <input
-              type="number"
-              id="capacidadHabitacion"
-              name="capacidad"
-              min="1"
-              value="1"
-              required />
-          </div>
+        <div class="fila-formulario" id="filaEstadoHabitacion">
           <div class="grupo-formulario">
             <label for="estadoHabitacion">ESTADO</label>
             <select id="estadoHabitacion" name="estado" required>
@@ -88,13 +80,12 @@
         </div>
 
         <div class="acciones-formulario">
-          <button
-            type="button"
-            id="btnCancelarHabitacion"
-            class="btn-secundario">
+          <button type="button" id="btnCancelarHabitacion" class="btn-secundario">
             Cancelar
           </button>
-          <button type="submit" class="btn-primario">Guardar</button>
+          <button type="submit" id="btnSubmitHabitacion" class="btn-primario">
+            Guardar
+          </button>
         </div>
       </form>
     </div>

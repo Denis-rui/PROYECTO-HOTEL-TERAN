@@ -47,15 +47,41 @@ class HabitacionController extends Controller
     public function registrar($params = '')
     {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            header('Content-Type: application/json');
             $datos = json_decode(file_get_contents('php://input'), true) ?? $_POST;
-            $ok = $this->model->registrar($datos);
-            
-            if (isset($_SERVER['HTTP_X_REQUESTED_WITH'])) {
-                header('Content-Type: application/json');
-                echo json_encode(['exito' => $ok]);
-            } else {
-                header('Location: ' . BASE_URL . 'Habitacion/index');
+            try {
+                $ok = $this->model->registrar($datos);
+                echo json_encode([
+                    'exito'   => (bool) $ok,
+                    'mensaje' => $ok ? 'Habitación registrada correctamente.' : 'No se pudo registrar la habitación.',
+                ]);
+            } catch (\Throwable $e) {
+                echo json_encode(['exito' => false, 'mensaje' => $e->getMessage()]);
             }
+        }
+    }
+
+    public function editar($params = '')
+    {
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            header('Content-Type: application/json');
+            $datos = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+            try {
+                $resultado = $this->model->editarHabitacion($datos);
+                echo json_encode($resultado);
+            } catch (\Throwable $e) {
+                echo json_encode(['exito' => false, 'mensaje' => $e->getMessage()]);
+            }
+        }
+    }
+
+    public function eliminar($params = '')
+    {
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            header('Content-Type: application/json');
+            $datos = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+            $resultado = $this->model->eliminarHabitacion((int) ($datos['id'] ?? 0));
+            echo json_encode($resultado);
         }
     }
 

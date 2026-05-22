@@ -10,13 +10,28 @@
         <?php endif; ?>
         
         <?php 
-            // Normalizar clase para CSS
             $claseEstado = strtolower(htmlspecialchars($hab['estado']));
             if (strpos($claseEstado, 'mantenim') !== false) $claseEstado = 'mantenimiento';
         ?>
         
         <div class="tarjeta-habitacion <?= $claseEstado ?>">
-            <div class="habitacion-numero"><?= htmlspecialchars($hab["numero_habitacion"]); ?></div>
+            <div class="habitacion-cabecera">
+                <div class="habitacion-numero"><?= htmlspecialchars($hab["numero_habitacion"]); ?></div>
+                <div class="habitacion-cabecera-botones">
+                    <button
+                        class="btn-editar-habitacion"
+                        title="Editar habitación"
+                        onclick="editarHabitacion(this, <?= (int) $hab['id'] ?>, '<?= htmlspecialchars($hab['numero_habitacion'], ENT_QUOTES) ?>', <?= (int) $hab['piso'] ?>, <?= (int) $hab['id_tipo_habitacion'] ?>, <?= (int) $hab['capacidad'] ?>, '<?= htmlspecialchars($hab['descripcion'] ?? '', ENT_QUOTES) ?>')">
+                        ✏️
+                    </button>
+                    <button
+                        class="btn-eliminar-habitacion"
+                        title="Eliminar habitación"
+                        onclick="eliminarHabitacion(<?= (int) $hab['id'] ?>, '<?= htmlspecialchars($hab['numero_habitacion'], ENT_QUOTES) ?>')">
+                        🗑️
+                    </button>
+                </div>
+            </div>
             <div class="habitacion-tipo"><?= htmlspecialchars($hab['tipo_nombre']); ?> · Cap. <?= htmlspecialchars($hab['capacidad']); ?></div>
             <div class="habitacion-precio">S/ <?= number_format($hab['precio'], 0); ?> / Dia</div>
             <div class="habitacion-descripcion"><?= htmlspecialchars($hab['descripcion'] ?: 'Sin descripción'); ?></div>
@@ -27,7 +42,7 @@
 
             <div class="habitacion-acciones">
                 <select class="selector-estado" onchange="cambiarEstado(<?= (int) $hab['id'] ?>, this.value)">
-                    <option value="" disabled selected>Cambiar</option>
+                    <option value="" disabled selected>Cambiar estado</option>
                     <option value="Disponible">Disponible</option>
                     <option value="Ocupada">Ocupada</option>
                     <option value="Mantenimiento">Mantenimiento</option>
