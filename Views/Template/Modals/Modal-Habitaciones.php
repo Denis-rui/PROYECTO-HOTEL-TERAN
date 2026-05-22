@@ -59,7 +59,7 @@
           </div>
         </div>
 
-        <div class="fila-formulario">
+        <div class="fila-formulario" id="filaEstadoHabitacion">
           <div class="grupo-formulario">
             <label for="estadoHabitacion">ESTADO</label>
             <select id="estadoHabitacion" name="estado" required>

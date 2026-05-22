@@ -75,6 +75,16 @@ class HabitacionController extends Controller
         }
     }
 
+    public function eliminar($params = '')
+    {
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            header('Content-Type: application/json');
+            $datos = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+            $resultado = $this->model->eliminarHabitacion((int) ($datos['id'] ?? 0));
+            echo json_encode($resultado);
+        }
+    }
+
     public function actualizarEstado($params = '')
     {
         header('Content-Type: application/json');

@@ -22,6 +22,8 @@ document.addEventListener("click", (e) => {
       requestAnimationFrame(() => {
         document.getElementById("tituloModalHabitacion").textContent = "Nueva Habitación";
         document.getElementById("btnSubmitHabitacion").textContent   = "Guardar";
+        document.getElementById("filaEstadoHabitacion").style.display = "";
+        document.getElementById("estadoHabitacion").required = true;
       });
     }
   }
@@ -36,15 +38,32 @@ document.addEventListener("click", (e) => {
 });
 
 // Abrir modal en modo edición
-window.editarHabitacion = (id, numero, piso, idTipo, capacidad, estado, descripcion) => {
+window.editarHabitacion = (btnEl, id, numero, piso, idTipo, capacidad, descripcion) => {
+  // Leer el estado real desde la clase CSS de la tarjeta padre
+  const tarjeta = btnEl.closest('.tarjeta-habitacion');
+  let estadoReal = 'disponible';
+  if (tarjeta) {
+    if (tarjeta.classList.contains('reservada'))          estadoReal = 'reservada';
+    else if (tarjeta.classList.contains('ocupada'))       estadoReal = 'ocupada';
+    else if (tarjeta.classList.contains('mantenimiento')) estadoReal = 'mantenimiento';
+  }
+
+  if (estadoReal === 'reservada' || estadoReal === 'ocupada') {
+    Notificar(`La habitación N° ${numero} está reservada y no puede editarse.`, "error");
+    return;
+  }
+
+  if (estadoReal === 'mantenimiento') {
+    Notificar(`La habitación N° ${numero} está en mantenimiento y no puede editarse.`, "error");
+    return;
+  }
+
   const modal = document.getElementById("modalHabitacion");
   if (!modal) return;
   window._modalAbierto = true;
 
-  // Mostrar modal primero para que la animación arranque inmediato
   modal.style.display = "flex";
 
-  // Rellenar campos en el siguiente frame (no bloquea la animación de apertura)
   requestAnimationFrame(() => {
     document.getElementById("tituloModalHabitacion").textContent = "Editar Habitación";
     document.getElementById("btnSubmitHabitacion").textContent   = "Actualizar";
@@ -54,6 +73,10 @@ window.editarHabitacion = (id, numero, piso, idTipo, capacidad, estado, descripc
     document.getElementById("capacidadHabitacion").value         = capacidad;
     document.getElementById("descripcionHabitacion").value       = descripcion ?? "";
 
+    // Ocultar campo estado en modo edición
+    document.getElementById("filaEstadoHabitacion").style.display = "none";
+    document.getElementById("estadoHabitacion").required = false;
+
     const selectTipo = document.getElementById("tipoHabitacion");
     if (selectTipo) {
       for (const opt of selectTipo.options) opt.selected = opt.value == idTipo;
@@ -61,13 +84,42 @@ window.editarHabitacion = (id, numero, piso, idTipo, capacidad, estado, descripc
 
     const selectEstado = document.getElementById("estadoHabitacion");
     if (selectEstado) {
-      for (const opt of selectEstado.options) opt.selected = opt.value === estado;
+      for (const opt of selectEstado.options) opt.selected = opt.value.toLowerCase() === estadoReal;
     }
   });
 };
 
-// Guardar / Actualizar — escuchar click en el botón directamente
-// (evita problemas con el evento submit nativo del form)
+// Eliminar habitación
+window.eliminarHabitacion = async (id, numero) => {
+  const confirmacion = await Confirmar(
+    `¿Está seguro de eliminar la habitación N° ${numero}? Esta acción no se puede deshacer.`
+  );
+  if (!confirmacion) return;
+
+  try {
+    const res = await fetch(BASE_URL + "Habitacion/eliminar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+
+    const resultado = await res.json();
+
+    if (resultado.exito) {
+      Notificar(resultado.mensaje || "Habitación eliminada correctamente.", "exito");
+      setTimeout(() => {
+        window.location.href = BASE_URL + "Habitacion/index";
+      }, 800);
+    } else {
+      Notificar(resultado.mensaje || "No se pudo eliminar la habitación.", "error");
+    }
+  } catch (error) {
+    console.error("Error al eliminar habitación:", error);
+    Notificar("Error de conexión con el servidor.", "error");
+  }
+};
+
+// Guardar / Actualizar 
 document.addEventListener("click", async (e) => {
   if (e.target.id !== "btnSubmitHabitacion") return;
 
@@ -122,7 +174,6 @@ document.addEventListener("click", async (e) => {
         "exito"
       );
 
-      // Redirigir a URL limpia para evitar filtros residuales en la recarga
       setTimeout(() => {
         window.location.href = BASE_URL + "Habitacion/index";
       }, 800);
