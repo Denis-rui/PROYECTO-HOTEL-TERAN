@@ -41,10 +41,10 @@ window.editarHabitacion = (id, numero, piso, idTipo, capacidad, estado, descripc
   if (!modal) return;
   window._modalAbierto = true;
 
-  // Mostrar modal primero para que la animación arranque inmediato
+  // Mostrar modal primero 
   modal.style.display = "flex";
 
-  // Rellenar campos en el siguiente frame (no bloquea la animación de apertura)
+  // Rellenar campos en el siguiente frame 
   requestAnimationFrame(() => {
     document.getElementById("tituloModalHabitacion").textContent = "Editar Habitación";
     document.getElementById("btnSubmitHabitacion").textContent   = "Actualizar";
@@ -66,8 +66,7 @@ window.editarHabitacion = (id, numero, piso, idTipo, capacidad, estado, descripc
   });
 };
 
-// Guardar / Actualizar — escuchar click en el botón directamente
-// (evita problemas con el evento submit nativo del form)
+// Guardar / Actualizar 
 document.addEventListener("click", async (e) => {
   if (e.target.id !== "btnSubmitHabitacion") return;
 
@@ -122,7 +121,6 @@ document.addEventListener("click", async (e) => {
         "exito"
       );
 
-      // Redirigir a URL limpia para evitar filtros residuales en la recarga
       setTimeout(() => {
         window.location.href = BASE_URL + "Habitacion/index";
       }, 800);
