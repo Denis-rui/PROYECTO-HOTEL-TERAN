@@ -4,8 +4,11 @@ const runInitializers = () => {
     const tipoUsuario = localStorage.getItem("tipoUsuario");
     const opcionesNav = document.querySelectorAll("[data-rol]");
     opcionesNav.forEach((opcion) => {
-        const rolesPermitidos = opcion.getAttribute("data-rol").split(",");
-        if (!rolesPermitidos.includes(tipoUsuario)) {
+        const rolesRaw = opcion.getAttribute("data-rol");
+        if (!rolesRaw) return;
+
+        const rolesPermitidos = rolesRaw.split(",").map((rol) => rol.trim()).filter(Boolean);
+        if (!tipoUsuario || !rolesPermitidos.includes(tipoUsuario)) {
             opcion.style.display = "none";
         }
     });
