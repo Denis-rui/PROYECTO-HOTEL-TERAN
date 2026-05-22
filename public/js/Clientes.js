@@ -1,4 +1,4 @@
-// Clientes.js - Gestion de clientes con busqueda en tiempo real y perfil
+ï»¿// Clientes.js - Gestion de clientes con busqueda en tiempo real y perfil
 
 const configurarEventosClientes = () => {
   const botonNuevoCliente = document.getElementById("btnNuevoCliente");
@@ -69,7 +69,7 @@ const configurarEventosClientes = () => {
 
       const botonInhabilitar = evento.target.closest(".btnInhabilitarCliente");
       if (botonInhabilitar) {
-        if (confirm("¿Está seguro de que desea inhabilitar este cliente?")) {
+        if (confirm("Esta seguro de que desea inhabilitar este cliente?")) {
           try {
             const res = await fetch(BASE_URL + "Cliente/eliminar", {
               method: "POST",
@@ -150,9 +150,19 @@ const cerrarPerfilCliente = () => {
   }
 };
 
+let clientesInicializados = false;
+
 window.inicializarClientes = () => {
+  if (clientesInicializados) return;
+  clientesInicializados = true;
   configurarEventosClientes();
 };
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => window.inicializarClientes());
+} else {
+  window.inicializarClientes();
+}
 
 window.registrarClienteNuevo = async (datos) => {
   const res = await fetch(BASE_URL + "Cliente/registrar", {
