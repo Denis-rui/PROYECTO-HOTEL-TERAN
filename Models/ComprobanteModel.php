@@ -2,36 +2,20 @@
 namespace Models;
 
 use Illuminate\Database\Capsule\Manager as DB;
-use Illuminate\Database\Eloquent\Model as Eloquent;
 use Models\HabitacionModel;
 use Models\Entities\Comprobante;
 use Models\Entities\Pago;
 use Models\Entities\Reserva;
 
-class ComprobanteModel extends Eloquent
+class ComprobanteModel
 {
-    protected $table = 'comprobante';
-    public $timestamps = false;
-    protected $fillable = [
-        'id_pago', 'numero_ticket', 'fecha_emision', 'descripcion', 'total', 'id_forma_pago', 'id_usuario'
-    ];
-
-    public function pago()
-    {
-        return $this->belongsTo(Pago::class, 'id_pago');
-    }
-
-    public function usuario()
-    {
-        return $this->belongsTo(\Models\Entities\Usuario::class, 'id_usuario');
-    }
 
     public function generarNumeroTicket(): string
     {
         $anio = date('Y');
         $prefijo = 'TCK-' . $anio . '-';
 
-        $ultimo = self::where('numero_ticket', 'like', $prefijo . '%')
+        $ultimo = Comprobante::where('numero_ticket', 'like', $prefijo . '%')
             ->orderBy('id', 'desc')
             ->first();
 

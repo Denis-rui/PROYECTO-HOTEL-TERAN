@@ -1,11 +1,10 @@
 <?php
 namespace Models;
  
-// Importamos la clase base de modelos y manejador de BD de Laravel.
-use Illuminate\Database\Eloquent\Model as Eloquent;
 use Illuminate\Database\Capsule\Manager as DB;
+use Models\Entities\Habitacion;
 
-class HabitacionModel extends Eloquent
+class HabitacionModel
 {
     protected $table      = 'habitacion';
     protected $primaryKey = 'id';
@@ -22,7 +21,7 @@ class HabitacionModel extends Eloquent
         try {
             $estado = $this->normalizarEstado($datos['estado'] ?? 'Disponible');
 
-            $habitacion = self::create([
+            $habitacion = Habitacion::create([
                 'numero_habitacion'      => $datos['numero_habitacion'] ?? '',
                 'piso'                   => (int) ($datos['piso'] ?? 1),
                 'id_tipo_habitacion'     => $datos['id_tipo_habitacion'] ?? null,
@@ -104,7 +103,7 @@ class HabitacionModel extends Eloquent
     {
         try {
             $nuevoEstado = $this->normalizarEstado($estado);
-            $habitacion = self::find($id);
+            $habitacion = Habitacion::find($id);
 
             if (!$habitacion) {
                 return ['exito' => false, 'mensaje' => 'Habitación no encontrada.'];
@@ -226,13 +225,13 @@ class HabitacionModel extends Eloquent
                 })
                 ->toArray();
 
-            $filtros['pisos'] = self::where('activo', 1)
+            $filtros['pisos'] = Habitacion::where('activo', 1)
                 ->distinct()
                 ->orderBy('piso', 'asc')
                 ->pluck('piso')
                 ->toArray();
 
-            $filtros['estados'] = self::where('activo', 1)
+            $filtros['estados'] = Habitacion::where('activo', 1)
                 ->distinct()
                 ->orderBy('estado', 'asc')
                 ->pluck('estado')
