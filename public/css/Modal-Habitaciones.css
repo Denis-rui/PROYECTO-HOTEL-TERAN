@@ -9,7 +9,6 @@
   z-index: 2000;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(2px);
 }
 
 .modal-contenido-habitacion {
@@ -22,12 +21,13 @@
   /* Bordes muy redondeados como en la imagen */
   position: relative;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  animation: modalEntrada 0.3s ease-out;
+  animation: modalEntrada 0.15s ease-out;
+  will-change: transform, opacity;
 }
 
 @keyframes modalEntrada {
   from {
-    transform: translateY(-20px);
+    transform: translateY(-10px);
     opacity: 0;
   }
 

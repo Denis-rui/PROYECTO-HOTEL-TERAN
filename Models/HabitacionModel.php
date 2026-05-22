@@ -27,14 +27,54 @@ class HabitacionModel extends Eloquent
                 'piso'                   => (int) ($datos['piso'] ?? 1),
                 'id_tipo_habitacion'     => $datos['id_tipo_habitacion'] ?? null,
                 'estado'                 => $estado,
-                'descripcion_habitacion' => $datos['descripcion'] ?? '',
+                'descripcion_habitacion' => $datos['descripcion_habitacion'] ?? $datos['descripcion'] ?? '',
                 'capacidad'              => (int) ($datos['capacidad'] ?? 1),
                 'activo'                 => (int) ($datos['activo'] ?? 1),
             ]);
 
             return (bool) $habitacion;
         } catch (\Throwable $e) {
+        
+            if ($e->getCode() == 23000 || strpos($e->getMessage(), '1062') !== false) {
+                throw new \Exception("La habitación número " . ($datos['numero_habitacion'] ?? '') . " ya está registrada.");
+            }
             throw new \Exception("Error al registrar habitación: " . $e->getMessage());
+        }
+    }
+
+
+    public function editarHabitacion($datos)
+    {
+        try {
+            $id = (int) ($datos['id'] ?? 0);
+            if (!$id) {
+                return ['exito' => false, 'mensaje' => 'ID de habitación no válido.'];
+            }
+
+            $habitacion = self::find($id);
+            if (!$habitacion) {
+                return ['exito' => false, 'mensaje' => 'Habitación no encontrada.'];
+            }
+
+            $habitacion->update([
+                'numero_habitacion'      => $datos['numero_habitacion']      ?? $habitacion->numero_habitacion,
+                'piso'                   => (int) ($datos['piso']            ?? $habitacion->piso),
+                'id_tipo_habitacion'     => $datos['id_tipo_habitacion']     ?? $habitacion->id_tipo_habitacion,
+                'estado'                 => $this->normalizarEstado($datos['estado'] ?? $habitacion->estado),
+                'descripcion_habitacion' => $datos['descripcion_habitacion'] ?? $datos['descripcion'] ?? $habitacion->descripcion_habitacion,
+                'capacidad'              => (int) ($datos['capacidad']       ?? $habitacion->capacidad),
+            ]);
+
+            // Eloquent retorna false si no hubo cambios
+            return [
+                'exito'   => true,
+                'mensaje' => 'Habitación actualizada correctamente.',
+            ];
+        } catch (\Throwable $e) {
+            if ($e->getCode() == 23000 || strpos($e->getMessage(), '1062') !== false) {
+                return ['exito' => false, 'mensaje' => 'El número de habitación ' . ($datos['numero_habitacion'] ?? '') . ' ya está en uso por otra habitación.'];
+            }
+            return ['exito' => false, 'mensaje' => 'Error al editar: ' . $e->getMessage()];
         }
     }
 
@@ -110,8 +150,7 @@ class HabitacionModel extends Eloquent
                 return ['exito' => false, 'mensaje' => 'Habitación no encontrada.'];
             }
 
-            // Si se intenta marcar como Disponible, bloquear si existe cualquier
-            // `reserva_habitacion` para la habitación con `check_out` NULL o en el futuro.
+
             if ($nuevoEstado === 'Disponible') {
                 $bloqueoExiste = DB::table('reserva_habitacion as rh')
                     ->where('rh.id_habitacion', (int) $id)
@@ -152,9 +191,6 @@ class HabitacionModel extends Eloquent
                 $updateData['descripcion_habitacion'] = $motivo;
             }
 
-            // Si intentan marcar como Disponible, usar una actualización condicional
-            // en la DB para evitar race conditions y garantizar que no exista
-            // una reserva/estadia activa que bloquee el cambio.
             if ($nuevoEstado === 'Disponible') {
                 $affected = DB::table('habitacion')
                     ->where('id', (int) $id)
