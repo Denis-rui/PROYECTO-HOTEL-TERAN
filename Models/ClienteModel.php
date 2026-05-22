@@ -23,8 +23,7 @@ class ClienteModel
                 'c.reservaciones',
                 'c.activo',
                 'c.fecha_creacion'
-            )
-            ->where('c.activo', 1);
+            );
 
         if (!empty($nombre)) {
             $query->where(function($q) use ($nombre) {
@@ -57,10 +56,29 @@ class ClienteModel
             ->limit(50);
 
         if ($textoBusqueda !== '') {
-            $query->where('nombre_completo', 'like', '%' . $textoBusqueda . '%');
+            $query->where(function ($q) use ($textoBusqueda) {
+                $q->where('nombre_completo', 'like', '%' . $textoBusqueda . '%')
+                  ->orWhere('documento', 'like', '%' . $textoBusqueda . '%');
+            });
         }
 
         return $query->get()->toArray();
+    }
+
+    public function buscarClienteInhabilitadoPorDocumento(string $documento): ?array
+    {
+        $documento = trim($documento);
+        if ($documento === '') {
+            return null;
+        }
+
+        $cliente = Cliente::query()
+            ->select(['id', 'nombre_completo as nombre', 'documento', 'activo'])
+            ->where('documento', $documento)
+            ->where('activo', 0)
+            ->first();
+
+        return $cliente ? $cliente->toArray() : null;
     }
 
     public function crearCliente($data)
@@ -109,6 +127,17 @@ class ClienteModel
             return true;
         } catch (\Exception $e) {
             throw new \Exception('Error al inhabilitar cliente: ' . $e->getMessage());
+        }
+    }
+
+    public function habilitarCliente($id)
+    {
+        try {
+            $cliente = Cliente::findOrFail($id);
+            $cliente->update(['activo' => 1]);
+            return true;
+        } catch (\Exception $e) {
+            throw new \Exception('Error al habilitar cliente: ' . $e->getMessage());
         }
     }
 }

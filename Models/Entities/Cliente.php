@@ -9,7 +9,7 @@ class Cliente extends Eloquent
     public $timestamps = false;
     protected $fillable = [
         'nombre_completo','id_tipo_documento', 'documento', 'correo_electronico', 'procedencia', 'telefono',
-        'reservaciones', 'activo','fecha_creacion'
+        'reservaciones', 'observaciones', 'activo','fecha_creacion'
     ];
 
     public function reservas()

@@ -51,7 +51,8 @@ $obtenerCampoCliente = static function ($cliente, string $campo, $defecto = '') 
         <?php if (!empty($clientes)): ?>
           <?php foreach ($clientes as $cliente): ?>
             <?php $idCliente = (int) $obtenerCampoCliente($cliente, 'id', 0); ?>
-            <tr>
+            <?php $estaActivo = (int) $obtenerCampoCliente($cliente, 'activo', 0) === 1; ?>
+            <tr class="<?= $estaActivo ? 'cliente-activo' : 'cliente-inactivo' ?>" data-activo="<?= $estaActivo ? '1' : '0' ?>">
               <td><?= $idCliente ?></td>
               <td><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'nombre_completo', '')) ?></td>
               <td><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'tipo_documento_nombre', '')) ?></td>
@@ -64,7 +65,11 @@ $obtenerCampoCliente = static function ($cliente, string $campo, $defecto = '') 
               <td>
                 <button type="button" class="btnVerPerfil" data-id="<?= $idCliente ?>" title="Ver perfil">&#128065;</button>
                 <button type="button" class="btnEditarCliente" data-id="<?= $idCliente ?>" data-tipo-documento="<?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'id_tipo_documento', '')) ?>" title="Editar">&#9998;</button>
-                <button type="button" class="btnInhabilitarCliente" data-id="<?= $idCliente ?>" title="Inhabilitar">&#128683;</button>
+                <?php if ($estaActivo): ?>
+                  <button type="button" class="btnInhabilitarCliente" data-id="<?= $idCliente ?>" title="Inhabilitar">&#128683;</button>
+                <?php else: ?>
+                  <button type="button" class="btnHabilitarCliente" data-id="<?= $idCliente ?>" title="Habilitar">&#9989;</button>
+                <?php endif; ?>
               </td>
             </tr>
           <?php endforeach; ?>

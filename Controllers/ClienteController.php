@@ -39,9 +39,18 @@ class ClienteController extends Controller
 
     public function buscar($params = '')
     {
-        $texto = $_GET['q'] ?? '';
+        $texto = trim((string) ($_GET['q'] ?? ''));
         $clientes = $this->model->obtenerClientesParaReserva($texto);
-        $this->responderJson(['clientes' => $clientes]);
+        $clienteInhabilitado = null;
+
+        if ($texto !== '' && ctype_digit($texto)) {
+            $clienteInhabilitado = $this->model->buscarClienteInhabilitadoPorDocumento($texto);
+        }
+
+        $this->responderJson([
+            'clientes' => $clientes,
+            'cliente_inhabilitado' => $clienteInhabilitado
+        ]);
     }
 
     public function registrar($params = '')
@@ -196,6 +205,31 @@ class ClienteController extends Controller
             $this->responderJson([
                 'exito' => (bool) $ok,
                 'mensaje' => $ok ? 'Cliente inhabilitado correctamente' : 'No se pudo inhabilitar'
+            ]);
+        } catch (\Exception $e) {
+            $this->responderJson(['exito' => false, 'mensaje' => $e->getMessage()], 500);
+        }
+    }
+
+    public function habilitar($params = '')
+    {
+        $datos = $this->obtenerPayloadJson();
+        if ($datos === null) {
+            $this->responderJson(['exito' => false, 'mensaje' => 'JSON invalido'], 400);
+            return;
+        }
+
+        $idCliente = (int) ($datos['id'] ?? 0);
+        if ($idCliente <= 0) {
+            $this->responderJson(['exito' => false, 'mensaje' => 'ID de cliente invalido'], 422);
+            return;
+        }
+
+        try {
+            $ok = $this->model->habilitarCliente($idCliente);
+            $this->responderJson([
+                'exito' => (bool) $ok,
+                'mensaje' => $ok ? 'Cliente habilitado correctamente' : 'No se pudo habilitar'
             ]);
         } catch (\Exception $e) {
             $this->responderJson(['exito' => false, 'mensaje' => $e->getMessage()], 500);

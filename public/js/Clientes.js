@@ -30,10 +30,8 @@ const configurarEventosClientes = () => {
     cuerpoTabla.addEventListener("click", async (evento) => {
       const botonVerPerfil = evento.target.closest(".btnVerPerfil");
       if (botonVerPerfil) {
-        const id = botonVerPerfil.dataset.id;
         const fila = botonVerPerfil.closest("tr");
         const datosCliente = {
-          id: id,
           nombre: fila.cells[1]?.innerText.trim() || "",
           documento: fila.cells[3]?.innerText.trim() || "",
           email: fila.cells[4]?.innerText.trim() || "",
@@ -70,26 +68,39 @@ const configurarEventosClientes = () => {
       const botonInhabilitar = evento.target.closest(".btnInhabilitarCliente");
       if (botonInhabilitar) {
         if (confirm("Esta seguro de que desea inhabilitar este cliente?")) {
-          try {
-            const res = await fetch(BASE_URL + "Cliente/eliminar", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ id: botonInhabilitar.dataset.id }),
-            });
-            const resultado = await res.json();
-            if (resultado.exito) {
-              alert("Cliente inhabilitado correctamente");
-              window.location.reload();
-            } else {
-              alert(resultado.mensaje || "Error al inhabilitar");
-            }
-          } catch (error) {
-            console.error(error);
-            alert("Error al inhabilitar el cliente");
-          }
+          await cambiarEstadoCliente("eliminar", botonInhabilitar.dataset.id, "Cliente inhabilitado correctamente");
+        }
+        return;
+      }
+
+      const botonHabilitar = evento.target.closest(".btnHabilitarCliente");
+      if (botonHabilitar) {
+        if (confirm("Esta seguro de que desea habilitar este cliente?")) {
+          await cambiarEstadoCliente("habilitar", botonHabilitar.dataset.id, "Cliente habilitado correctamente");
         }
       }
     });
+  }
+};
+
+const cambiarEstadoCliente = async (accion, idCliente, mensajeExito) => {
+  try {
+    const res = await fetch(BASE_URL + `Cliente/${accion}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: idCliente }),
+    });
+
+    const resultado = await res.json();
+    if (resultado.exito) {
+      alert(mensajeExito);
+      window.location.reload();
+    } else {
+      alert(resultado.mensaje || "No se pudo cambiar el estado del cliente");
+    }
+  } catch (error) {
+    console.error(error);
+    alert("Error al cambiar el estado del cliente");
   }
 };
 
@@ -100,10 +111,6 @@ const mostrarPerfilCliente = (cliente) => {
         <h2 style="margin-top: 0; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">Perfil del Cliente</h2>
 
         <div style="display: grid; gap: 15px; margin: 20px 0;">
-          <div>
-            <label style="font-weight: bold; color: #555;">ID:</label>
-            <p style="margin: 5px 0; color: #333;">${cliente.id}</p>
-          </div>
           <div>
             <label style="font-weight: bold; color: #555;">Nombre:</label>
             <p style="margin: 5px 0; color: #333;">${cliente.nombre}</p>
