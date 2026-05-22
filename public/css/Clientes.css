@@ -63,11 +63,13 @@
   color: #2f3e1f;
 }
 
-.tabla .tbl-usuarios tbody tr.cliente-activo {
-  background-color: #e9f9ee;
+.tabla .tbl-usuarios tbody tr.cliente-activo,
+.tabla .tbl-usuarios tbody tr.cliente-activo td {
+  background-color: #dff3e3 !important;
 }
 
-.tabla .tbl-usuarios tbody tr.cliente-inactivo {
-  background-color: #e1e1e1;
-  color: #666;
+.tabla .tbl-usuarios tbody tr.cliente-inactivo,
+.tabla .tbl-usuarios tbody tr.cliente-inactivo td {
+  background-color: #d9d9d9 !important;
+  color: #555 !important;
 }
