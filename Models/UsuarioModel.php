@@ -158,7 +158,7 @@ class UsuarioModel
         }
 
         $this->validarMayorEdad($datos['fecha_nacimiento'] ?? null);
-    $this->validarUnicidadCampos($datos);
+        $this->validarUnicidadCampos($datos);
 
         $userData = [
             'nombre_completo'  => $datos['nombre_completo']  ?? '',
