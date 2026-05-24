@@ -17,7 +17,7 @@ class ReservaModel
     protected $table = 'reserva';
     private const ESTADOS_ACTIVOS = ['pendiente', 'confirmada', 'checkin_realizado', 'en_estadia', 'checkout_pendiente'];
 
-
+    // puede salir
     private function obtenerDiasEstadia($checkIn, $checkOut)
     {
         if (!$checkIn || !$checkOut) {
@@ -36,7 +36,7 @@ class ReservaModel
 
         return (int) $inicio->diff($fin)->days;
     }
-
+    // puede salir
     private function combinarFechaHora($fecha, $hora = null)
     {
         $fecha = trim((string) $fecha);
@@ -52,7 +52,7 @@ class ReservaModel
 
         return $fecha . ' ' . $hora . ':00';
     }
-
+    //se queda
     public function obtenerReservas()
     {
         try {
@@ -68,7 +68,7 @@ class ReservaModel
             throw new \Exception("Error al obtener reservas: " . $e->getMessage());
         }
     }
-
+    // se queda sirve par ala edicion y pagar
     public function obtenerReservaPorId($idReserva)
     {
         $reserva = Reserva::with(['cliente', 'habitacion', 'pagos', 'reservaHabitacion'])
@@ -77,12 +77,7 @@ class ReservaModel
         return $reserva ? $this->formatearReserva($reserva) : null;
     }
 
-    public function registrarReserva($reserva, $idUsuario = null)
-    {
-        $reservaNuevaModel = new ReservaNuevaModel();
-        return $reservaNuevaModel->registrarReserva($reserva, $idUsuario);
-    }
-
+    // no se si dejarla o cambiarla a reservaneuvaModel
     public function actualizarReserva($datos)
     {
         try {
@@ -299,18 +294,16 @@ class ReservaModel
         }
     }
 
-    public function registrarPago($idReserva, $monto, $idMetodoPago, $descripcion = '', $fechaPago = null, $idUsuario = null)
-    {
-        $pagoModel = new PagoModel();
-        return $pagoModel->registrarPago($idReserva, $monto, $idMetodoPago, $descripcion, $fechaPago, $idUsuario);
-    }
 
+    // pienso en cambiarla o eliminarla de aca
     public function generarCodigoReserva(): string
     {
         $reservaNuevaModel = new ReservaNuevaModel();
         return $reservaNuevaModel->generarCodigoReserva();
     }
+    
 
+    // este metodo hay que analizarlo, si lo dejamos aca o lo mandamos a otra parte
     private function formatearReserva($reserva)
     {
 
@@ -394,6 +387,7 @@ class ReservaModel
         ];
     }
 
+    // ahqy qeu analizarlo
     public function actualizarEstadoReserva($idReserva, $nuevoEstado)
     {
         $estadoNormalizado = strtolower(trim((string) $nuevoEstado));
@@ -455,11 +449,8 @@ class ReservaModel
         }
     }
 
-    public function actualizarEstado($idReserva, $nuevoEstado)
-    {
-        return $this->actualizarEstadoReserva($idReserva, $nuevoEstado);
-    }
 
+    
     public function cancelarReserva($idReserva, $motivo = '', $idUsuario = null)
     {
         try {
@@ -781,11 +772,13 @@ class ReservaModel
         }
     }
 
+    // hay qu eanalizarlo bonito si la usamo so no
     public function obtenerNotificacionesCheckout()
     {
         return (new NotificacionModel())->obtenerNotificacionesCheckout();
     }
 
+    
     private function calcularCargoCheckoutTarde($minutosDemora, $totalReserva)
     {
         if ($minutosDemora <= 30) {

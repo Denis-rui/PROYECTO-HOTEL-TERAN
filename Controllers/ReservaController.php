@@ -91,7 +91,7 @@ class ReservaController extends Controller
     {
         header('Content-Type: application/json');
         $datos     = json_decode(file_get_contents('php://input'), true);
-        $resultado = $this->model->actualizarEstado(
+        $resultado = $this->model->actualizarEstadoReserva(
             (int) ($datos['id_reserva'] ?? 0),
             $datos['nuevo_estado'] ?? ''
         );
