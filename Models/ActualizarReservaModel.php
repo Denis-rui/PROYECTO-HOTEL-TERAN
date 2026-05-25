@@ -146,9 +146,6 @@ class ActualizarReservaModel extends ReservaModel
                     'check_out'     => $checkOut,
                     'activo'        => 1,
                 ]);
-
-                // No cambiar el estado de la habitación al actualizar la reserva.
-                // El estado se actualiza al confirmar el check-in.
             }
 
             // Decidir estado de habitaciones que fueron removidas de la reserva
