@@ -1,5 +1,6 @@
 <?php
 $reservas = $data['reservas'] ?? [];
+$errorReservas = $data['error_reservas'] ?? '';
 
 if (!function_exists('formatearListaHabitacionesReserva')) {
   function formatearListaHabitacionesReserva(array $reserva): string
@@ -138,8 +139,7 @@ if (!function_exists('esEstadoBloqueadoReserva')) {
                 class="estado-reserva <?= claseEstadoReserva((string) $reserva["estado"]) ?>"
                 data-id="<?= (int) $reserva["id"] ?>"
                 data-estado="<?= htmlspecialchars($reserva["estado"]) ?>"
-                title="Cambiar estado de la reserva"
-              >
+                title="Cambiar estado de la reserva">
                 <option value="confirmada" <?= $reserva["estado"] === "confirmada" ? 'selected' : '' ?> <?= esEstadoBloqueadoReserva((string) $reserva["estado"], "confirmada") ? 'disabled' : '' ?>>Confirmada</option>
                 <option value="en_estadia" <?= $reserva["estado"] === "en_estadia" ? 'selected' : '' ?> <?= esEstadoBloqueadoReserva((string) $reserva["estado"], "en_estadia") ? 'disabled' : '' ?>>En estadía</option>
                 <option value="checkout_realizado" <?= $reserva["estado"] === "checkout_realizado" ? 'selected' : '' ?> <?= esEstadoBloqueadoReserva((string) $reserva["estado"], "checkout_realizado") ? 'disabled' : '' ?>>Checkout realizado</option>
@@ -159,8 +159,7 @@ if (!function_exists('esEstadoBloqueadoReserva')) {
               <button
                 class="boton-editar-reserva"
                 data-id="<?= $reserva["id"] ?>"
-                <?= $reserva["estado"] === "checkout_realizado" ? 'disabled title="No se puede editar una reserva con checkout realizado"' : '' ?>
-              >
+                <?= $reserva["estado"] === "checkout_realizado" ? 'disabled title="No se puede editar una reserva con checkout realizado"' : '' ?>>
                 ✏️
               </button>
               <?php if ($reserva["estado"] === "confirmada"): ?>
@@ -172,6 +171,20 @@ if (!function_exists('esEstadoBloqueadoReserva')) {
             </td>
           </tr>
         <?php endforeach; ?>
+        <?php if ($errorReservas !== '') : ?>
+          <tr>
+            <td colspan="8" style="text-align:center; color:#b42318; font-weight:600; padding:14px;">
+              <?= htmlspecialchars($errorReservas, ENT_QUOTES, 'UTF-8') ?>
+            </td>
+          </tr>
+        <?php elseif (empty($reservas)) : ?>
+          <tr>
+            <td colspan="8" style="text-align:center; color:#667085; padding:14px;">
+              No hay reservas para mostrar.
+            </td>
+          </tr>
+        <?php endif; ?>
+
       </tbody>
     </table>
   </div>

@@ -1,4 +1,5 @@
 <?php
+
 namespace Controllers;
 
 use Libraries\Core\Controller;
@@ -18,8 +19,27 @@ class ReservaController extends Controller
             header('Location: ' . BASE_URL . 'Login/index');
             exit();
         }
-        $data['page_title'] = "Gestión de Reservas";
-        $data['reservas'] = $this->model->obtenerReservas();
+
+        $data['reservas'] = [];
+        $data['error_reservas'] = '';
+
+        try {
+            $resultado = $this->model->obtenerReservas();
+
+            if (!is_array($resultado)) {
+                throw new \RuntimeException('Resultado no es un array');
+            }
+
+            if (count($resultado) === 1 && is_string($resultado[0])) {
+                $data['error_reservas'] = 'Error al cargar las reservas. Intenta nuevamente en unos minutos.';
+            } else {
+                $data['reservas'] = $resultado;
+            }
+        } catch (\Throwable $e) {
+            error_log('ReservaController::index -> ' . $e->getMessage());
+            $data['error_reservas'] = 'Error al cargar las reservas. Intenta nuevamente en unos minutos.';
+        }
+
         $data['page_js'] = ['Clientes.js', 'Modal-Clientes.js', 'Modal-NuevaReserva.js', 'Pago.js', 'Comprobante.js', 'Reservas.js'];
         $this->views->render($this, 'index', $data);
     }

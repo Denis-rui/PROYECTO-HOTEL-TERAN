@@ -1,5 +1,7 @@
 <?php
+
 namespace Models;
+
 use Illuminate\Database\Capsule\Manager as DB;
 use Models\Entities\Devolucion;
 use Models\Entities\Habitacion;
@@ -36,12 +38,12 @@ class ReservaModel
                 ->where('estado', '!=', 'cancelada')
                 ->orderByDesc('id')
                 ->get()
-                ->map(fn ($reserva) => $this->formatearReserva($reserva))
+                ->map(fn($reserva) => $this->formatearReserva($reserva))
                 ->sortByDesc('check_in')
                 ->values()
                 ->all();
         } catch (\Throwable $e) {
-            throw new \Exception("Error al obtener reservas: " . $e->getMessage());
+            return ["Error" . $e->getMessage()];
         }
     }
     // se queda sirve par ala edicion y pagar
@@ -163,7 +165,7 @@ class ReservaModel
             }
 
             $idsHabitacionesNuevas = array_values(array_unique(array_map(
-                fn ($item) => (int) $item['id'],
+                fn($item) => (int) $item['id'],
                 $habitacionesNormalizadas
             )));
 
@@ -188,8 +190,8 @@ class ReservaModel
                     'activo'        => 1,
                 ]);
 
-                    // No cambiar el estado de la habitación al actualizar la reserva.
-                    // El estado se actualiza al confirmar el check-in.
+                // No cambiar el estado de la habitación al actualizar la reserva.
+                // El estado se actualiza al confirmar el check-in.
             }
 
             // Decidir estado de habitaciones que fueron removidas de la reserva
@@ -247,7 +249,6 @@ class ReservaModel
                             'Habitación removida de reserva: estado ajustado según fechas.'
                         );
                     } catch (\Throwable $e) {
-                       
                     }
                 }
             }
@@ -277,14 +278,14 @@ class ReservaModel
         $reservaNuevaModel = new ReservaNuevaModel();
         return $reservaNuevaModel->generarCodigoReserva();
     }
-    
+
 
     // este metodo hay que analizarlo, si lo dejamos aca o lo mandamos a otra parte
     private function formatearReserva($reserva)
     {
 
         $cliente = $reserva->cliente;
-        
+
         $reservaHabitacion = $reserva->reservaHabitacion;
         $habitacionesRelacionadas = is_iterable($reservaHabitacion) ? $reservaHabitacion : [$reservaHabitacion];
         $habitaciones = [];
@@ -345,9 +346,9 @@ class ReservaModel
             'cliente' => $cliente->nombre_completo ?? '',
             'correo_electronico' => $cliente->correo_electronico ?? '',
             'id_habitacion' => $habitacionPrincipal['id'] ?? null,
-                'habitacion' => $habitacionPrincipal ? 'Hab. ' . $habitacionPrincipal['numero_habitacion'] . ' - Piso ' . $habitacionPrincipal['piso'] : '',
-                'habitaciones' => $habitaciones,
-                'piso' => $habitacionPrincipal['piso'] ?? null,
+            'habitacion' => $habitacionPrincipal ? 'Hab. ' . $habitacionPrincipal['numero_habitacion'] . ' - Piso ' . $habitacionPrincipal['piso'] : '',
+            'habitaciones' => $habitaciones,
+            'piso' => $habitacionPrincipal['piso'] ?? null,
             'check_in' => $checkIn,
             'check_out' => $checkOut,
             'minutos_demora_checkout' => $reserva->minutos_demora_checkout ?? 0,
@@ -426,7 +427,7 @@ class ReservaModel
     }
 
 
-    
+
     public function cancelarReserva($idReserva, $motivo = '', $idUsuario = null)
     {
         try {
@@ -444,7 +445,7 @@ class ReservaModel
 
             $penalidad = (float) $reservaActual->total * ($porcentajePenalidad / 100);
             $montoPagado = (float) $reservaActual->pagos->sum('monto');
-            
+
             $reembolso = max(0, $montoPagado - $penalidad);
 
             DB::connection()->beginTransaction();
@@ -522,7 +523,6 @@ class ReservaModel
 
             DB::connection()->commit();
             return ['exito' => true, 'mensaje' => 'Reserva cancelada. Penalidad administrativa: S/ ' . number_format($penalidad, 2)];
-
         } catch (\Exception $e) {
             $con = DB::connection();
             if ($con->getPdo()->inTransaction()) $con->rollBack();
@@ -754,7 +754,7 @@ class ReservaModel
         return (new NotificacionModel())->obtenerNotificacionesCheckout();
     }
 
-    
+
     private function calcularCargoCheckoutTarde($minutosDemora, $totalReserva)
     {
         return ReservaHelper::calcularCargoCheckoutTarde($minutosDemora, $totalReserva);
