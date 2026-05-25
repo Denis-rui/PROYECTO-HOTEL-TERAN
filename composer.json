@@ -9,7 +9,8 @@
         "psr-4": {
             "Libraries\\Core\\": "Libraries/Core/",
             "Controllers\\": "Controllers/",
-            "Models\\": "Models/"
+            "Models\\": "Models/",
+            "Helpers\\": "Helpers/"
         }
     }
 }

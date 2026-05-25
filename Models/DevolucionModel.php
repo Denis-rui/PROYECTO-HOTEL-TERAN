@@ -1,11 +1,13 @@
 <?php
+
 namespace Models;
 
 use Models\Entities\Devolucion;
 
+use function Illuminate\Support\now;
+
 class DevolucionModel
 {
-    protected $table = 'devolucion';
 
 
     public function listar($busqueda = '')
@@ -17,9 +19,9 @@ class DevolucionModel
         if (!empty($busqueda)) {
             $query->where(function ($q) use ($busqueda) {
                 $q->where('id_reserva', 'like', "%$busqueda%")
-                  ->orWhereHas('reserva.cliente', function ($q2) use ($busqueda) {
-                      $q2->where('nombre_completo', 'like', "%$busqueda%");
-                  });
+                    ->orWhereHas('reserva.cliente', function ($q2) use ($busqueda) {
+                        $q2->where('nombre_completo', 'like', "%$busqueda%");
+                    });
             });
         }
 
