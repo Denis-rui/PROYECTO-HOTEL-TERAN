@@ -1,4 +1,5 @@
 <?php
+
 namespace Models;
 
 use Illuminate\Database\Capsule\Manager as DB;

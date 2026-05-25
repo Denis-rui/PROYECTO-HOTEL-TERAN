@@ -10,6 +10,7 @@ use Models\PagoModel;
 use Models\NotificacionModel;
 use Models\ReservaNuevaModel;
 use Models\ReporteOcupacionModel;
+use Models\ActualizarReservaModel;
 
 class ReservaController extends Controller
 {
@@ -44,11 +45,6 @@ class ReservaController extends Controller
         $this->views->render($this, 'index', $data);
     }
 
-    // public function listar($params = '')
-    // {
-    //     header('Content-Type: application/json');
-    //     echo json_encode($this->model->obtenerReservas());
-    // }
 
     public function registrar($params = '')
     {
@@ -63,7 +59,8 @@ class ReservaController extends Controller
     {
         header('Content-Type: application/json');
         $datos     = json_decode(file_get_contents('php://input'), true);
-        $resultado = $this->model->actualizarReserva($datos);
+        $modeloActualizarReserva = new ActualizarReservaModel();
+        $resultado = $modeloActualizarReserva->actualizarReserva($datos);
         echo json_encode($resultado);
     }
 
