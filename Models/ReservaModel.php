@@ -11,6 +11,7 @@ use Models\PagoModel;
 use Models\NotificacionModel;
 use Models\ReporteOcupacionModel;
 use Models\ReservaNuevaModel;
+use Helpers\ReservaHelper;
 
 class ReservaModel
 {
@@ -20,37 +21,12 @@ class ReservaModel
     // puede salir
     private function obtenerDiasEstadia($checkIn, $checkOut)
     {
-        if (!$checkIn || !$checkOut) {
-            return 0;
-        }
-
-        $inicioTexto = substr(trim((string) $checkIn), 0, 10);
-        $finTexto = substr(trim((string) $checkOut), 0, 10);
-
-        $inicio = \DateTime::createFromFormat('Y-m-d', $inicioTexto);
-        $fin = \DateTime::createFromFormat('Y-m-d', $finTexto);
-
-        if (!$inicio || !$fin || $fin <= $inicio) {
-            return 0;
-        }
-
-        return (int) $inicio->diff($fin)->days;
+        return ReservaHelper::obtenerDiasEstadia($checkIn, $checkOut);
     }
     // puede salir
     private function combinarFechaHora($fecha, $hora = null)
     {
-        $fecha = trim((string) $fecha);
-        $hora = trim((string) $hora);
-
-        if ($fecha === '') {
-            return null;
-        }
-
-        if ($hora === '') {
-            return $fecha . ' 12:00:00';
-        }
-
-        return $fecha . ' ' . $hora . ':00';
+        return ReservaHelper::combinarFechaHora($fecha, $hora);
     }
     //se queda
     public function obtenerReservas()
@@ -781,15 +757,7 @@ class ReservaModel
     
     private function calcularCargoCheckoutTarde($minutosDemora, $totalReserva)
     {
-        if ($minutosDemora <= 30) {
-            return 0;
-        }
-
-        if ($minutosDemora <= 120) {
-            return 50;
-        }
-
-        return round(max(50, $totalReserva / 2), 2);
+        return ReservaHelper::calcularCargoCheckoutTarde($minutosDemora, $totalReserva);
     }
 
     private function crearNotificacion($tipo, $titulo, $mensaje, $idReserva = null, $idHabitacion = null, $idCliente = null, $prioridad = 'media')
