@@ -382,7 +382,9 @@ const cargarClientes = (texto = "") => {
   const mensajeBusquedaCliente = estado.elementos?.mensajeBusquedaCliente;
   const textoBusqueda = String(texto || "").trim();
 
-  return fetch(BASE_URL + `Cliente/buscar&q=${encodeURIComponent(textoBusqueda)}`)
+  return fetch(
+    BASE_URL + `Cliente/buscar&q=${encodeURIComponent(textoBusqueda)}`,
+  )
     .then((res) => res.json())
     .then((respuesta) => {
       if (respuesta.error) {
@@ -527,9 +529,7 @@ const cargarHabitacionesDisponibles = () => {
   if (filtroPisoReserva && filtroPisoReserva.value)
     params.append("piso", filtroPisoReserva.value);
 
-  return fetch(
-    BASE_URL + `Habitacion/disponiblesPorRango&${params.toString()}`,
-  )
+  return fetch(BASE_URL + `Habitacion/disponiblesPorRango&${params.toString()}`)
     .then((res) => res.json())
     .then((respuesta) => {
       const habitaciones = Array.isArray(respuesta)
@@ -654,11 +654,25 @@ const validarYContinuarPago = () => {
 
 const abrirModalPagoConDatos = (datosReserva) => {
   if (typeof window.abrirModalPago !== "function") {
-    alert("No se pudo abrir el modulo de pago");
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "No se pudo abrir el módulo de pago",
+    });
     return;
   }
-
-  window.abrirModalPago(datosReserva);
+  Swal.fire({
+    title: "Confirmar pago",
+    text: "¿Desea continuar con el proceso de pago de la reserva?",
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonText: "Sí, continuar",
+    cancelButtonText: "Cancelar",
+  }).then((resultado) => {
+    if (resultado.isConfirmed) {
+      window.abrirModalPago(datosReserva);
+    }
+  });
 };
 
 window.abrirModalReserva = async (modo = "nuevo", datos = null) => {

@@ -15,6 +15,8 @@ use Models\ReporteOcupacionModel;
 use Models\ReservaNuevaModel;
 use Helpers\ReservaHelper;
 
+use function Illuminate\Support\now;
+
 class ReservaModel
 {
     protected $table = 'reserva';
@@ -33,13 +35,32 @@ class ReservaModel
     //se queda
     public function obtenerReservas()
     {
+
         try {
             return Reserva::with(['cliente', 'pagos', 'reservaHabitacion.habitacion'])
                 ->where('estado', '!=', 'cancelada')
-                ->orderByDesc('id')
+
+                ->orderByRaw("
+                CASE
+                    WHEN (
+                        SELECT MIN(rh.check_in)
+                        FROM reserva_habitacion rh
+                        WHERE rh.id_reserva = reserva.id
+                        AND rh.check_in >= ?
+                    ) IS NOT NULL THEN 0
+                    ELSE 1
+                END
+            ", [now()->startOfDay()])
+
+                ->orderBy(
+                    ReservaHabitacion::select('check_in')
+                        ->whereColumn('reserva_habitacion.id_reserva', 'reserva.id')
+                        ->orderBy('check_in', 'asc')
+                        ->limit(1)
+                )
+
                 ->get()
                 ->map(fn($reserva) => $this->formatearReserva($reserva))
-                ->sortByDesc('check_in')
                 ->values()
                 ->all();
         } catch (\Throwable $e) {
