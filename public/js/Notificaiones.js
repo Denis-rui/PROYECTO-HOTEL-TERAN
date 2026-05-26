@@ -10,7 +10,7 @@ window.Notificar = (mensaje, tipo = "info") => {
     icon: icon,
     title: mensaje,
     showConfirmButton: false,
-    timer: 4000,
+    timer: 9000,
     timerProgressBar: true,
   });
 };
