@@ -14,3 +14,36 @@
   align-items: center;
   padding: 12px;
 }
+
+
+.campo-requerido {
+  color: #dc3545;
+  font-weight: bold;
+  margin-left: 4px;
+}
+
+
+.input-modal.error {
+  border-color: #dc3545 !important;
+  background-color: #fff5f5;
+}
+
+.error-validation {
+  display: none;
+  color: #dc3545;
+  font-size: 12px;
+  margin-top: 4px;
+  font-weight: 500;
+  animation: slideIn 0.2s ease-in;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
