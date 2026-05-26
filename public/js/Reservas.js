@@ -1,4 +1,7 @@
 window.inicializarReservas = () => {
+  if (window.__reservasEventosInicializados) return;
+  window.__reservasEventosInicializados = true;
+
   configurarEventosReservas();
   const buscarReserva = document.getElementById("inputBuscarReserva");
   const estadoSeleccionadoFiltro = document.getElementById("filtroEstado");
@@ -11,7 +14,7 @@ window.inicializarReservas = () => {
     const filas = document.querySelectorAll("#contenido-reservas tr");
     filas.forEach((fila) => {
       const nombre = fila.children[0].textContent.toLowerCase();
-      const estadoSelect = fila.children[5]?.querySelector(
+      const estadoSelect = fila.children[4]?.querySelector(
         "select.estado-reserva",
       );
       const estado = (
@@ -41,6 +44,18 @@ window.inicializarReservas = () => {
 const configurarEventosReservas = () => {
   const btnNuevaReserva = document.getElementById("btnNuevaReserva");
   const cuerpoTabla = document.getElementById("contenido-reservas");
+  const anchoMenu = 220;
+  const cerrarMenusOpciones = () => {
+    document.querySelectorAll(".menu-mas-opciones-wrap").forEach((menu) => {
+      menu.classList.remove("menu-abierto");
+      const panel = menu.querySelector(".menu-mas-opciones-panel");
+      if (panel) {
+        panel.style.display = "none";
+        panel.style.top = "";
+        panel.style.left = "";
+      }
+    });
+  };
 
   const pedirConfirmacionCambioEstado = async (estadoAnterior, estadoNuevo) => {
     const etiquetas = {
@@ -97,6 +112,154 @@ const configurarEventosReservas = () => {
     });
 
     cuerpoTabla.addEventListener("click", async (e) => {
+      const btnDetalles = e.target.closest(".boton-mas-opciones");
+      if (btnDetalles) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const contenedorMenu = btnDetalles.closest(".menu-mas-opciones-wrap");
+        if (!contenedorMenu) return;
+
+        const panel = contenedorMenu.querySelector(".menu-mas-opciones-panel");
+        if (!panel) return;
+
+        const estabaAbierto = contenedorMenu.classList.contains("menu-abierto");
+        cerrarMenusOpciones();
+        if (!estabaAbierto) {
+          const rect = btnDetalles.getBoundingClientRect();
+          const left = Math.max(
+            12,
+            Math.min(
+              window.innerWidth - anchoMenu - 12,
+              rect.right - anchoMenu,
+            ),
+          );
+          panel.style.top = `${rect.bottom + 6}px`;
+          panel.style.left = `${left}px`;
+          contenedorMenu.classList.add("menu-abierto");
+          panel.style.display = "grid";
+        }
+
+        return;
+      }
+
+      const accionMarcarAusente = e.target.closest(".accion-marcar-ausente");
+      if (accionMarcarAusente) {
+        cerrarMenusOpciones();
+        if (typeof window.Notificar === "function") {
+          window.Notificar("Acción de frontend: marcar ausente", "info");
+        } else {
+          alert("Acción de frontend: marcar ausente");
+        }
+        return;
+      }
+
+      const accionMarcarOcupado = e.target.closest(".accion-marcar-ocupado");
+      if (accionMarcarOcupado) {
+        cerrarMenusOpciones();
+        if (typeof window.Notificar === "function") {
+          window.Notificar("Acción de frontend: marcar ocupado", "info");
+        } else {
+          alert("Acción de frontend: marcar ocupado");
+        }
+        return;
+      }
+
+      const accionVerDetalles = e.target.closest(".accion-ver-detalles");
+      if (accionVerDetalles) {
+        const fila = accionVerDetalles.closest("tr");
+        if (!fila) return;
+        cerrarMenusOpciones();
+
+        const parseArray = (valor) => {
+          try {
+            return JSON.parse(valor || "[]");
+          } catch (error) {
+            return [];
+          }
+        };
+
+        const datosReserva = {
+          id: fila.dataset.id,
+          estado: fila.dataset.estado,
+          porcentaje_pago: fila.dataset.porcentajepago,
+          total: fila.dataset.total,
+          saldo_pendiente: fila.dataset.saldoPendiente,
+          cliente: fila.dataset.cliente,
+          habitacion: fila.dataset.habitacion,
+          habitaciones: parseArray(fila.dataset.habitaciones),
+          historial: parseArray(fila.dataset.historial),
+          documentos: parseArray(fila.dataset.documentos),
+          check_in: fila.dataset.checkin,
+          check_out: fila.dataset.checkout,
+          email: fila.dataset.email,
+          correo_electronico: fila.dataset.email,
+        };
+
+        if (typeof window.abrirModalVerDetalles === "function") {
+          window.abrirModalVerDetalles(datosReserva);
+        } else {
+          alert("No se pudo abrir el módulo de detalles");
+        }
+
+        return;
+      }
+
+      const accionCancelar = e.target.closest(".accion-cancelar-reserva");
+      if (accionCancelar) {
+        cerrarMenusOpciones();
+
+        const id = accionCancelar.dataset.id;
+        const codigo = accionCancelar.dataset.codigo;
+        const cliente = accionCancelar.dataset.cliente;
+        const checkin = accionCancelar.dataset.checkin;
+
+        if (typeof window.Swal === "undefined") {
+          alert(`Frontend: cancelar reserva ${codigo} (${cliente})`);
+          return;
+        }
+
+        Swal.fire({
+          title: `Cancelar reserva ${codigo}`,
+          html: `
+            <p style="margin:0 0 8px; text-align:left;"><strong>Cliente:</strong> ${cliente}</p>
+            <p style="margin:0 0 12px; text-align:left;"><strong>Check-in:</strong> ${checkin}</p>
+            <select id="motivoCancelacionReserva" class="swal2-input" style="margin:0; width:100%;">
+              <option value="">Motivo de cancelación</option>
+              <option value="cliente">Cancelación del cliente</option>
+              <option value="no_show">No show</option>
+              <option value="error">Error de reserva</option>
+              <option value="fuerza_mayor">Fuerza mayor</option>
+            </select>
+          `,
+          showCancelButton: true,
+          confirmButtonText: "Confirmar cancelación",
+          cancelButtonText: "Volver",
+          confirmButtonColor: "#8f2f2f",
+          cancelButtonColor: "#2f3e1f",
+          preConfirm: () => {
+            const motivo =
+              document.getElementById("motivoCancelacionReserva")?.value || "";
+            if (!motivo) {
+              Swal.showValidationMessage("Seleccione un motivo");
+              return null;
+            }
+            return { id_reserva: id, motivo };
+          },
+        }).then((result) => {
+          if (!result.isConfirmed) return;
+
+          Swal.fire({
+            icon: "success",
+            title: "Cancelación preparada",
+            text: "Frontend listo. Luego conectamos el backend.",
+            confirmButtonColor: "#185025",
+          });
+        });
+
+        return;
+      }
+
       const btnEditar = e.target.closest(".boton-editar-reserva");
       if (btnEditar) {
         const fila = btnEditar.closest("tr");
@@ -130,7 +293,9 @@ const configurarEventosReservas = () => {
         // Confirmación antes de ejecutar check-in
         let confirmado = false;
         if (typeof window.Confirmar === "function") {
-          confirmado = await window.Confirmar("¿Confirmar check-in para esta reserva?");
+          confirmado = await window.Confirmar(
+            "¿Confirmar check-in para esta reserva?",
+          );
         } else {
           confirmado = confirm("¿Confirmar check-in para esta reserva?");
         }
@@ -179,21 +344,6 @@ const configurarEventosReservas = () => {
         return;
       }
 
-      const btnCancelar = e.target.closest(".boton-cancelar-reserva");
-      if (btnCancelar) {
-        const confirmado = confirm(
-          "¿Desea cancelar la reserva y procesar la devolución (aplicable según política)?",
-        );
-        if (!confirmado) return;
-
-        const motivo = prompt("Motivo de la cancelación:", "");
-        ejecutarAccionReserva("cancelar", {
-          id_reserva: btnCancelar.dataset.id,
-          motivo: motivo || ''
-        });
-        return;
-      }
-
       const btnCambioHabitacion = e.target.closest(".boton-cambio-habitacion");
       if (btnCambioHabitacion) {
         const idHabitacionNueva = prompt(
@@ -210,6 +360,12 @@ const configurarEventosReservas = () => {
       }
     });
   }
+
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".menu-mas-opciones-wrap")) {
+      cerrarMenusOpciones();
+    }
+  });
 };
 
 const ejecutarAccionReserva = async (accion, datos) => {
@@ -239,5 +395,4 @@ const ejecutarAccionReserva = async (accion, datos) => {
   }
 };
 
-// Inicializar automáticamente al cargar el script
-window.inicializarReservas();
+// La inicialización se ejecuta desde main.js para evitar duplicar listeners.
