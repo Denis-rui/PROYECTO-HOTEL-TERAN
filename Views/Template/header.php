@@ -29,6 +29,7 @@
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Notificaciones.css" />
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Devoluciones.css" />
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Modal-TipoHabitacion.css" />
+    <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Modal-Confirm.css" />
 </head>
 <body>
     <div id="nav">

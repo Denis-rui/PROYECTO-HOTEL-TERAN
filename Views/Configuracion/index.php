@@ -88,6 +88,31 @@ $tipos = $data['tipos_habitacion'] ?? [];
     <button type="submit" class="form-button">Guardar Cambios Generales</button>
   </form>
 
+    <!-- Modal de confirmación al guardar cambios generales -->
+    <section class="modal-confirm" id="modal-confirmar-guardar" style="display: none;">
+      <div class="contenedor-modal" role="dialog" aria-modal="true">
+        <h3 class="titulo-modal">Confirmar cambios</h3>
+        <p>
+          ¿Estás seguro de conservar los cambios realizados?
+        </p>
+        <div class="div-mensaje-exito-error" id="mensaje-modal-confirm"></div>
+        <div class="acciones-modal">
+          <button type="button"
+                  id="btn-cancelar-guardar"
+                  class="btn-cancelar btn">
+            Cancelar
+          </button>
+
+          <button type="button"
+                  id="btn-confirmar-guardar"
+                  class="btn-guardar btn">
+            Sí, guardar
+          </button>
+        </div>
+
+      </div>
+    </section>
+
   <br><br>
   <p>🛏️ Tipos de Habitación y Precios Base</p>
   <hr />

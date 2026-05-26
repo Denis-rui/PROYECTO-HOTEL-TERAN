@@ -40,20 +40,57 @@ window.inicializarConfiguraciones = () => {
       porcentaje_penalidad: document.getElementById("porcentaje_penalidad").value,
     };
 
-    fetch(BASE_URL + "Configuracion/actualizar", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(datos),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.exito) {
-          alert("Configuración guardada correctamente.");
-        } else {
-          alert("Error al guardar. Intenta de nuevo.");
-        }
+    // Mostrar modal de confirmación antes de enviar
+    const modalConfirm = document.getElementById("modal-confirmar-guardar");
+    const btnConfirm = document.getElementById("btn-confirmar-guardar");
+    const btnCancelar = document.getElementById("btn-cancelar-guardar");
+    const mensajeModal = document.getElementById("mensaje-modal-confirm");
+
+    modalConfirm.style.display = "flex";
+
+    function enviarDatos() {
+      // deshabilitar botones para evitar envíos dobles
+      btnConfirm.disabled = true;
+      btnCancelar.disabled = true;
+
+      fetch(BASE_URL + "Configuracion/actualizar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(datos),
       })
-      .catch(() => alert("Error de conexión."));
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.exito) {
+            mensajeModal.className = "div-mensaje-exito-error exito";
+            mensajeModal.textContent = "Configuración guardada correctamente.";
+            setTimeout(() => location.reload(), 800);
+          } else {
+            mensajeModal.className = "div-mensaje-exito-error error";
+            mensajeModal.textContent = "Error al guardar. Intenta de nuevo.";
+            btnConfirm.disabled = false;
+            btnCancelar.disabled = false;
+          }
+        })
+        .catch(() => {
+          mensajeModal.className = "div-mensaje-exito-error error";
+          mensajeModal.textContent = "Error de conexión.";
+          btnConfirm.disabled = false;
+          btnCancelar.disabled = false;
+        });
+    }
+
+    function cerrarModal() {
+      mensajeModal.textContent = "";
+      modalConfirm.style.display = "none";
+      btnConfirm.disabled = false;
+      btnCancelar.disabled = false;
+      // eliminar listeners para evitar duplicados
+      btnConfirm.removeEventListener("click", enviarDatos);
+      btnCancelar.removeEventListener("click", cerrarModal);
+    }
+
+    btnConfirm.addEventListener("click", enviarDatos);
+    btnCancelar.addEventListener("click", cerrarModal);
   });
 
   function validarFormulario() {
