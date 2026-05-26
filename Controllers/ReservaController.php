@@ -41,7 +41,7 @@ class ReservaController extends Controller
             $data['error_reservas'] = 'Error al cargar las reservas. Intenta nuevamente en unos minutos.';
         }
 
-        $data['page_js'] = ['Clientes.js', 'Modal-Clientes.js', 'Modal-NuevaReserva.js', 'Pago.js', 'Comprobante.js', 'Reservas.js'];
+        $data['page_js'] = ['Clientes.js', 'Modal-Clientes.js', 'Modal-NuevaReserva.js', 'Pago.js', 'Comprobante.js', 'Modal-VerDetalles.js', 'Reservas.js'];
         $this->views->render($this, 'index', $data);
     }
 
