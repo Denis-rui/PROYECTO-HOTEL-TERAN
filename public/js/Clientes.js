@@ -82,17 +82,39 @@ const configurarEventosClientes = () => {
 
       const botonInhabilitar = evento.target.closest(".btnInhabilitarCliente");
       if (botonInhabilitar) {
-        if (confirm("Esta seguro de que desea inhabilitar este cliente?")) {
-          await cambiarEstadoCliente("eliminar", botonInhabilitar.dataset.id, "Cliente inhabilitado correctamente");
-        }
+        Swal.fire({
+          title: "¿Está seguro?",
+          text: "¿Está seguro de que desea inhabilitar este cliente?",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonColor: "#d33",
+          cancelButtonColor: "#6c757d",
+          confirmButtonText: "Sí, inhabilitar",
+          cancelButtonText: "Cancelar",
+        }).then((result) => {
+          if (result.isConfirmed) {
+            cambiarEstadoCliente("eliminar", botonInhabilitar.dataset.id, "Cliente inhabilitado correctamente");
+          }
+        });
         return;
       }
 
       const botonHabilitar = evento.target.closest(".btnHabilitarCliente");
       if (botonHabilitar) {
-        if (confirm("Esta seguro de que desea habilitar este cliente?")) {
-          await cambiarEstadoCliente("habilitar", botonHabilitar.dataset.id, "Cliente habilitado correctamente");
-        }
+        Swal.fire({
+          title: "¿Está seguro?",
+          text: "¿Está seguro de que desea habilitar este cliente?",
+          icon: "question",
+          showCancelButton: true,
+          confirmButtonColor: "#28a745",
+          cancelButtonColor: "#6c757d",
+          confirmButtonText: "Sí, habilitar",
+          cancelButtonText: "Cancelar",
+        }).then((result) => {
+          if (result.isConfirmed) {
+            cambiarEstadoCliente("habilitar", botonHabilitar.dataset.id, "Cliente habilitado correctamente");
+          }
+        });
       }
     });
   }
@@ -108,14 +130,33 @@ const cambiarEstadoCliente = async (accion, idCliente, mensajeExito) => {
 
     const resultado = await res.json();
     if (resultado.exito) {
-      alert(mensajeExito);
-      window.location.reload();
+      Swal.fire({
+        title: "¡Éxito!",
+        text: mensajeExito,
+        icon: "success",
+        confirmButtonColor: "#28a745",
+        confirmButtonText: "Aceptar",
+      }).then(() => {
+        window.location.reload();
+      });
     } else {
-      alert(resultado.mensaje || "No se pudo cambiar el estado del cliente");
+      Swal.fire({
+        title: "Error",
+        text: resultado.mensaje || "No se pudo cambiar el estado del cliente",
+        icon: "error",
+        confirmButtonColor: "#d33",
+        confirmButtonText: "Aceptar",
+      });
     }
   } catch (error) {
     console.error(error);
-    alert("Error al cambiar el estado del cliente");
+    Swal.fire({
+      title: "Error",
+      text: "Error al cambiar el estado del cliente",
+      icon: "error",
+      confirmButtonColor: "#d33",
+      confirmButtonText: "Aceptar",
+    });
   }
 };
 
@@ -187,29 +228,67 @@ if (document.readyState === "loading") {
 }
 
 window.registrarClienteNuevo = async (datos) => {
-  const res = await fetch(BASE_URL + "Cliente/registrar", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(datos),
-  });
-  const resultado = await res.json();
-  if (resultado.exito) {
-    window.location.reload();
-  } else {
-    throw new Error(resultado.mensaje || "Error al registrar");
+  try {
+    const res = await fetch(BASE_URL + "Cliente/registrar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(datos),
+    });
+    const resultado = await res.json();
+    if (resultado.exito) {
+      Swal.fire({
+        title: "¡Éxito!",
+        text: "Cliente registrado correctamente",
+        icon: "success",
+        confirmButtonColor: "#28a745",
+        confirmButtonText: "Aceptar",
+      }).then(() => {
+        window.location.reload();
+      });
+    } else {
+      throw new Error(resultado.mensaje || "Error al registrar");
+    }
+  } catch (error) {
+    Swal.fire({
+      title: "Error",
+      text: error.message,
+      icon: "error",
+      confirmButtonColor: "#d33",
+      confirmButtonText: "Aceptar",
+    });
+    throw error;
   }
 };
 
 window.actualizarClienteExistente = async (datos) => {
-  const res = await fetch(BASE_URL + "Cliente/actualizar", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(datos),
-  });
-  const resultado = await res.json();
-  if (resultado.exito) {
-    window.location.reload();
-  } else {
-    throw new Error(resultado.mensaje || "Error al actualizar");
+  try {
+    const res = await fetch(BASE_URL + "Cliente/actualizar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(datos),
+    });
+    const resultado = await res.json();
+    if (resultado.exito) {
+      Swal.fire({
+        title: "¡Éxito!",
+        text: "Cliente actualizado correctamente",
+        icon: "success",
+        confirmButtonColor: "#28a745",
+        confirmButtonText: "Aceptar",
+      }).then(() => {
+        window.location.reload();
+      });
+    } else {
+      throw new Error(resultado.mensaje || "Error al actualizar");
+    }
+  } catch (error) {
+    Swal.fire({
+      title: "Error",
+      text: error.message,
+      icon: "error",
+      confirmButtonColor: "#d33",
+      confirmButtonText: "Aceptar",
+    });
+    throw error;
   }
 };

@@ -6,38 +6,44 @@
       <input type="hidden" id="id-cliente" name="id-cliente" />
 
       <div class="label-input-modal">
-        <label for="nombre-cliente">Nombre</label>
+        <label for="nombre-cliente">Nombre <span class="campo-requerido">*</span></label>
         <input type="text" id="nombre-cliente" class="input-modal" required />
+        <span class="error-validation" id="error-nombre-cliente"></span>
       </div>
 
       <div class="label-input-modal">
-        <label for="tipo-documento-cliente">Tipo de Documento</label>
+        <label for="tipo-documento-cliente">Tipo de Documento <span class="campo-requerido">*</span></label>
         <select id="tipo-documento-cliente" class="input-modal" required>
           <option value="">Seleccione</option>
           <option value="1">DNI</option>
           <option value="2">RUC</option>
           <option value="3">PASAPORTE</option>
         </select>
+        <span class="error-validation" id="error-tipo-documento-cliente"></span>
       </div>
 
       <div class="label-input-modal">
-        <label for="dni-cliente">Documento</label>
+        <label for="dni-cliente">Documento <span class="campo-requerido">*</span></label>
         <input type="text" id="dni-cliente" class="input-modal" required />
+        <span class="error-validation" id="error-dni-cliente"></span>
       </div>
 
       <div class="label-input-modal">
-        <label for="gmail-cliente">Correo Electrónico</label>
+        <label for="gmail-cliente">Correo Electrónico <span class="campo-requerido">*</span></label>
         <input type="email" id="gmail-cliente" class="input-modal" required />
+        <span class="error-validation" id="error-gmail-cliente"></span>
       </div>
 
       <div class="label-input-modal">
-        <label for="telefono-cliente">Teléfono</label>
+        <label for="telefono-cliente">Teléfono <span class="campo-requerido">*</span></label>
         <input type="tel" id="telefono-cliente" class="input-modal" required />
+        <span class="error-validation" id="error-telefono-cliente"></span>
       </div>
 
       <div class="label-input-modal">
-        <label for="procedencia-cliente">Procedencia *</label>
+        <label for="procedencia-cliente">Procedencia <span class="campo-requerido">*</span></label>
         <input type="text" id="procedencia-cliente" class="input-modal" required />
+        <span class="error-validation" id="error-procedencia-cliente"></span>
       </div>
 
       <div class="label-input-modal">
@@ -45,11 +51,8 @@
         <textarea id="observaciones-cliente" class="input-modal" rows="3" style="resize: vertical;"></textarea>
       </div>
 
-      <div class="label-input-modal">
-        <label for="reservaciones-cliente">Reservaciones</label>
-        <input type="number" id="reservaciones-cliente" class="input-modal" readonly style="background-color: #e9ecef; cursor: not-allowed;" />
-        <small style="color: #666;">Se calcula automáticamente según check-ins</small>
-      </div>
+      <!-- Campo Reservaciones oculto: Se calcula automáticamente según check-ins -->
+      <input type="hidden" id="reservaciones-cliente" name="reservaciones-cliente" />
 
       <div id="error-exito-modal-cliente" class="div-mensaje-exito-error"></div>
 
@@ -63,3 +66,4 @@
     </form>
   </div>
 </section>
+
