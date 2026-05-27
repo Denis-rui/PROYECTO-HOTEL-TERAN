@@ -40,7 +40,7 @@ window.inicializarConfiguraciones = () => {
       porcentaje_penalidad: document.getElementById("porcentaje_penalidad").value,
     };
 
-    // Confirmación usando SweetAlert2 (funciones en public/js/Notificaiones.js)
+    // Confirmación usando SweetAlert2
     Confirmar("¿Estás seguro de conservar los cambios realizados?").then((confirmado) => {
       if (!confirmado) return;
 

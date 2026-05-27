@@ -10,8 +10,9 @@ const obtenerDatosUsuarioDesdeBoton = (boton) => ({
   password: "",
 });
 
-const eliminarUsuarioPorId = (idUsuario) => {
-  if (!confirm("¿Estás seguro de eliminar este usuario?")) return;
+const eliminarUsuarioPorId = async (idUsuario) => {
+  const confirmado = await window.Confirmar?.("¿Estás seguro de eliminar este usuario?");
+  if (!confirmado) return;
 
   fetch(BASE_URL + "Usuario/eliminar", {
     method: "POST",
@@ -21,12 +22,13 @@ const eliminarUsuarioPorId = (idUsuario) => {
     .then((res) => res.json())
     .then((data) => {
       if (data.exito) {
-        window.location.reload();
+        window.Notificar?.("Usuario eliminado correctamente.", "exito");
+        setTimeout(() => window.location.reload(), 1500);
       } else {
-        alert("Error al eliminar usuario.");
+        window.Notificar?.(data.error || "Error al eliminar usuario.", "error");
       }
     })
-    .catch(() => alert("Error de conexión."));
+    .catch(() => window.Notificar?.("Error de conexión.", "error"));
 };
 
 const abrirModalParaEditar = (boton) => {
