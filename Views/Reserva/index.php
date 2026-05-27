@@ -1,6 +1,25 @@
 <?php
 $reservas = $data['reservas'] ?? [];
 $errorReservas = $data['error_reservas'] ?? '';
+$filtros = $data['filtros'] ?? [];
+$valorBusqueda = (string) ($filtros['busqueda'] ?? '');
+$valorEstado = (string) ($filtros['estado'] ?? '');
+$limiteActual = max(30, (int) ($data['limite'] ?? 30));
+$hayMasReservas = (bool) ($data['hay_mas'] ?? false);
+$totalReservas = (int) ($data['total_reservas'] ?? count($reservas));
+$mostradasReservas = (int) ($data['mostradas_reservas'] ?? count($reservas));
+
+$paramsVerMas = [
+  'url' => 'Reserva/index',
+  'limite' => $limiteActual + 30,
+];
+if ($valorBusqueda !== '') {
+  $paramsVerMas['busqueda'] = $valorBusqueda;
+}
+if ($valorEstado !== '') {
+  $paramsVerMas['estado'] = $valorEstado;
+}
+$urlVerMas = BASE_URL . '?' . http_build_query($paramsVerMas);
 
 if (!function_exists('formatearListaHabitacionesReserva')) {
   function formatearListaHabitacionesReserva(array $reserva): string
@@ -29,6 +48,24 @@ if (!function_exists('formatearListaHabitacionesReserva')) {
     }
 
     return htmlspecialchars((string) ($reserva['habitacion'] ?? ''), ENT_QUOTES, 'UTF-8');
+  }
+}
+
+if (!function_exists('formatearFechaReserva')) {
+  function formatearFechaReserva(?string $fecha): string
+  {
+    $fecha = trim((string) $fecha);
+    if ($fecha === '') {
+      return '';
+    }
+
+    try {
+      $formato = strlen($fecha) > 16 ? 'Y-m-d H:i:s' : 'Y-m-d H:i';
+      $dateTime = DateTime::createFromFormat($formato, $fecha) ?: new DateTime($fecha);
+      return $dateTime->format('Y-m-d H:i');
+    } catch (Throwable $e) {
+      return $fecha;
+    }
   }
 }
 
@@ -91,24 +128,34 @@ if (!function_exists('esEstadoBloqueadoReserva')) {
   </header>
 
   <div class="buscar-filtro">
-    <form action="">
+    <form action="<?= BASE_URL ?>" method="GET">
+      <input type="hidden" name="url" value="Reserva/index">
+      <input type="hidden" name="limite" value="30">
       <input
         class="buscar"
+
         id="inputBuscarReserva"
+        name="busqueda"
         type="text"
-        placeholder="🔍 Buscar " />
-      <select id="filtroEstado" class="filtro-estado">
+        placeholder="🔍 Buscar por nombre o DNI"
+        value="<?= htmlspecialchars($valorBusqueda, ENT_QUOTES, 'UTF-8') ?>" />
+      <select id="filtroEstado" name="estado" class="filtro-estado">
         <option value="">Todos los estados</option>
-        <option value="confirmada">Confirmada</option>
-        <option value="en_estadia">En estadía</option>
-        <option value="checkout_realizado">Checkout</option>
-        <option value="cancelada">Cancelada</option>
+        <option value="ausente" <?= $valorEstado === 'ausente' ? 'selected' : '' ?>>Ausente</option>
+        <option value="confirmada" <?= $valorEstado === 'confirmada' ? 'selected' : '' ?>>Confirmada</option>
+        <option value="en_estadia" <?= $valorEstado === 'en_estadia' ? 'selected' : '' ?>>En estadía</option>
+        <option value="checkout_pendiente" <?= $valorEstado === 'checkout_pendiente' ? 'selected' : '' ?>>Checkout pendiente</option>
+        <option value="checkout_realizado" <?= $valorEstado === 'checkout_realizado' ? 'selected' : '' ?>>Checkout</option>
+        <option value="cancelada" <?= $valorEstado === 'cancelada' ? 'selected' : '' ?>>Cancelada</option>
 
       </select>
 
-      <button class="btn">
+      <button type="submit" class="btn">
         Aplicar filtros
       </button>
+      <a href="<?= BASE_URL ?>?url=Reserva/index" class="btn btn-limpiar-filtros">
+        Limpiar filtros
+      </a>
 
     </form>
 
@@ -132,9 +179,9 @@ if (!function_exists('esEstadoBloqueadoReserva')) {
           <tr data-id="<?= (int) $reserva["id"] ?>" data-estado="<?= htmlspecialchars($reserva["estado"]) ?>" data-porcentajepago="<?= htmlspecialchars($reserva["porcentaje_pago"]) ?>" data-total="<?= htmlspecialchars($reserva["total"]) ?>" data-saldo-pendiente="<?= htmlspecialchars($reserva["saldo_pendiente"] ?? 0) ?>" data-cliente="<?= htmlspecialchars($reserva["cliente"]) ?>" data-habitacion="<?= htmlspecialchars($reserva["habitacion"]) ?>" data-habitaciones='<?= htmlspecialchars(json_encode($reserva["habitaciones"] ?? [], JSON_UNESCAPED_UNICODE), ENT_QUOTES, "UTF-8") ?>' data-historial='<?= htmlspecialchars(json_encode($reserva["historial"] ?? [], JSON_UNESCAPED_UNICODE), ENT_QUOTES, "UTF-8") ?>' data-documentos='<?= htmlspecialchars(json_encode($reserva["documentos"] ?? [], JSON_UNESCAPED_UNICODE), ENT_QUOTES, "UTF-8") ?>' data-checkin="<?= htmlspecialchars($reserva["check_in"]) ?>" data-checkout="<?= htmlspecialchars($reserva["check_out"]) ?>" data-email="<?= htmlspecialchars($reserva["correo_electronico"] ?? '') ?>">
             <td><?= htmlspecialchars($reserva["cliente"]) ?></td>
             <td><?= formatearListaHabitacionesReserva($reserva) ?></td>
-            <td><?= htmlspecialchars($reserva["check_in"]) ?></td>
+            <td><?= htmlspecialchars(formatearFechaReserva($reserva["check_in"])) ?></td>
             <td>
-              <?= htmlspecialchars($reserva["check_out"]) ?>
+                <?= htmlspecialchars(formatearFechaReserva($reserva["check_out"])) ?>
               <?php if ((int) ($reserva["minutos_checkout_vencido"] ?? 0) > 0): ?>
                 <span class="badge-vencido" data-checkout="<?= htmlspecialchars($reserva["check_out"]) ?>">Checkout vencido</span>
               <?php endif; ?>
@@ -225,6 +272,14 @@ if (!function_exists('esEstadoBloqueadoReserva')) {
       </tbody>
     </table>
   </div>
+
+  <?php if ($hayMasReservas): ?>
+    <div class="contenedor-ver-mas">
+      <a href="<?= htmlspecialchars($urlVerMas, ENT_QUOTES, 'UTF-8') ?>" class="btn btn-ver-mas-reservas">
+        Ver más (<?= $mostradasReservas ?> de <?= $totalReservas ?>)
+      </a>
+    </div>
+  <?php endif; ?>
 
   <!-- INCLUSIÓN DE MODALES -->
   <?php require_once("Views/Template/Modals/Modal-NuevaReserva.php"); ?>

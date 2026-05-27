@@ -3,8 +3,8 @@
 body{
     margin:0;
     font-family:'Segoe UI',sans-serif;
-    background:#f4f4f1;
-    color:#3d4a2f;
+    background:var(--bg-cream);
+    color:var(--text-primary);
 }
 
 /* ========= LAYOUT ========= */
@@ -28,7 +28,7 @@ body{
 
 .parte-lateral{
 
-    background:#dfe8c3;
+    background:var(--bg-light);
 
     border-radius:26px;
 
@@ -48,6 +48,8 @@ body{
     top:25px;
 
     height:fit-content;
+
+    border:1px solid var(--border);
 }
 
 /* ========= AVATAR ========= */
@@ -60,7 +62,7 @@ body{
     border-radius:50%;
 
     background:
-    linear-gradient(135deg,#6f8d3c,#84a84c);
+    linear-gradient(135deg,var(--primary),var(--primary-light));
 
     color:white;
 
@@ -74,7 +76,7 @@ body{
 
     margin-bottom:20px;
 
-    border:4px solid #edf4dd;
+    border:4px solid var(--primary-bg);
 
     box-shadow:
     0 8px 20px rgba(0,0,0,.12);
@@ -88,7 +90,7 @@ body{
 
     font-weight:700;
 
-    color:#425329;
+    color:var(--primary-dark);
 
     margin-bottom:12px;
 
@@ -99,11 +101,11 @@ body{
 
 .perfil-rol{
 
-    background:#eef5dd;
+    background:var(--primary-bg);
 
-    color:#6b8640;
+    color:var(--primary);
 
-    border:1px solid #cad7aa;
+    border:1px solid var(--border);
 
     border-radius:30px;
 
@@ -135,7 +137,7 @@ body{
 
   margin-bottom:14px;
 
-  color:#5c6d44;
+  color:var(--text-primary);
 
   font-size:14px;
 
@@ -165,7 +167,7 @@ body{
 
 .form{
 
-    background:#dfe8c3;
+    background:var(--bg-light);
 
     border-radius:28px;
 
@@ -173,6 +175,8 @@ body{
 
     box-shadow:
     0 10px 25px rgba(0,0,0,.08);
+
+    border:1px solid var(--border);
 
     transition:.3s ease;
 }
@@ -192,7 +196,7 @@ body{
 
     font-size:32px;
 
-    color:#425329;
+    color:var(--primary-dark);
 
     display:flex;
 
@@ -209,7 +213,7 @@ body{
 
     margin-bottom:28px;
 
-    color:#708255;
+    color:var(--primary-light);
 
     font-size:14px;
 }
@@ -248,7 +252,7 @@ body{
 
     margin-bottom:8px;
 
-    color:#5c6d44;
+    color:var(--text-primary);
 
     font-size:13px;
 
@@ -290,9 +294,7 @@ body{
     outline:none;
 
     box-shadow:
-    0 0 0 4px rgba(110,140,62,.2);
-
-    background:#242424;
+    0 0 0 4px rgba(45,74,30,0.12);
 }
 
 /* ========= BOTON ========= */
@@ -310,7 +312,7 @@ body{
     border-radius:14px;
 
     background:
-    linear-gradient(135deg,#6f8d3c,#88a84e);
+    linear-gradient(135deg,var(--primary),var(--primary-light));
 
     color:white;
 

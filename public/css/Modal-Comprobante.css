@@ -34,12 +34,12 @@
   display: inline-block;
   font-size: 10px;
   font-weight: 700;
-  color: #333;
-  background: #f1f1f1;
+  color: var(--text-dark);
+  background: var(--border-light);
   padding: 2px 7px;
   border-radius: 999px;
   margin-bottom: 4px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border);
 }
 
 .titulo-comprobante {
@@ -51,7 +51,7 @@
   font-size: 24px;
   line-height: 1;
   cursor: pointer;
-  color: #555;
+  color: var(--text-secondary);
 }
 
 .comprobante-resumen {

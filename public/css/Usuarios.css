@@ -5,14 +5,14 @@
   margin-bottom: 20px;
 
   h2 {
-    color: #2f3e1f;
+    color: var(--primary-dark);
     font-size: 24px;
     font-weight: bold;
   }
 
   .boton-nuevo-usuario {
-    background-color: #4f6422;
-    color: #fff;
+    background-color: var(--primary);
+    color: var(--text-white);
     border: none;
     padding: 10px 20px;
     border-radius: 5px;
@@ -20,7 +20,7 @@
     font-size: 14px;
 
     &:hover {
-      background-color: #3d4e1a;
+      background-color: var(--primary-dark);
     }
   }
 }
@@ -29,7 +29,7 @@
   margin-bottom: 20px;
 
   padding: 10px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border);
   border-radius: 5px;
   font-size: 14px;
   width: 200px;
@@ -37,24 +37,36 @@
 
 .tabla {
   width: 100%;
-  border-radius: 20px 20px;
+  border-radius: 16px;
   overflow: hidden;
-  background-color: #e8dfc880;
+  background: var(--bg-white);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 
   .tbl-usuarios {
     width: 100%;
     border-spacing: 0;
+    border-collapse: separate;
     thead {
-      background-color: rgb(232, 223, 200);
+      background: var(--primary-dark);
     }
   }
-  th,
+  th {
+    color: var(--text-white);
+    font-weight: 600;
+    padding: 14px 12px;
+    text-align: left;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+  }
   td {
     padding: 12px;
     text-align: left;
+    border-bottom: 1px solid var(--border-light);
   }
-
-  th {
-    color: #2f3e1f;
+  tbody tr:nth-child(even) {
+    background: var(--bg-light);
+  }
+  tbody tr:hover {
+    background: var(--primary-bg);
   }
 }

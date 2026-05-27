@@ -6,7 +6,7 @@
 }
 
 .header-devoluciones h2 {
-  color: #2f3e1f;
+  color: var(--primary-dark);
   font-size: 24px;
   font-weight: bold;
 }
@@ -17,7 +17,7 @@
 
 .buscar input {
   padding: 10px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border);
   border-radius: 5px;
   font-size: 14px;
   width: 320px;
@@ -25,26 +25,41 @@
 
 .tabla {
   width: 100%;
-  border-radius: 20px;
+  border-radius: 16px;
   overflow: hidden;
-  background-color: rgba(232, 223, 200, 0.5);
+  background: var(--bg-white);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
 .tbl-devoluciones {
   width: 100%;
   border-spacing: 0;
+  border-collapse: separate;
 }
 
 .tbl-devoluciones thead {
-  background-color: rgba(232, 223, 200, 1);
-}
-
-.tbl-devoluciones th,
-.tbl-devoluciones td {
-  padding: 12px;
-  text-align: left;
+  background: var(--primary-dark);
 }
 
 .tbl-devoluciones th {
-  color: #2f3e1f;
+  color: var(--text-white);
+  font-weight: 600;
+  padding: 14px 12px;
+  text-align: left;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+}
+
+.tbl-devoluciones td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.tbl-devoluciones tbody tr:nth-child(even) {
+  background: var(--bg-light);
+}
+
+.tbl-devoluciones tbody tr:hover {
+  background: var(--primary-bg);
 }

@@ -1,7 +1,7 @@
 body {
   margin: 0;
   font-family: "Segoe UI", sans-serif;
-  background-color: #d9d2b6;
+  background-color: var(--bg-warm);
 }
 
 .contenedor-habitaciones {
@@ -18,7 +18,7 @@ body {
 .cabecera-habitaciones h1 {
   margin: 0;
   font-size: 40px;
-  color: #2e3d1f;
+  color: var(--primary-dark);
 }
 
 .cabecera-derecha {
@@ -28,7 +28,7 @@ body {
 }
 
 .btn-nueva-habitacion {
-  background-color: #3f5c2d;
+  background-color: var(--primary);
   color: white;
   border: none;
   padding: 12px 20px;
@@ -47,7 +47,7 @@ body {
 .caja-busqueda {
   display: flex;
   align-items: center;
-  background: #e8e2c8;
+  background: var(--bg-warm);
   padding: 10px 15px;
   border-radius: 15px;
 }
@@ -63,7 +63,7 @@ select {
   padding: 10px 15px;
   border-radius: 15px;
   border: none;
-  background: #e8e2c8;
+  background: var(--bg-warm);
   cursor: pointer;
 }
 
@@ -73,14 +73,14 @@ select {
 }
 
 .tarjeta-habitacion {
-  background-color: #e8e2c8;
+  background-color: var(--bg-warm);
   border-radius: 15px;
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  border: 2px solid #ccc;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  border: 2px solid var(--border);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
@@ -90,22 +90,10 @@ select {
 }
 
 /* Bordes por estado */
-.tarjeta-habitacion.disponible {
-  border-color: #00b853;
-}
-
-.tarjeta-habitacion.ocupada,
-.tarjeta-habitacion.ocupado {
-  border-color: #ff3b3b;
-}
-
-.tarjeta-habitacion.mantenimiento {
-  border-color: #ff9d2e;
-}
-
-.tarjeta-habitacion.reservada {
-  border-color: #8c8c8c;
-}
+.tarjeta-habitacion.disponible { border-color: var(--success); }
+.tarjeta-habitacion.ocupada, .tarjeta-habitacion.ocupado { border-color: var(--danger); }
+.tarjeta-habitacion.mantenimiento { border-color: var(--warning); }
+.tarjeta-habitacion.reservada { border-color: var(--text-muted); }
 
 /* Número Habitación */
 .habitacion-numero {
@@ -116,22 +104,10 @@ select {
   font-size: 14px;
   width: fit-content;
 }
-
-.tarjeta-habitacion.disponible .habitacion-numero {
-  background-color: #00b853;
-}
-
-.tarjeta-habitacion.ocupada .habitacion-numero {
-  background-color: #ff3b3b;
-}
-
-.tarjeta-habitacion.mantenimiento .habitacion-numero {
-  background-color: #ff9d2e;
-}
-
-.tarjeta-habitacion.reservada .habitacion-numero {
-  background-color: #8c8c8c;
-}
+.tarjeta-habitacion.disponible .habitacion-numero { background-color: var(--success); }
+.tarjeta-habitacion.ocupada .habitacion-numero { background-color: var(--danger); }
+.tarjeta-habitacion.mantenimiento .habitacion-numero { background-color: var(--warning); }
+.tarjeta-habitacion.reservada .habitacion-numero { background-color: var(--text-muted); }
 
 /* Tipo y Capacidad */
 .habitacion-tipo {
@@ -139,34 +115,22 @@ select {
   font-weight: 600;
   margin-top: 5px;
 }
-
-.tarjeta-habitacion.disponible .habitacion-tipo {
-  color: #00b853;
-}
-
-.tarjeta-habitacion.ocupada .habitacion-tipo {
-  color: #ff3b3b;
-}
-
-.tarjeta-habitacion.mantenimiento .habitacion-tipo {
-  color: #ff9d2e;
-}
-
-.tarjeta-habitacion.reservada .habitacion-tipo {
-  color: #8c8c8c;
-}
+.tarjeta-habitacion.disponible .habitacion-tipo { color: var(--success); }
+.tarjeta-habitacion.ocupada .habitacion-tipo { color: var(--danger); }
+.tarjeta-habitacion.mantenimiento .habitacion-tipo { color: var(--warning); }
+.tarjeta-habitacion.reservada .habitacion-tipo { color: var(--text-muted); }
 
 /* Precio */
 .habitacion-precio {
   font-size: 18px;
   font-weight: bold;
-  color: #2e3d1f;
+  color: var(--primary-dark);
 }
 
 /* Descripción */
 .habitacion-descripcion {
   font-size: 13px;
-  color: #555;
+  color: var(--text-secondary);
   min-height: 40px;
 }
 
@@ -189,24 +153,16 @@ select {
 
 /* Colores Badges */
 .tarjeta-habitacion.disponible .badge-status.operativo,
-.tarjeta-habitacion.limpia .badge-status.limpieza {
-  background-color: #00b853;
-}
+.tarjeta-habitacion.limpia .badge-status.limpieza { background-color: var(--success); }
 
 .tarjeta-habitacion.ocupada .badge-status.operativo,
-.tarjeta-habitacion.sucia .badge-status.limpieza {
-  background-color: #ff3b3b;
-}
+.tarjeta-habitacion.sucia .badge-status.limpieza { background-color: var(--danger); }
 
 .tarjeta-habitacion.mantenimiento .badge-status.operativo,
-.tarjeta-habitacion.en_limpieza .badge-status.limpieza {
-  background-color: #ff9d2e;
-}
+.tarjeta-habitacion.en_limpieza .badge-status.limpieza { background-color: var(--warning); }
 
 .tarjeta-habitacion.reservada .badge-status.operativo,
-.tarjeta-habitacion.inspeccion_pendiente .badge-status.limpieza {
-  background-color: #8c8c8c;
-}
+.tarjeta-habitacion.inspeccion_pendiente .badge-status.limpieza { background-color: var(--text-muted); }
 
 /* Acciones */
 .habitacion-acciones {
@@ -216,15 +172,14 @@ select {
   margin-top: 15px;
 }
 
-.selector-estado,
-.selector-limpieza {
-  background-color: #e8e2c8;
-  border: 1px solid #ccc;
+.selector-estado, .selector-limpieza {
+  background-color: var(--bg-warm);
+  border: 1px solid var(--border);
   padding: 8px 12px;
   border-radius: 20px;
   font-size: 11px;
   font-weight: bold;
-  color: #2e3d1f;
+  color: var(--primary-dark);
   cursor: pointer;
   width: 100%;
 }
@@ -232,9 +187,9 @@ select {
 /* Pisos */
 .titulo-piso {
   margin: 30px 0 15px;
-  color: #2e3d1f;
+  color: var(--primary-dark);
   font-size: 22px;
-  border-bottom: 2px solid #3f5c2d;
+  border-bottom: 2px solid var(--primary);
   padding-bottom: 5px;
   width: fit-content;
 }
@@ -302,17 +257,17 @@ select {
   margin-top: 10px;
   padding: 10px;
   border-radius: 10px;
-  background: #fff3cd;
-  color: #856404;
+  background: var(--warning-bg);
+  color: var(--warning);
   font-size: 12px;
-  border: 1px solid #ffeeba;
+  border: 1px solid var(--warning-bg);
 }
 
 /* Botón Editar Habitación */
 .btn-editar-habitacion {
-  background-color: #e8e2c8;
-  border: 1px solid #3f5c2d;
-  color: #3f5c2d;
+  background-color: var(--bg-warm);
+  border: 1px solid var(--primary);
+  color: var(--primary);
   padding: 8px 12px;
   border-radius: 20px;
   font-size: 11px;
@@ -324,7 +279,7 @@ select {
 }
 
 .btn-editar-habitacion:hover {
-  background-color: #3f5c2d;
+  background-color: var(--primary);
   color: white;
 }
 

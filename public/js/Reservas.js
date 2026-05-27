@@ -3,43 +3,6 @@ window.inicializarReservas = () => {
   window.__reservasEventosInicializados = true;
 
   configurarEventosReservas();
-  const buscarReserva = document.getElementById("inputBuscarReserva");
-  const estadoSeleccionadoFiltro = document.getElementById("filtroEstado");
-
-  if (!buscarReserva || !estadoSeleccionadoFiltro) return;
-
-  const aplicarFiltros = () => {
-    const nombreBuscar = buscarReserva.value.toLowerCase();
-    const estadoSeleccionado = estadoSeleccionadoFiltro.value.toLowerCase();
-    const filas = document.querySelectorAll("#contenido-reservas tr");
-    filas.forEach((fila) => {
-      const nombre = fila.children[0].textContent.toLowerCase();
-      const estadoSelect = fila.children[4]?.querySelector(
-        "select.estado-reserva",
-      );
-      const estado = (
-        estadoSelect?.value ||
-        fila.dataset.estado ||
-        ""
-      ).toLowerCase();
-      if (
-        nombre.includes(nombreBuscar) &&
-        (estadoSeleccionado === "" || estado === estadoSeleccionado)
-      ) {
-        fila.style.display = "";
-      } else {
-        fila.style.display = "none";
-      }
-    });
-  };
-
-  buscarReserva.addEventListener("input", () => {
-    aplicarFiltros();
-  });
-
-  estadoSeleccionadoFiltro.addEventListener("change", () => {
-    aplicarFiltros();
-  });
 };
 const configurarEventosReservas = () => {
   const btnNuevaReserva = document.getElementById("btnNuevaReserva");

@@ -1,7 +1,7 @@
 /* GENERAL */
 .main-content.dashboard {
   padding: 40px;
-  background-color: #f3f2eb; /* Cream background from the image */
+  background-color: var(--bg-cream);
   min-height: 100vh;
   font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
@@ -18,7 +18,7 @@
   margin: 0;
   font-size: 24px;
   font-weight: 800;
-  color: #000;
+  color: var(--primary-dark);
   text-transform: uppercase;
 }
 
@@ -29,7 +29,7 @@
 
 /* BOTÓN NUEVA RESERVA */
 .btn-nueva-reserva {
-  background-color: #5a2328; /* Dark red */
+  background-color: var(--danger);
   color: white;
   padding: 12px 24px;
   border: none;
@@ -43,7 +43,7 @@
 }
 
 .btn-nueva-reserva:hover {
-  background-color: #43191d;
+  background-color: #6d2a2a;
   transform: translateY(-2px);
 }
 
@@ -84,15 +84,15 @@
 
 /* Estilos específicos de cada widget */
 .widget-red {
-  border: 3px solid #5a2328;
+  border: 3px solid var(--danger);
 }
 
 .widget-green {
-  border: 3px solid #84e16d;
+  border: 3px solid var(--success);
 }
 
 .widget-gray {
-  background-color: #d9d9d9;
+  background-color: var(--border-light);
   border: none;
 }
 
@@ -107,7 +107,7 @@
 .section-title {
   font-size: 18px;
   font-weight: normal;
-  color: #333;
+  color: var(--text-dark);
   margin-bottom: 20px;
 }
 
@@ -130,7 +130,7 @@
 .activity-pill p {
   margin: 0;
   font-size: 16px;
-  color: #333;
+  color: var(--text-dark);
 }
 
 .activity-icon {
@@ -145,11 +145,11 @@
 }
 
 .pill-blue {
-  background-color: #dce4ee;
+  background-color: var(--info-bg);
 }
 
 .blue-icon {
-  background-color: #3b82f6;
+  background-color: var(--info);
 }
 
 .pill-purple {
@@ -162,7 +162,7 @@
 
 /* TARJETA RESUMEN DEL DÍA */
 .summary-card {
-  background: white;
+  background: var(--bg-white);
   border-radius: 30px;
   padding: 30px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
@@ -171,7 +171,7 @@
 .summary-title {
   font-size: 18px;
   font-weight: normal;
-  color: #333;
+  color: var(--text-dark);
   margin: 0 0 20px 0;
   text-align: center;
 }
@@ -203,12 +203,12 @@
 
 .summary-item-left span:last-child {
   font-size: 16px;
-  color: #333;
+  color: var(--text-dark);
 }
 
 .summary-value {
   font-size: 16px;
-  color: #333;
+  color: var(--text-dark);
 }
 
 .summary-item-accordion {
@@ -221,7 +221,7 @@
 }
 
 .summary-item-accordion:hover {
-  background-color: #f3f4f6;
+  background-color: var(--border-light);
 }
 
 .summary-item-main {
@@ -234,7 +234,7 @@
 
 .chevron-icon {
   font-size: 18px;
-  color: #9ca3af;
+  color: var(--text-muted);
   margin-left: 10px;
   transition: transform 0.2s;
   display: inline-block;
@@ -248,9 +248,9 @@
   display: none;
   width: 100%;
   padding: 15px 15px 15px 50px; 
-  background: #f9fafb;
+  background: var(--bg-light);
   border-radius: 0 0 12px 12px;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--border-light);
 }
 
 .summary-item-accordion.active .mante-accordion-content {
@@ -272,18 +272,18 @@
 
 .mante-hab {
   font-weight: 700;
-  color: #5a2328;
+  color: var(--danger);
   min-width: 70px;
 }
 
 .mante-razon {
-  color: #4b5563;
+  color: var(--text-secondary);
   flex: 1;
 }
 
 .mante-vacio {
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--text-muted);
   font-style: italic;
 }
 
@@ -304,22 +304,22 @@
   flex-direction: column;
   gap: 4px;
   padding: 10px 12px;
-  border-left: 4px solid #6b7280;
-  background: #ffffff;
+  border-left: 4px solid var(--text-muted);
+  background: var(--bg-white);
   border-radius: 8px;
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
 }
 
 .notificacion-dashboard.media {
-  border-left-color: #2563eb;
+  border-left-color: var(--info);
 }
 
 .notificacion-dashboard.alta {
-  border-left-color: #f59e0b;
+  border-left-color: var(--warning);
 }
 
 .notificacion-dashboard.critica {
-  border-left-color: #dc2626;
+  border-left-color: var(--danger);
 }
 
 .boton-checkout-dashboard {
@@ -327,7 +327,7 @@
   border: none;
   border-radius: 6px;
   padding: 7px 10px;
-  background: #22324a;
-  color: #fff;
+  background: var(--primary-dark);
+  color: var(--text-white);
   cursor: pointer;
 }

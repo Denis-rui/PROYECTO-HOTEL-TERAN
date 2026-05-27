@@ -3,7 +3,7 @@ h2 {
   margin-bottom: 20px;
   font-size: 28px;
   font-weight: 600;
-  color: #4f6422;
+  color: var(--primary);
   font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
 }
 
@@ -19,7 +19,7 @@ section p {
   font-size: 16px;
   font-weight: 700;
   margin-bottom: 10px;
-  color: #2d5f2d;
+  color: var(--primary-dark);
   font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
 }
 
@@ -32,19 +32,20 @@ hr {
 
 /* ----- Formulario -------*/
 .form {
-  background: #cee4cb;
+  background: var(--bg-light);
   padding: 30px;
-  border-radius: 12px;
+  border-radius: 16px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
+  border: 1px solid var(--border);
 }
 
 /* ----- Labels ---*/
 .form-label {
   font-size: 11px;
   font-weight: 650;
-  color: #7e9c85;
+  color: var(--text-muted);
   font-family:
     "Lucida Sans", "Lucida Sans Regular", "Lucida Grande",
     "Lucida Sans Unicode", Geneva, Verdana, sans-serif;
@@ -77,29 +78,29 @@ hr {
   box-sizing: border-box;
   padding: 10px 12px;
   border-radius: 15px;
-  border: 1px solid #dcdcdc;
+  border: 1px solid var(--border);
   font-size: 14px;
   transition: all 0.3s ease;
   outline: none;
   background-color: #ffffff;  /* ← agregado */
-  color: #333333;              /* ← agregado */
+  color: var(--text-dark);              /* ← agregado */
   color-scheme: light;
 }
 
 .form-input::selection,
 .form-textarea::selection {
-  background-color: #c5d9b8;
-  color: #2d5f2d;
+  background-color: var(--primary-bg);
+  color: var(--primary-dark);
 }
 
 /* efectos */
 .form-input:focus,
 .form-select:focus,
 .form-textarea:focus {
-  border-color: #8fa878;
-  box-shadow: 0 0 0 2px rgba(143, 168, 120, 0.2);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(74, 122, 48, 0.2);
   background-color: #ffffff !important;
-  color: #333333 !important;
+  color: var(--text-dark) !important;
 }
 
 /*------ descripcion ----- */
@@ -113,7 +114,7 @@ hr {
 .form-button {
   margin-top: 10px;
   padding: 12px;
-  background: #8fa878;
+  background: var(--primary);
   color: white;
   border: none;
   border-radius: 8px;
@@ -125,7 +126,7 @@ hr {
 
 /* efecto hover */
 .form-button:hover {
-  background: #7b9366;
+  background: var(--primary-dark);
   transform: translateY(-1px);
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }

@@ -19,10 +19,10 @@
   flex-direction: column;
   position: relative;
   overflow: hidden;
-  /* Glassmorphism con fondo verde petróleo */
-  background: linear-gradient(180deg, rgba(7,78,69,0.78), rgba(12,99,86,0.72));
+  /* Glassmorphism con fondo verde bosque */
+  background: linear-gradient(180deg, rgba(45,74,30,0.92), rgba(45,74,30,0.85));
   border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px rgba(6, 42, 38, 0.28);
+  box-shadow: 0 8px 32px rgba(26, 42, 18, 0.35);
   backdrop-filter: blur(10px) saturate(120%);
   -webkit-backdrop-filter: blur(10px) saturate(120%);
 
@@ -52,7 +52,7 @@
 .nombre-principal {
   font-size: 18px;
   letter-spacing: 1px;
-  color: #f8fbf7;
+  color: var(--text-white);
   font-weight: 700;
   text-shadow: 0 1px 0 rgba(0,0,0,0.2);
 }
@@ -60,7 +60,7 @@
 .nombre-secundario {
   font-size: 12px;
   letter-spacing: 2px;
-  color: #6b7a40;
+  color: var(--gold-light);
   margin-top: 5px;
 }
 
@@ -82,7 +82,7 @@
   display: block;
   margin-top: 15px;
   height: 1px;
-  background: #b5b08c;
+  background: var(--border-gold);
   margin-bottom: 15px;
 }
 
@@ -91,7 +91,7 @@
   margin: 8px 0;
   border-radius: 12px;
   cursor: pointer;
-  color: #e9f0e6;
+  color: var(--text-white);
   padding: 0;
 }
 
@@ -137,9 +137,9 @@
   width: 100%;
   margin-top: 8px;
   padding: 10px 16px;
-  background: rgba(120, 20, 40, 0.75);
-  border: 1px solid rgba(180, 40, 60, 0.60);
-  color: #fde8ec;
+  background: var(--danger);
+  border: 1px solid rgba(139, 58, 58, 0.6);
+  color: var(--text-white);
   border-radius: 12px;
   font-family: "Segoe UI", sans-serif;
   font-size: 13px;
@@ -152,8 +152,8 @@
 
 .btn-cs:hover {
   transform: translateY(-3px);
-  background: rgba(150, 25, 50, 0.95);
-  box-shadow: 0 8px 20px rgba(120, 20, 40, 0.55);
+  background: #a04545;
+  box-shadow: 0 8px 20px rgba(139, 58, 58, 0.55);
 }
 
 /* Partículas flotantes */

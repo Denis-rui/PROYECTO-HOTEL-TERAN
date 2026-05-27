@@ -52,18 +52,17 @@ $obtenerCampoCliente = static function ($cliente, string $campo, $defecto = '') 
           <?php foreach ($clientes as $cliente): ?>
             <?php $idCliente = (int) $obtenerCampoCliente($cliente, 'id', 0); ?>
             <?php $estaActivo = (int) $obtenerCampoCliente($cliente, 'activo', 0) === 1; ?>
-            <?php $estiloFila = $estaActivo ? 'background-color:#dff3e3;' : 'background-color:#d9d9d9;color:#555;'; ?>
             <tr class="<?= $estaActivo ? 'cliente-activo' : 'cliente-inactivo' ?>" data-activo="<?= $estaActivo ? '1' : '0' ?>">
-              <td style="<?= $estiloFila ?>"><?= $idCliente ?></td>
-              <td style="<?= $estiloFila ?>"><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'nombre_completo', '')) ?></td>
-              <td style="<?= $estiloFila ?>"><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'tipo_documento_nombre', '')) ?></td>
-              <td style="<?= $estiloFila ?>"><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'documento', '')) ?></td>
-              <td style="<?= $estiloFila ?>"><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'correo_electronico', '')) ?></td>
-              <td style="<?= $estiloFila ?>"><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'procedencia', '')) ?></td>
-              <td style="<?= $estiloFila ?>"><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'telefono', '')) ?></td>
-              <td style="<?= $estiloFila ?>"><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'reservaciones', '')) ?></td>
-              <td style="<?= $estiloFila ?>"><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'observaciones', '')) ?></td>
-              <td style="<?= $estiloFila ?>">
+              <td><?= $idCliente ?></td>
+              <td><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'nombre_completo', '')) ?></td>
+              <td><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'tipo_documento_nombre', '')) ?></td>
+              <td><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'documento', '')) ?></td>
+              <td><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'correo_electronico', '')) ?></td>
+              <td><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'procedencia', '')) ?></td>
+              <td><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'telefono', '')) ?></td>
+              <td><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'reservaciones', '')) ?></td>
+              <td><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'observaciones', '')) ?></td>
+              <td>
                 <button type="button" class="btnVerPerfil" data-id="<?= $idCliente ?>" title="Ver perfil">&#128065;</button>
                 <button type="button" class="btnEditarCliente" data-id="<?= $idCliente ?>" data-tipo-documento="<?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'id_tipo_documento', '')) ?>" title="Editar">&#9998;</button>
                 <?php if ($estaActivo): ?>

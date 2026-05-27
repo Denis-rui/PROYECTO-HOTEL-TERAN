@@ -22,7 +22,7 @@
 }
 
 .contenedor-modal {
-  background-color: #e8dfc8;
+  background-color: var(--bg-warm);
   padding: 30px;
   border-radius: 10px;
   display: flex;
@@ -33,7 +33,7 @@
 }
 
 .titulo-modal {
-  color: #2e3a14;
+  color: var(--primary-dark);
   font-size: 28px;
   font-weight: bold;
   margin-bottom: 20px;
@@ -53,18 +53,18 @@
 }
 
 .label-input-modal label {
-  color: #2f3e1f;
+  color: var(--primary-dark);
   font-size: 14px;
 }
 
 .input-modal {
   padding: 10px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border);
   border-radius: 5px;
   box-sizing: border-box;
   font-size: 14px;
   width: 100%;
-  background-color: #f0ead8;
+  background-color: var(--bg-light);
 }
 
 .div-mensaje-exito-error {
@@ -76,14 +76,14 @@
 
 .div-mensaje-exito-error.error {
   color: #fff;
-  background-color: #b42318;
+  background-color: var(--danger);
   padding: 10px;
   border-radius: 6px;
 }
 
 .div-mensaje-exito-error.exito {
   color: #fff;
-  background-color: #18794e;
+  background-color: var(--success);
   padding: 10px;
   border-radius: 6px;
 }
@@ -97,18 +97,18 @@
 }
 
 .btn-guardar {
-  background-color: #4f6422;
+  background-color: var(--primary);
   color: #fff;
 }
 
 .btn-guardar:hover {
-  background-color: #3d4e1a;
+  background-color: var(--primary-dark);
 }
 
 .btn-cancelar {
   background-color: rgba(240, 234, 216, 0.7);
-  color: #333;
-  border: #2e3a14 solid 1px;
+  color: var(--text-dark);
+  border: var(--primary-dark) solid 1px;
 }
 
 .btn-cancelar:hover {

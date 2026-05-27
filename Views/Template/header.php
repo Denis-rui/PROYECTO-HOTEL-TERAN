@@ -1,16 +1,18 @@
 <!doctype html>
 <html lang="es">
+
 <head>
     <?php $page_title = $data['page_title'] ?? 'Dashboard'; ?>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="<?= BASE_URL ?>public/assets/img/image.jpeg" />
     <title>Hotel Teran - <?= $page_title ?></title>
-    
+
     <script>
         const BASE_URL = "<?= BASE_URL ?>";
     </script>
 
+    <link rel="stylesheet" href="<?= BASE_URL ?>public/css/variables.css" />
     <link rel="stylesheet" href="<?= BASE_URL ?>style.css" />
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Nav.css" />
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Usuarios.css" />
@@ -35,10 +37,9 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
+
 <body>
     <div id="nav">
         <?php require_once("Views/Template/nav.php"); ?>
     </div>
     <div id="app">
-
-    

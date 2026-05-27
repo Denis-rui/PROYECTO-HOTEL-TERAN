@@ -6,14 +6,14 @@
 }
 
 .header-clientes h2 {
-  color: #2f3e1f;
+  color: var(--primary-dark);
   font-size: 24px;
   font-weight: bold;
 }
 
 .header-clientes .boton-nuevo-cliente {
-  background-color: #4f6422;
-  color: #fff;
+  background-color: var(--primary);
+  color: var(--text-white);
   border: none;
   padding: 10px 20px;
   border-radius: 5px;
@@ -22,7 +22,7 @@
 }
 
 .header-clientes .boton-nuevo-cliente:hover {
-  background-color: #3d4e1a;
+  background-color: var(--primary-dark);
 }
 
 .buscar {
@@ -31,7 +31,7 @@
 
 .buscar input {
   padding: 10px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border);
   border-radius: 5px;
   font-size: 14px;
   width: 200px;
@@ -39,37 +39,51 @@
 
 .tabla {
   width: 100%;
-  border-radius: 20px 20px;
+  border-radius: 16px;
   overflow: hidden;
-  background-color: rgba(232, 223, 200, 0.5);
+  background: var(--bg-white);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
-.tabla .tbl-clientes {
+.tabla .tbl-usuarios {
   width: 100%;
   border-spacing: 0;
+  border-collapse: separate;
 }
 
-.tabla .tbl-clientes thead {
-  background-color: rgba(232, 223, 200, 1);
-}
-
-.tabla th,
-.tabla td {
-  padding: 12px;
-  text-align: left;
+.tabla .tbl-usuarios thead {
+  background: var(--primary-dark);
 }
 
 .tabla th {
-  color: #2f3e1f;
+  color: var(--text-white);
+  font-weight: 600;
+  padding: 14px 12px;
+  text-align: left;
+  font-size: 13px;
+  letter-spacing: 0.5px;
 }
 
-.tabla .tbl-usuarios tbody tr.cliente-activo,
+.tabla td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.tabla tbody tr:nth-child(even) {
+  background: var(--bg-light);
+}
+
+.tabla tbody tr:hover {
+  background: var(--primary-bg);
+}
+
 .tabla .tbl-usuarios tbody tr.cliente-activo td {
-  background-color: #dff3e3 !important;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .tabla .tbl-usuarios tbody tr.cliente-inactivo,
 .tabla .tbl-usuarios tbody tr.cliente-inactivo td {
   background-color: #d9d9d9 !important;
-  color: #555 !important;
+  color: var(--text-secondary) !important;
 }
