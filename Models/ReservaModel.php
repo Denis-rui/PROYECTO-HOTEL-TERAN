@@ -463,11 +463,6 @@ class ReservaModel
                 ]);
 
                 $habitacionModel->registrarHistorial((int) $reservaHabitacion->id_habitacion, (int) $idReserva, 'Ocupada', 'Mantenimiento', null, null, 'checkout', 'Checkout manual confirmado.', $idUsuario);
-                    'estado' => 'En Limpieza',
-                    'limpieza_inicio' => date('Y-m-d H:i:s'),
-                ]);
-
-                $habitacionModel->registrarHistorial((int) $reservaHabitacion->id_habitacion, (int) $idReserva, 'Ocupada', 'En Limpieza', null, null, 'checkout', 'Checkout confirmado. Limpieza iniciada automáticamente.', $idUsuario);
                 $Notificacion = new NotificacionModel();
                 $Notificacion->crear('habitacion_limpieza_pendiente', 'Habitación pendiente de limpieza', 'La habitación ' . ($reservaHabitacion->habitacion->numero_habitacion ?? '') . ' quedó en mantenimiento después del checkout.', (int) $idReserva, (int) $reservaHabitacion->id_habitacion, (int) $reservaActual->id_cliente, 'alta');
             }
