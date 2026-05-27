@@ -23,18 +23,30 @@ class ReservaController extends Controller
 
         $data['reservas'] = [];
         $data['error_reservas'] = '';
+        $data['filtros'] = [
+            'busqueda' => trim((string) ($_GET['busqueda'] ?? '')),
+            'estado' => trim((string) ($_GET['estado'] ?? '')),
+        ];
+        $data['limite'] = max(30, (int) ($_GET['limite'] ?? 30));
+        $data['hay_mas'] = false;
+        $data['total_reservas'] = 0;
+        $data['mostradas_reservas'] = 0;
 
         try {
-            $resultado = $this->model->obtenerReservas();
+            $resultado = $this->model->obtenerReservas($data['filtros'], $data['limite']);
 
             if (!is_array($resultado)) {
                 throw new \RuntimeException('Resultado no es un array');
             }
 
-            if (count($resultado) === 1 && is_string($resultado[0])) {
+            $items = $resultado['items'] ?? [];
+            if (count($items) === 1 && is_string($items[0])) {
                 $data['error_reservas'] = 'Error al cargar las reservas. Intenta nuevamente en unos minutos.';
             } else {
-                $data['reservas'] = $resultado;
+                $data['reservas'] = is_array($items) ? $items : [];
+                $data['hay_mas'] = (bool) ($resultado['hay_mas'] ?? false);
+                $data['total_reservas'] = (int) ($resultado['total'] ?? 0);
+                $data['mostradas_reservas'] = (int) ($resultado['mostrados'] ?? count($data['reservas']));
             }
         } catch (\Throwable $e) {
             error_log('ReservaController::index -> ' . $e->getMessage());

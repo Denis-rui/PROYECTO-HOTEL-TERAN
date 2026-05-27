@@ -19,38 +19,77 @@ use function Illuminate\Support\now;
 
 class ReservaModel
 {
-    public function obtenerReservas()
+    public function obtenerReservas(array $filtros = [], int $limite = 30)
     {
 
         try {
-            return Reserva::with(['cliente', 'pagos', 'reservaHabitacion.habitacion'])
-                ->where('estado', '!=', 'cancelada')
+            $busqueda = trim((string) ($filtros['busqueda'] ?? ''));
+            $estado = strtolower(trim((string) ($filtros['estado'] ?? '')));
+            $estadosPermitidos = ['confirmada', 'en_estadia', 'checkout_realizado', 'checkout_pendiente', 'ausente', 'cancelada'];
+            $limite = max(30, $limite);
 
-                ->orderByRaw("
-                CASE
-                    WHEN (
-                        SELECT MIN(rh.check_in)
-                        FROM reserva_habitacion rh
-                        WHERE rh.id_reserva = reserva.id
-                        AND rh.check_in >= ?
-                    ) IS NOT NULL THEN 0
-                    ELSE 1
-                END
-            ", [now()->startOfDay()])
+            $query = Reserva::with(['cliente', 'pagos', 'reservaHabitacion.habitacion']);
 
-                ->orderBy(
-                    ReservaHabitacion::select('check_in')
-                        ->whereColumn('reserva_habitacion.id_reserva', 'reserva.id')
-                        ->orderBy('check_in', 'asc')
-                        ->limit(1)
+            if ($estado === '' || $estado !== 'cancelada') {
+                $query->where('estado', '!=', 'cancelada');
+            }
+
+            if ($busqueda !== '') {
+                $query->whereHas('cliente', function ($q) use ($busqueda) {
+                    $q->where(function ($subQuery) use ($busqueda) {
+                        $subQuery->where('nombre_completo', 'like', '%' . $busqueda . '%')
+                            ->orWhere('documento', 'like', '%' . $busqueda . '%');
+                    });
+                });
+            }
+
+            if ($estado !== '' && in_array($estado, $estadosPermitidos, true)) {
+                $query->where('estado', $estado);
+            }
+
+            $query->select('reserva.*')
+                ->selectSub(
+                    ReservaHabitacion::selectRaw('MIN(reserva_habitacion.check_in)')
+                        ->whereColumn('reserva_habitacion.id_reserva', 'reserva.id'),
+                    'primer_check_in'
+                );
+
+            $total = (clone $query)->count();
+
+            $reservas = $query
+                ->orderByRaw(
+                    "
+                    CASE
+                        WHEN LOWER(reserva.estado) = 'ausente' THEN 0
+                        WHEN LOWER(reserva.estado) = 'en_estadia' THEN 1
+                        WHEN DATE(primer_check_in) = CURDATE() THEN 2
+                        WHEN DATE(primer_check_in) > CURDATE() THEN 3
+                        ELSE 4
+                    END ASC
+                    "
                 )
-
+                ->orderByRaw('primer_check_in IS NULL ASC')
+                ->orderByRaw('primer_check_in ASC')
+                ->orderByDesc('reserva.id')
+                ->limit($limite)
                 ->get()
                 ->map(fn($reserva) => $this->formatearReserva($reserva))
                 ->values()
                 ->all();
+
+            return [
+                'items' => $reservas,
+                'total' => (int) $total,
+                'mostrados' => count($reservas),
+                'hay_mas' => $total > count($reservas),
+            ];
         } catch (\Throwable $e) {
-            return ["Error" . $e->getMessage()];
+            return [
+                'items' => ["Error" . $e->getMessage()],
+                'total' => 0,
+                'mostrados' => 0,
+                'hay_mas' => false,
+            ];
         }
     }
     // se queda sirve par ala edicion y pagar
@@ -107,8 +146,10 @@ class ReservaModel
 
         $habitacionPrincipal = $habitaciones[0] ?? null;
         $totalPagado = (float) ($reserva->pagos->sum('monto') ?? 0);
-        $checkIn = $reserva->check_in ?? ($habitacionesRelacionadas[0]->check_in ?? null);
-        $checkOut = $reserva->check_out ?? ($habitacionesRelacionadas[0]->check_out ?? null);
+        $checkInProgramado = $reserva->check_in ?? ($habitacionesRelacionadas[0]->check_in ?? null);
+        $checkOutProgramado = $reserva->check_out ?? ($habitacionesRelacionadas[0]->check_out ?? null);
+        $checkIn = $reserva->checkin_real ?? $checkInProgramado;
+        $checkOut = $reserva->checkout_real ?? $checkOutProgramado;
         $estado = $reserva->estado ?? '';
         $total = (float) ($reserva->total ?? 0);
         $cargoTarde = (float) ($reserva->cargo_checkout_tarde ?? 0);
@@ -136,6 +177,10 @@ class ReservaModel
             'piso' => $habitacionPrincipal['piso'] ?? null,
             'check_in' => $checkIn,
             'check_out' => $checkOut,
+            'check_in_programado' => $checkInProgramado,
+            'check_out_programado' => $checkOutProgramado,
+            'checkin_real' => $reserva->checkin_real ?? null,
+            'checkout_real' => $reserva->checkout_real ?? null,
             'minutos_demora_checkout' => $reserva->minutos_demora_checkout ?? 0,
             'cargo_checkout_tarde' => $cargoTarde,
             'total' => $total,
@@ -327,7 +372,6 @@ class ReservaModel
                 return ['exito' => false, 'mensaje' => 'Solo se puede confirmar check-in de reservas confirmadas.'];
             }
 
-            $habitacionModel = new HabitacionModel();
             $reporteOcupacionModel = new ReporteOcupacionModel();
             $idHabitacionPrincipal = (int) ($reservaActual->reservaHabitacion->first()->id_habitacion ?? 0);
             $ocupada = $reporteOcupacionModel->obtenerReser_EstadiaHab($idHabitacionPrincipal);
@@ -335,25 +379,31 @@ class ReservaModel
                 return ['exito' => false, 'mensaje' => 'La habitación está ocupada por otra reserva.'];
             }
 
+            $habitacionModel = new HabitacionModel();
+
             DB::connection()->beginTransaction();
 
             $reservaActual->estado = 'en_estadia';
+            $reservaActual->checkin_real = date('Y-m-d H:i:s');
             $reservaActual->save();
 
-            try {
-                if ($idHabitacionPrincipal > 0) {
-                    ReservaHabitacion::where('id_reserva', (int) $idReserva)
-                        ->where('id_habitacion', $idHabitacionPrincipal)
-                        ->update(['check_in' => date('Y-m-d H:i:s')]);
-                }
-            } catch (\Throwable $e) {
-            }
-
             if ($idHabitacionPrincipal > 0) {
-                Habitacion::where('id', $idHabitacionPrincipal)->update(['estado' => 'Ocupada']);
-            }
+                Habitacion::where('id', $idHabitacionPrincipal)->update([
+                    'estado' => 'Ocupada',
+                ]);
 
-            $habitacionModel->registrarHistorial($idHabitacionPrincipal, (int) $idReserva, 'confirmada', 'Ocupada', null, null, 'check_in', 'Check-in manual confirmado', $idUsuario);
+                $habitacionModel->registrarHistorial(
+                    $idHabitacionPrincipal,
+                    (int) $idReserva,
+                    'confirmada',
+                    'Ocupada',
+                    null,
+                    null,
+                    'check_in',
+                    'Check-in manual confirmado',
+                    $idUsuario
+                );
+            }
 
             DB::connection()->commit();
             return ['exito' => true, 'mensaje' => 'Check-in confirmado correctamente.'];
@@ -390,21 +440,12 @@ class ReservaModel
             DB::connection()->beginTransaction();
 
             $reservaActual->estado = 'checkout_realizado';
+            $reservaActual->checkout_real = date('Y-m-d H:i:s');
             $reservaActual->check_out_real = date('Y-m-d H:i:s');
             $reservaActual->minutos_demora_checkout = $minutosDemora;
             $reservaActual->cargo_checkout_tarde = $cargoTarde;
             $reservaActual->observaciones = trim((string) ($reservaActual->observaciones ?? '') . "\n" . ($motivoAutorizacion ? 'Checkout autorizado: ' . $motivoAutorizacion : ''));
             $reservaActual->save();
-
-            foreach ($reservaActual->reservaHabitacion as $reservaHabitacion) {
-                if (!$reservaHabitacion || empty($reservaHabitacion->id_habitacion)) {
-                    continue;
-                }
-
-                Habitacion::where('id', (int) $reservaHabitacion->id_habitacion)->update([
-                    'estado' => 'Disponible',
-                ]);
-            }
 
             $habitacionModel = new HabitacionModel();
             foreach ($reservaActual->reservaHabitacion as $reservaHabitacion) {
@@ -412,13 +453,17 @@ class ReservaModel
                     continue;
                 }
 
-                $habitacionModel->registrarHistorial((int) $reservaHabitacion->id_habitacion, (int) $idReserva, 'Ocupada', 'Disponible', null, null, 'checkout', 'Checkout manual confirmado.', $idUsuario);
+                Habitacion::where('id', (int) $reservaHabitacion->id_habitacion)->update([
+                    'estado' => 'Mantenimiento',
+                ]);
+
+                $habitacionModel->registrarHistorial((int) $reservaHabitacion->id_habitacion, (int) $idReserva, 'Ocupada', 'Mantenimiento', null, null, 'checkout', 'Checkout manual confirmado.', $idUsuario);
                 $Notificacion = new NotificacionModel();
-                $Notificacion->crear('habitacion_limpieza_pendiente', 'Habitación pendiente de limpieza', 'La habitación ' . ($reservaHabitacion->habitacion->numero_habitacion ?? '') . ' quedó sucia después del checkout.', (int) $idReserva, (int) $reservaHabitacion->id_habitacion, (int) $reservaActual->id_cliente, 'alta');
+                $Notificacion->crear('habitacion_limpieza_pendiente', 'Habitación pendiente de limpieza', 'La habitación ' . ($reservaHabitacion->habitacion->numero_habitacion ?? '') . ' quedó en mantenimiento después del checkout.', (int) $idReserva, (int) $reservaHabitacion->id_habitacion, (int) $reservaActual->id_cliente, 'alta');
             }
 
             DB::connection()->commit();
-            return ['exito' => true, 'mensaje' => 'Checkout confirmado. La habitación quedó bloqueada y sucia hasta limpieza.', 'cargo_checkout_tarde' => $cargoTarde, 'minutos_demora' => $minutosDemora];
+            return ['exito' => true, 'mensaje' => 'Checkout confirmado. La habitación quedó en mantenimiento hasta limpieza.', 'cargo_checkout_tarde' => $cargoTarde, 'minutos_demora' => $minutosDemora];
         } catch (\Exception $e) {
             $con = DB::connection();
             if ($con->getPdo()->inTransaction()) {

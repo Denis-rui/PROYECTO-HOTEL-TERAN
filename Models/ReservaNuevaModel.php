@@ -1,4 +1,5 @@
 <?php
+
 namespace Models;
 
 use Illuminate\Database\Capsule\Manager as DB;
@@ -134,6 +135,8 @@ class ReservaNuevaModel
                 'codigo_reserva' => $reserva['codigoReserva'] ?? $this->generarCodigoReserva(),
                 'id_usuario'     => $idUsuario ?? ($reserva['usuario'] ?? ($_SESSION['id_usuario'] ?? null)),
                 'observaciones'  => $reserva['observaciones'] ?? null,
+                'checkin_real'   => null,
+                'checkout_real'  => null,
             ]);
 
             $ok = (bool) $reservaCreada;

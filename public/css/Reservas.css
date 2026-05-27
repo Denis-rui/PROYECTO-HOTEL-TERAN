@@ -43,6 +43,18 @@
       background-color: var(--primary-dark);
     }
   }
+
+  .btn-limpiar-filtros {
+    display: inline-block;
+    margin-left: 8px;
+    background-color: var(--border-light);
+    color: var(--primary-dark);
+    text-decoration: none;
+
+    &:hover {
+      background-color: #d5d0c5;
+    }
+  }
 }
 
 .tabla {
@@ -79,6 +91,28 @@
   tbody tr:hover {
     background: var(--primary-bg);
   }
+}
+
+.contenedor-ver-mas {
+  margin-top: 14px;
+  display: flex;
+  justify-content: center;
+}
+
+.btn-ver-mas-reservas {
+  display: inline-block;
+  background-color: var(--primary-dark);
+  color: var(--text-white);
+  text-decoration: none;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btn-ver-mas-reservas:hover {
+  background-color: var(--primary);
 }
 
 /* Estilos para la celda de pago */

@@ -10,7 +10,8 @@ class Reserva extends Eloquent
     protected $fillable = [
         'id_cliente' , 'total', 'estado',
         'codigo_reserva', 'id_usuario', 'observaciones',
-        'minutos_demora_checkout', 'cargo_checkout_tarde'
+        'minutos_demora_checkout', 'cargo_checkout_tarde',
+        'checkin_real', 'checkout_real'
     ];
 
     public function cliente()
