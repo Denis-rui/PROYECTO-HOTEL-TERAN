@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="<?= BASE_URL ?>public/assets/img/image.jpeg" />
     <title>Hotel Teran - Login</title>
+    <link rel="stylesheet" href="<?= BASE_URL ?>public/css/variables.css" />
     <link rel="stylesheet" href="<?= BASE_URL ?>style.css" />
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Login.css" />
 </head>

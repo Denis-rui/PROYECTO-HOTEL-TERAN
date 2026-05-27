@@ -1,12 +1,13 @@
 <!doctype html>
 <html lang="es">
+
 <head>
     <?php $page_title = $data['page_title'] ?? 'Dashboard'; ?>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="<?= BASE_URL ?>public/assets/img/image.jpeg" />
     <title>Hotel Teran - <?= $page_title ?></title>
-    
+
     <script>
         const BASE_URL = "<?= BASE_URL ?>";
     </script>
@@ -32,10 +33,9 @@
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Devoluciones.css" />
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Modal-TipoHabitacion.css" />
 </head>
+
 <body>
     <div id="nav">
         <?php require_once("Views/Template/nav.php"); ?>
     </div>
     <div id="app">
-
-    
