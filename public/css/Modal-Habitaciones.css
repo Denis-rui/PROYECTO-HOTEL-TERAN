@@ -12,13 +12,11 @@
 }
 
 .modal-contenido-habitacion {
-  background: #d8d3bc;
-  /* Color crema similar a la imagen */
+  background: var(--bg-warm);
   width: 90%;
   max-width: 650px;
   padding: 40px;
   border-radius: 40px;
-  /* Bordes muy redondeados como en la imagen */
   position: relative;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   animation: modalEntrada 0.15s ease-out;
@@ -47,7 +45,7 @@
   border: 1px solid #7a7a7a;
   background: transparent;
   font-size: 20px;
-  color: #2e3d1f;
+  color: var(--primary-dark);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -62,7 +60,7 @@
 .titulo-modal-habitacion {
   font-family: "Playfair Display", serif;
   /* O una similar con serifa */
-  color: #2e3d1f;
+  color: var(--primary-dark);
   font-size: 32px;
   margin-bottom: 30px;
   font-weight: 500;
@@ -84,7 +82,7 @@
 .grupo-formulario label {
   font-size: 13px;
   font-weight: 800;
-  color: #4a5a2a;
+  color: var(--primary-dark);
   margin-bottom: 8px;
   letter-spacing: 0.5px;
 }
@@ -92,19 +90,19 @@
 .grupo-formulario input,
 .grupo-formulario select,
 .grupo-formulario textarea {
-  background: #e6e0ca;
-  border: 1.5px solid #c9c2a8;
+  background: var(--bg-warm);
+  border: 1.5px solid var(--border);
   padding: 14px 18px;
   border-radius: 18px;
   font-size: 15px;
-  color: #2e3d1f;
+  color: var(--primary-dark);
   outline: none;
   transition: border-color 0.2s;
 }
 
 .grupo-formulario input::placeholder,
 .grupo-formulario textarea::placeholder {
-  color: #8c8c8c;
+  color: var(--text-muted);
   font-style: italic;
 }
 
@@ -121,7 +119,7 @@
 }
 
 .btn-primario {
-  background-color: #3f5c2d;
+  background-color: var(--primary);
   color: white;
   border: none;
   padding: 15px 40px;
@@ -133,12 +131,12 @@
 }
 
 .btn-primario:hover {
-  background-color: #2e3d1f;
+  background-color: var(--primary-dark);
 }
 
 .btn-secundario {
-  background-color: #c9c2a8;
-  color: #2e3d1f;
+  background-color: var(--border);
+  color: var(--primary-dark);
   border: none;
   padding: 15px 40px;
   border-radius: 18px;
@@ -149,5 +147,5 @@
 }
 
 .btn-secundario:hover {
-  background-color: #bab398;
+  background-color: var(--border-gold);
 }

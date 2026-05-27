@@ -17,7 +17,7 @@
 
 /* CAJA DEL MODAL */
 .modal-pago-contenido {
-  background: #f5f1dc;
+  background: var(--bg-light);
   width: 60%;
   max-width: 760px;
   margin: 3% auto;
@@ -37,14 +37,14 @@
   right: 20px;
   font-size: 22px;
   cursor: pointer;
-  color: #2f3e1f;
+  color: var(--primary-dark);
 }
 
 /* TITULOS */
 .titulo-modal-pago {
   margin-bottom: 20px;
   font-size: 22px;
-  color: #2f3e1f;
+  color: var(--primary-dark);
   font-weight: bold;
 }
 
@@ -52,14 +52,14 @@
   margin: 18px 0 12px;
   font-size: 14px;
   font-weight: bold;
-  color: #4f6422;
+  color: var(--primary);
   text-transform: uppercase;
 }
 
 /* SECCION DE RESUMEN DE RESERVA */
 .seccion-info-reserva {
-  background: #ede8d2;
-  border: 1px solid #d7d0b5;
+  background: var(--bg-warm);
+  border: 1px solid var(--border-gold);
   border-radius: 10px;
   padding: 14px;
   margin-bottom: 14px;
@@ -80,12 +80,12 @@
 .etiqueta-info {
   font-size: 12px;
   font-weight: bold;
-  color: #4f6422;
+  color: var(--primary);
 }
 
 .valor-info {
   font-size: 14px;
-  color: #2f3e1f;
+  color: var(--primary-dark);
 }
 
 .valor-info.monto-total,
@@ -110,7 +110,7 @@
   font-size: 13px;
   font-weight: bold;
   margin-bottom: 5px;
-  color: #2f3e1f;
+  color: var(--primary-dark);
 }
 
 .form-group input,
@@ -118,7 +118,7 @@
 .form-group textarea {
   padding: 10px;
   border-radius: 8px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border);
   font-size: 14px;
   background: #fff;
 }
@@ -131,8 +131,8 @@
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #4f6422;
-  box-shadow: 0 0 0 2px rgba(79, 100, 34, 0.14);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(74, 122, 48, 0.14);
 }
 
 /* CAMPO MONTO */
@@ -140,13 +140,13 @@
   display: flex;
   align-items: center;
   border-radius: 8px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border);
   background: #fff;
   padding-left: 10px;
 }
 
 .moneda {
-  color: #4f6422;
+  color: var(--primary);
   font-weight: bold;
   margin-right: 6px;
 }
@@ -182,21 +182,21 @@
 }
 
 .boton-cancelar-pago {
-  background: #c9c2a8;
-  color: #2f3e1f;
+  background: var(--border);
+  color: var(--primary-dark);
 }
 
 .boton-cancelar-pago:hover {
-  background: #bab398;
+  background: var(--border-gold);
 }
 
 .boton-confirmar-pago {
-  background: #3b5d2a;
-  color: #fff;
+  background: var(--primary);
+  color: var(--text-white);
 }
 
 .boton-confirmar-pago:hover {
-  background: #2f4a21;
+  background: var(--primary-dark);
 }
 
 /* HISTORIAL DE PAGOS */
@@ -207,7 +207,7 @@
 .tabla-historial {
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid #d7d0b5;
+  border: 1px solid var(--border-gold);
   background: #fff;
 }
 
@@ -217,7 +217,7 @@
 }
 
 .tabla-pagos thead {
-  background: rgba(232, 223, 200, 1);
+  background: var(--bg-warm);
 }
 
 .tabla-pagos th,
@@ -228,11 +228,11 @@
 }
 
 .tabla-pagos th {
-  color: #2f3e1f;
+  color: var(--primary-dark);
 }
 
 .tabla-pagos tbody tr {
-  border-top: 1px solid #efead8;
+  border-top: 1px solid var(--border-light);
 }
 
 @keyframes entradaModalPago {

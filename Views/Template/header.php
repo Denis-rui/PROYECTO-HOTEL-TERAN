@@ -11,6 +11,7 @@
         const BASE_URL = "<?= BASE_URL ?>";
     </script>
 
+    <link rel="stylesheet" href="<?= BASE_URL ?>public/css/variables.css" />
     <link rel="stylesheet" href="<?= BASE_URL ?>style.css" />
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Nav.css" />
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Usuarios.css" />

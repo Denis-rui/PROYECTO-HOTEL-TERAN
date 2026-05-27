@@ -8,7 +8,7 @@ body {
   font-family: "Times New Roman", Times, serif;
   min-height: 100vh;
   display: flex;
-  background-color: #f2f4ee;
+  background-color: var(--bg-cream);
 }
 
 #nav {
@@ -21,9 +21,9 @@ body {
   flex: 1;
   padding: 10px;
   min-width: 0;
-  background-color: #f2f4ee !important;
+  background-color: var(--bg-cream) !important;
 }
 
 .informacion h2 {
-  color: #2f3e1f;
+  color: var(--primary-dark);
 }

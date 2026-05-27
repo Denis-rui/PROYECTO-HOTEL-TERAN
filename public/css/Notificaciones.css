@@ -27,15 +27,15 @@
 }
 
 .notificacion.exito {
-  background: #00b853;
+  background: var(--success);
 }
 
 .notificacion.error {
-  background: #ff3b3b;
+  background: var(--danger);
 }
 
 .notificacion.info {
-  background: #3f5c2d;
+  background: var(--primary);
 }
 
 @keyframes slideIn {
@@ -78,7 +78,7 @@
 }
 
 .modal-confirmacion {
-  background: #fdfbf5;
+  background: var(--bg-light);
   padding: 30px;
   border-radius: 20px;
   width: 90%;
@@ -91,11 +91,11 @@
 
 .modal-confirmacion h3 {
   margin-top: 0;
-  color: #2e3d1f;
+  color: var(--primary-dark);
 }
 
 .modal-confirmacion p {
-  color: #666;
+  color: var(--text-secondary);
   margin-bottom: 25px;
 }
 
@@ -115,12 +115,12 @@
 }
 
 .btn-cancelar {
-  background: #eee;
-  color: #444;
+  background: var(--border-light);
+  color: var(--text-dark);
 }
 
 .btn-aceptar {
-  background: #3f5c2d;
+  background: var(--primary);
   color: white;
 }
 
@@ -146,7 +146,7 @@
   width: 100%;
   padding: 12px 15px;
   border-radius: 12px;
-  border: 2px solid #e8e2c8;
+  border: 2px solid var(--bg-warm);
   background: #fff;
   font-family: inherit;
   font-size: 14px;
@@ -156,7 +156,7 @@
 }
 
 .modal-input-field:focus {
-  border-color: #3f5c2d;
+  border-color: var(--primary);
 }
 
 .modal-input h3 {

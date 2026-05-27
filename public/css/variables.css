@@ -1,0 +1,40 @@
+:root {
+  /* ===== PRIMARY PALETTE - HOTEL TERAN ===== */
+  --primary-dark: #2d4a1e;
+  --primary: #4a7a30;
+  --primary-light: #6a9a4a;
+  --primary-bg: #eaf3e4;
+
+  /* ===== GOLD ACCENTS ===== */
+  --gold-dark: #8a6d2b;
+  --gold: #c4a44a;
+  --gold-light: #e8d9a8;
+
+  /* ===== BACKGROUNDS ===== */
+  --bg-cream: #f5f0e6;
+  --bg-light: #faf7f0;
+  --bg-warm: #ede5d4;
+  --bg-white: #ffffff;
+
+  /* ===== TEXT ===== */
+  --text-dark: #1a1a1a;
+  --text-primary: #2c3e1a;
+  --text-secondary: #5c5c5c;
+  --text-muted: #8a8a8a;
+  --text-white: #fafaf5;
+
+  /* ===== BORDERS ===== */
+  --border: #d4cfc0;
+  --border-light: #e5e0d5;
+  --border-gold: #d4c49a;
+
+  /* ===== STATUS COLORS ===== */
+  --success: #3a7d44;
+  --success-bg: #e8f5e9;
+  --warning: #c9940e;
+  --warning-bg: #fff8e1;
+  --danger: #8b3a3a;
+  --danger-bg: #fce4e4;
+  --info: #3a6b8b;
+  --info-bg: #e3f0f7;
+}
