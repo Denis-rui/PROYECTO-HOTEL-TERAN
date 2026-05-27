@@ -1,0 +1,167 @@
+/* =========================
+   MODAL CONFIRMAR GUARDAR
+========================= */
+
+#modal-confirmar-guardar {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+
+  display: none;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  background: rgba(38, 45, 24, 0.35);
+  backdrop-filter: blur(3px);
+}
+
+/* Caja del modal */
+#modal-confirmar-guardar .contenedor-modal {
+  width: 100%;
+  max-width: 420px;
+
+  background: #e7dec7;
+  border-radius: 18px;
+
+  padding: 28px 24px;
+
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.20),
+    0 2px 8px rgba(0,0,0,0.08);
+
+  border: 1px solid rgba(75, 92, 33, 0.18);
+
+  text-align: center;
+
+  animation: modalEntrada .22s ease;
+}
+
+/* Animación suave */
+@keyframes modalEntrada {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Título */
+#modal-confirmar-guardar .titulo-modal {
+  margin: 0 0 12px;
+
+  font-size: 28px;
+  font-weight: 700;
+
+  color: #3d4b1f;
+  line-height: 1.2;
+}
+
+/* Texto */
+#modal-confirmar-guardar p {
+  margin: 0 0 18px;
+
+  font-size: 15px;
+  line-height: 1.5;
+
+  color: #4e4e4e;
+}
+
+/* Mensajes */
+#modal-confirmar-guardar .div-mensaje-exito-error {
+  min-height: 20px;
+  margin-bottom: 14px;
+  font-size: 14px;
+  font-weight: 500;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+
+#modal-confirmar-guardar .div-mensaje-exito-error.exito {
+  color: #2f7a3e;
+  background: transparent;
+  padding: 0;
+}
+
+#modal-confirmar-guardar .div-mensaje-exito-error.error {
+  color: #b00020;
+  background: transparent;
+  padding: 0;
+}
+
+/* Contenedor botones */
+#modal-confirmar-guardar .acciones-modal {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+/* Botones generales */
+#modal-confirmar-guardar .btn {
+  flex: 1;
+
+  border: none;
+  border-radius: 12px;
+
+  padding: 13px 18px;
+
+  font-size: 15px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    transform .18s ease,
+    box-shadow .18s ease,
+    background .18s ease;
+}
+
+/* Hover */
+#modal-confirmar-guardar .btn:hover {
+  transform: translateY(-1px);
+}
+
+/* Cancelar */
+#modal-confirmar-guardar .btn-cancelar {
+  background: #f4f1e8;
+  color: #4d4d4d;
+
+  border: 1px solid #7b7b7b;
+}
+
+#modal-confirmar-guardar .btn-cancelar:hover {
+  background: #ebe4d6;
+}
+
+/* Confirmar */
+#modal-confirmar-guardar .btn-guardar {
+  background: #556f1d;
+  color: #fff;
+
+  box-shadow: 0 4px 10px rgba(85, 111, 29, 0.25);
+}
+
+#modal-confirmar-guardar .btn-guardar:hover {
+  background: #4a6218;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+
+  #modal-confirmar-guardar .contenedor-modal {
+    padding: 24px 18px;
+  }
+
+  #modal-confirmar-guardar .titulo-modal {
+    font-size: 24px;
+  }
+
+  #modal-confirmar-guardar .acciones-modal {
+    flex-direction: column;
+  }
+}

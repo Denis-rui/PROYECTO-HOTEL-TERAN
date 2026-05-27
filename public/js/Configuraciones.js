@@ -40,20 +40,34 @@ window.inicializarConfiguraciones = () => {
       porcentaje_penalidad: document.getElementById("porcentaje_penalidad").value,
     };
 
-    fetch(BASE_URL + "Configuracion/actualizar", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(datos),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.exito) {
-          alert("Configuración guardada correctamente.");
-        } else {
-          alert("Error al guardar. Intenta de nuevo.");
-        }
+    // Confirmación usando SweetAlert2 (funciones en public/js/Notificaiones.js)
+    Confirmar("¿Estás seguro de conservar los cambios realizados?").then((confirmado) => {
+      if (!confirmado) return;
+
+      // deshabilitar botón de guardar para evitar envíos dobles
+      const btnGuardar = formulario.querySelector('button[type="submit"]');
+      if (btnGuardar) btnGuardar.disabled = true;
+
+      fetch(BASE_URL + "Configuracion/actualizar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(datos),
       })
-      .catch(() => alert("Error de conexión."));
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.exito) {
+            Notificar("Configuración guardada correctamente.", "exito");
+            setTimeout(() => location.reload(), 800);
+          } else {
+            Notificar("Error al guardar. Intenta de nuevo.", "error");
+            if (btnGuardar) btnGuardar.disabled = false;
+          }
+        })
+        .catch(() => {
+          Notificar("Error de conexión.", "error");
+          if (btnGuardar) btnGuardar.disabled = false;
+        });
+    });
   });
 
   function validarFormulario() {

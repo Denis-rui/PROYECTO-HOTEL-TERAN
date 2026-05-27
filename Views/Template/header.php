@@ -32,6 +32,10 @@
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Notificaciones.css" />
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Devoluciones.css" />
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Modal-TipoHabitacion.css" />
+
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body>

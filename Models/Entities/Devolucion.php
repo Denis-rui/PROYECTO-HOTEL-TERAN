@@ -8,8 +8,17 @@ class Devolucion extends Eloquent
     protected $table = 'devolucion';
     public $timestamps = false;
     protected $fillable = [
-        'id_reserva', 'fecha_cancelacion', 'dias_usados', 'dias_no_usados',
-        'total_no_ocupado', 'porcentaje_penalidad', 'monto_penalidad', 'monto_devuelto', 'id_usuario'
+        'id_reserva',
+        'fecha_cancelacion',
+        'fecha_inicio',
+        'fecha_prevista',
+        'dias_usados',
+        'dias_no_usados',
+        'total_no_ocupado',
+        'porcentaje_penalidad',
+        'monto_penalidad',
+        'monto_devuelto',
+        'id_usuario'
     ];
 
     public function reserva()

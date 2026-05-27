@@ -11,6 +11,16 @@
       </div>
 
       <div class="label-input-modal">
+        <label for="fecha-inicio-devolucion">Fecha de Inicio (Check-in)</label>
+        <input type="datetime-local" id="fecha-inicio-devolucion" class="input-modal" readonly />
+      </div>
+
+      <div class="label-input-modal">
+        <label for="fecha-prevista-devolucion">Fecha Prevista de Checkout</label>
+        <input type="datetime-local" id="fecha-prevista-devolucion" class="input-modal" readonly />
+      </div>
+
+      <div class="label-input-modal">
         <label for="fecha-cancelacion-devolucion">Fecha de Cancelación</label>
         <input type="datetime-local" id="fecha-cancelacion-devolucion" class="input-modal" required />
       </div>

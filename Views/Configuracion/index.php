@@ -88,6 +88,8 @@ $tipos = $data['tipos_habitacion'] ?? [];
     <button type="submit" class="form-button">Guardar Cambios Generales</button>
   </form>
 
+    <!-- Confirmación manejada por SweetAlert2 (Notificaiones.js) -->
+
   <br><br>
   <p>🛏️ Tipos de Habitación y Precios Base</p>
   <hr />

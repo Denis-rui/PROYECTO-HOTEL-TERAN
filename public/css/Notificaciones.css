@@ -163,3 +163,40 @@
     margin-bottom: 10px;
 }
 
+/* SweetAlert2 overrides: modal popup (beige style) */
+.swal2-popup {
+  background: #e8dfc8 !important;
+  color: #3d4b1f !important;
+  border-radius: 18px !important;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.20), 0 2px 8px rgba(0,0,0,0.08) !important;
+  border: 1px solid rgba(75,92,33,0.12) !important;
+}
+
+.swal2-title {
+  color: #2e3a14 !important;
+  font-weight: 700 !important;
+}
+
+.swal2-content {
+  color: #4e4e4e !important;
+}
+
+.swal2-styled.swal2-confirm {
+  background: #556f1d !important;
+  color: #fff !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 10px rgba(85, 111, 29, 0.18) !important;
+}
+
+.swal2-styled.swal2-cancel {
+  background: #f4f1e8 !important;
+  color: #4d4d4d !important;
+  border: 1px solid #7b7b7b !important;
+  border-radius: 12px !important;
+}
+
+/* Keep toast default look but slightly rounded */
+.swal2-toast {
+  border-radius: 10px !important;
+}
+
