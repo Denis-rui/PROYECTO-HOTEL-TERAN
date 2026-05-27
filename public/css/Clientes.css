@@ -78,9 +78,8 @@
   background: var(--primary-bg);
 }
 
-.tabla .tbl-usuarios tbody tr.cliente-activo,
 .tabla .tbl-usuarios tbody tr.cliente-activo td {
-  background-color: var(--success-bg) !important;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .tabla .tbl-usuarios tbody tr.cliente-inactivo,
