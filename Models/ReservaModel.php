@@ -19,6 +19,11 @@ use function Illuminate\Support\now;
 
 class ReservaModel
 {
+    private function fechaHoraActual(): string
+    {
+        return (new \DateTimeImmutable('now', new \DateTimeZone('America/Lima')))->format('Y-m-d H:i:s');
+    }
+
     public function obtenerReservas(array $filtros = [], int $limite = 30)
     {
 
@@ -160,7 +165,7 @@ class ReservaModel
             in_array($estado, ['en_estadia', 'checkout_pendiente'], true)
             && $checkOut
             && strtotime((string) $checkOut) < time()
-            && empty($reserva->check_out_real)
+            && empty($reserva->checkout_real)
         ) {
             $minutosCheckoutVencido = (int) floor((time() - strtotime((string) $checkOut)) / 60);
         }
@@ -220,7 +225,14 @@ class ReservaModel
                 return ['exito' => false, 'mensaje' => 'No se permite volver a un estado anterior.'];
             }
 
+            $fechaHoraActual = $this->fechaHoraActual();
             $reserva->estado = $estadoNormalizado;
+            if ($estadoNormalizado === 'en_estadia' && empty($reserva->checkin_real)) {
+                $reserva->checkin_real = $fechaHoraActual;
+            }
+            if ($estadoNormalizado === 'checkout_realizado' && empty($reserva->checkout_real)) {
+                $reserva->checkout_real = $fechaHoraActual;
+            }
             $reserva->save();
 
             if ($estadoNormalizado === 'checkout_realizado') {
@@ -250,7 +262,11 @@ class ReservaModel
                 }
             }
 
-            return ['exito' => true, 'mensaje' => 'Estado de la reserva actualizado correctamente.'];
+            return [
+                'exito' => true,
+                'mensaje' => 'Estado de la reserva actualizado correctamente.',
+                'reserva' => $this->obtenerReservaPorId($idReserva),
+            ];
         } catch (\Throwable $e) {
             return ['exito' => false, 'mensaje' => 'Error al actualizar estado: ' . $e->getMessage()];
         }
@@ -388,8 +404,9 @@ class ReservaModel
 
             DB::connection()->beginTransaction();
 
+            $fechaCheckin = $this->fechaHoraActual();
             $reservaActual->estado = 'en_estadia';
-            $reservaActual->checkin_real = date('Y-m-d H:i:s');
+            $reservaActual->checkin_real = $fechaCheckin;
             $reservaActual->save();
 
             if ($idHabitacionPrincipal > 0) {
@@ -411,7 +428,12 @@ class ReservaModel
             }
 
             DB::connection()->commit();
-            return ['exito' => true, 'mensaje' => 'Check-in confirmado correctamente.'];
+            return [
+                'exito' => true,
+                'mensaje' => 'Check-in confirmado correctamente.',
+                'checkin_real' => $fechaCheckin,
+                'reserva' => $this->obtenerReservaPorId($idReserva),
+            ];
         } catch (\Exception $e) {
             $con = DB::connection();
             if ($con->getPdo()->inTransaction()) {
@@ -444,9 +466,9 @@ class ReservaModel
 
             DB::connection()->beginTransaction();
 
+            $fechaCheckout = $this->fechaHoraActual();
             $reservaActual->estado = 'checkout_realizado';
-            $reservaActual->checkout_real = date('Y-m-d H:i:s');
-            $reservaActual->check_out_real = date('Y-m-d H:i:s');
+            $reservaActual->checkout_real = $fechaCheckout;
             $reservaActual->minutos_demora_checkout = $minutosDemora;
             $reservaActual->cargo_checkout_tarde = $cargoTarde;
             $reservaActual->observaciones = trim((string) ($reservaActual->observaciones ?? '') . "\n" . ($motivoAutorizacion ? 'Checkout autorizado: ' . $motivoAutorizacion : ''));
@@ -468,7 +490,14 @@ class ReservaModel
             }
 
             DB::connection()->commit();
-            return ['exito' => true, 'mensaje' => 'Checkout confirmado. La habitación quedó en mantenimiento hasta limpieza.', 'cargo_checkout_tarde' => $cargoTarde, 'minutos_demora' => $minutosDemora];
+            return [
+                'exito' => true,
+                'mensaje' => 'Checkout confirmado. La habitación quedó en mantenimiento hasta limpieza.',
+                'checkout_real' => $fechaCheckout,
+                'cargo_checkout_tarde' => $cargoTarde,
+                'minutos_demora' => $minutosDemora,
+                'reserva' => $this->obtenerReservaPorId($idReserva),
+            ];
         } catch (\Exception $e) {
             $con = DB::connection();
             if ($con->getPdo()->inTransaction()) {
