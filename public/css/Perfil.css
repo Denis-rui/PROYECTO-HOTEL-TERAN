@@ -28,7 +28,7 @@ body{
 
 .parte-lateral{
 
-    background:var(--primary-bg);
+    background:var(--bg-light);
 
     border-radius:26px;
 
@@ -48,6 +48,8 @@ body{
     top:25px;
 
     height:fit-content;
+
+    border:1px solid var(--border);
 }
 
 /* ========= AVATAR ========= */
@@ -165,7 +167,7 @@ body{
 
 .form{
 
-    background:var(--primary-bg);
+    background:var(--bg-light);
 
     border-radius:28px;
 
@@ -173,6 +175,8 @@ body{
 
     box-shadow:
     0 10px 25px rgba(0,0,0,.08);
+
+    border:1px solid var(--border);
 
     transition:.3s ease;
 }
@@ -290,9 +294,7 @@ body{
     outline:none;
 
     box-shadow:
-    0 0 0 4px rgba(110,140,62,.2);
-
-    background:#242424;
+    0 0 0 4px rgba(45,74,30,0.12);
 }
 
 /* ========= BOTON ========= */

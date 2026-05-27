@@ -46,21 +46,38 @@
 }
 
 .tabla {
+  width: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--bg-white);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+
   .tbl-reservas {
     width: 100%;
     border-spacing: 0;
+    border-collapse: separate;
     thead {
-      background-color: var(--bg-warm);
+      background: var(--primary-dark);
     }
   }
-  th,
+  th {
+    color: var(--text-white);
+    font-weight: 600;
+    padding: 14px 12px;
+    text-align: left;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+  }
   td {
     padding: 12px;
     text-align: left;
+    border-bottom: 1px solid var(--border-light);
   }
-
-  th {
-    color: var(--primary-dark);
+  tbody tr:nth-child(even) {
+    background: var(--bg-light);
+  }
+  tbody tr:hover {
+    background: var(--primary-bg);
   }
 }
 

@@ -319,24 +319,25 @@
 
   .tabla-documentos-wrap {
     overflow-x: auto;
-    border: 1px solid var(--border-gold);
-    border-radius: 16px;
-    background: var(--bg-light);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--bg-white);
     max-height: 220px;
     overflow-y: auto;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
   }
 
   .tabla-documentos-reserva {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     min-width: 720px;
   }
 
   .tabla-documentos-reserva thead {
-    background: var(--bg-warm);
+    background: var(--primary-dark);
   }
 
-  .tabla-documentos-reserva th,
   .tabla-documentos-reserva td {
     padding: 13px 14px;
     text-align: left;
@@ -349,7 +350,17 @@
     font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: var(--primary-dark);
+    color: var(--text-white);
+    padding: 13px 14px;
+    font-weight: 600;
+  }
+
+  .tabla-documentos-reserva tbody tr:nth-child(even) {
+    background: var(--bg-light);
+  }
+
+  .tabla-documentos-reserva tbody tr:hover {
+    background: var(--primary-bg);
   }
 
   .documento-estado {

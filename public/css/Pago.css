@@ -205,34 +205,45 @@
 }
 
 .tabla-historial {
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
-  border: 1px solid var(--border-gold);
-  background: #fff;
+  border: 1px solid var(--border);
+  background: var(--bg-white);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
 
 .tabla-pagos {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 .tabla-pagos thead {
-  background: var(--bg-warm);
+  background: var(--primary-dark);
 }
 
-.tabla-pagos th,
+.tabla-pagos th {
+  color: var(--text-white);
+  padding: 12px 10px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
 .tabla-pagos td {
   padding: 10px;
   text-align: left;
   font-size: 13px;
+  border-bottom: 1px solid var(--border-light);
 }
 
-.tabla-pagos th {
-  color: var(--primary-dark);
+.tabla-pagos tbody tr:nth-child(even) {
+  background: var(--bg-light);
 }
 
-.tabla-pagos tbody tr {
-  border-top: 1px solid var(--border-light);
+.tabla-pagos tbody tr:hover {
+  background: var(--primary-bg);
 }
 
 @keyframes entradaModalPago {
