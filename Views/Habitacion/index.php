@@ -12,11 +12,7 @@
   <form method="GET" class="seccion-filtros">
     <div class="caja-busqueda">
       <span>🔍</span>
-      <input
-        type="text"
-        id="inputBuscar"
-        name="numero_habitacion"
-        placeholder="Buscar habitación..."
+      <input type="text" id="inputBuscar" name="numero_habitacion" placeholder="Buscar habitación..."
         value="<?= htmlspecialchars($_GET['numero_habitacion'] ?? '') ?>" />
     </div>
 
@@ -42,11 +38,15 @@
       <?php endforeach; ?>
     </select>
 
-    <!-- ESTADO UNIFICADO -->
-    <select name="estado">
-      <option value="">Todos los estados</option>
-      <?php foreach ($filtros['estados'] ?? [] as $estadoItem): ?>
-        <option value="<?= htmlspecialchars($estadoItem) ?>" <?= (($_GET['estado'] ?? '') == $estadoItem) ? 'selected' : '' ?>>
+    <!-- ESTADO: opciones fijas -->
+    <select name="estado" id="selectEstado">
+      <?php
+      $estadoSeleccionado = $_GET['estado'] ?? 'Disponible';
+      $estadosFijos = ['Disponible', 'Ocupada', 'Mantenimiento', 'Reservada'];
+      ?>
+      <option value="" <?= ($estadoSeleccionado === '') ? 'selected' : '' ?>>Todos los estados</option>
+      <?php foreach ($estadosFijos as $estadoItem): ?>
+        <option value="<?= htmlspecialchars($estadoItem) ?>" <?= ($estadoSeleccionado == $estadoItem) ? 'selected' : '' ?>>
           <?= htmlspecialchars($estadoItem) ?>
         </option>
       <?php endforeach; ?>
@@ -54,9 +54,9 @@
   </form>
 
   <div class="grid-habitaciones">
-    <?php 
-      $data['is_partial'] = true;
-      require_once("Views/Habitacion/grid.php"); 
+    <?php
+    $data['is_partial'] = true;
+    require_once("Views/Habitacion/grid.php");
     ?>
   </div>
 

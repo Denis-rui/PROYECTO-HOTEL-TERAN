@@ -1,18 +1,24 @@
 <?php
 namespace Models;
- 
+
 // Importamos la clase base de modelos y manejador de BD de Laravel..
 use Illuminate\Database\Eloquent\Model as Eloquent;
 use Illuminate\Database\Capsule\Manager as DB;
 
 class HabitacionModel extends Eloquent
 {
-    protected $table      = 'habitacion';
+    protected $table = 'habitacion';
     protected $primaryKey = 'id';
-    public $timestamps    = false;
-    protected $fillable   = [
-        'numero_habitacion', 'piso', 'id_tipo_habitacion',
-        'estado', 'descripcion_habitacion', 'capacidad', 'activo'
+    public $timestamps = false;
+    protected $fillable = [
+        'numero_habitacion',
+        'piso',
+        'id_tipo_habitacion',
+        'estado',
+        'descripcion_habitacion',
+        'capacidad',
+        'activo',
+        'limpieza_inicio'
     ];
 
     private const ESTADOS = ['Disponible', 'Ocupada', 'Mantenimiento', 'Reservada'];
@@ -23,18 +29,18 @@ class HabitacionModel extends Eloquent
             $estado = $this->normalizarEstado($datos['estado'] ?? 'Disponible');
 
             $habitacion = self::create([
-                'numero_habitacion'      => $datos['numero_habitacion'] ?? '',
-                'piso'                   => (int) ($datos['piso'] ?? 1),
-                'id_tipo_habitacion'     => $datos['id_tipo_habitacion'] ?? null,
-                'estado'                 => $estado,
+                'numero_habitacion' => $datos['numero_habitacion'] ?? '',
+                'piso' => (int) ($datos['piso'] ?? 1),
+                'id_tipo_habitacion' => $datos['id_tipo_habitacion'] ?? null,
+                'estado' => $estado,
                 'descripcion_habitacion' => $datos['descripcion_habitacion'] ?? $datos['descripcion'] ?? '',
-                'capacidad'              => (int) ($datos['capacidad'] ?? 1),
-                'activo'                 => (int) ($datos['activo'] ?? 1),
+                'capacidad' => (int) ($datos['capacidad'] ?? 1),
+                'activo' => (int) ($datos['activo'] ?? 1),
             ]);
 
             return (bool) $habitacion;
         } catch (\Throwable $e) {
-        
+
             if ($e->getCode() == 23000 || strpos($e->getMessage(), '1062') !== false) {
                 throw new \Exception("La habitación número " . ($datos['numero_habitacion'] ?? '') . " ya está registrada.");
             }
@@ -64,13 +70,13 @@ class HabitacionModel extends Eloquent
                 ->whereIn('r.estado', ['pendiente', 'confirmada', 'checkin_realizado', 'en_estadia', 'checkout_pendiente'])
                 ->where(function ($q) {
                     $q->whereNull('rh.check_out')
-                      ->orWhere('rh.check_out', '>', DB::raw('NOW()'));
+                        ->orWhere('rh.check_out', '>', DB::raw('NOW()'));
                 })
                 ->first();
 
             if ($reservaActiva) {
                 return [
-                    'exito'   => false,
+                    'exito' => false,
                     'mensaje' => 'No se puede editar la habitación N° ' . $habitacion->numero_habitacion . ' porque está reservada.',
                 ];
             }
@@ -78,22 +84,22 @@ class HabitacionModel extends Eloquent
             // Bloquear si está en mantenimiento
             if (strtolower($habitacion->estado) === 'mantenimiento') {
                 return [
-                    'exito'   => false,
+                    'exito' => false,
                     'mensaje' => 'No se puede editar la habitación N° ' . $habitacion->numero_habitacion . ' porque está en mantenimiento.',
                 ];
             }
 
             $habitacion->update([
-                'numero_habitacion'      => $datos['numero_habitacion']      ?? $habitacion->numero_habitacion,
-                'piso'                   => (int) ($datos['piso']            ?? $habitacion->piso),
-                'id_tipo_habitacion'     => $datos['id_tipo_habitacion']     ?? $habitacion->id_tipo_habitacion,
-                'estado'                 => $this->normalizarEstado($datos['estado'] ?? $habitacion->estado),
+                'numero_habitacion' => $datos['numero_habitacion'] ?? $habitacion->numero_habitacion,
+                'piso' => (int) ($datos['piso'] ?? $habitacion->piso),
+                'id_tipo_habitacion' => $datos['id_tipo_habitacion'] ?? $habitacion->id_tipo_habitacion,
+                'estado' => $this->normalizarEstado($datos['estado'] ?? $habitacion->estado),
                 'descripcion_habitacion' => $datos['descripcion_habitacion'] ?? $datos['descripcion'] ?? $habitacion->descripcion_habitacion,
-                'capacidad'              => (int) ($datos['capacidad']       ?? $habitacion->capacidad),
+                'capacidad' => (int) ($datos['capacidad'] ?? $habitacion->capacidad),
             ]);
 
             return [
-                'exito'   => true,
+                'exito' => true,
                 'mensaje' => 'Habitación actualizada correctamente.',
             ];
         } catch (\Throwable $e) {
@@ -124,13 +130,13 @@ class HabitacionModel extends Eloquent
                 ->whereIn('r.estado', ['pendiente', 'confirmada', 'checkin_realizado', 'en_estadia', 'checkout_pendiente'])
                 ->where(function ($q) {
                     $q->whereNull('rh.check_out')
-                      ->orWhere('rh.check_out', '>', DB::raw('NOW()'));
+                        ->orWhere('rh.check_out', '>', DB::raw('NOW()'));
                 })
                 ->first();
 
             if ($reservaActiva) {
                 return [
-                    'exito'   => false,
+                    'exito' => false,
                     'mensaje' => 'No se puede eliminar la habitación N° ' . $habitacion->numero_habitacion . ' porque está reservada. Primero cambia su estado.',
                 ];
             }
@@ -138,7 +144,7 @@ class HabitacionModel extends Eloquent
             // Bloquear si está en mantenimiento (solo si no tiene reservas)
             if (strtolower($habitacion->estado) === 'mantenimiento') {
                 return [
-                    'exito'   => false,
+                    'exito' => false,
                     'mensaje' => 'No se puede eliminar la habitación N° ' . $habitacion->numero_habitacion . ' porque está en mantenimiento. Primero cambia su estado.',
                 ];
             }
@@ -148,7 +154,7 @@ class HabitacionModel extends Eloquent
             $habitacion->save();
 
             return [
-                'exito'   => true,
+                'exito' => true,
                 'mensaje' => 'Habitación N° ' . $habitacion->numero_habitacion . ' eliminada correctamente.',
             ];
         } catch (\Throwable $e) {
@@ -166,7 +172,7 @@ class HabitacionModel extends Eloquent
                 ->whereIn('r2.estado', ['pendiente', 'confirmada', 'checkin_realizado', 'en_estadia', 'checkout_pendiente'])
                 ->where(function ($q) {
                     $q->whereNull('rh2.check_out')
-                      ->orWhere('rh2.check_out', '>', DB::raw('NOW()'));
+                        ->orWhere('rh2.check_out', '>', DB::raw('NOW()'));
                 })
                 ->select([
                     'rh2.id_habitacion',
@@ -205,6 +211,7 @@ class HabitacionModel extends Eloquent
                     'h.estado as estado_bd',
                     'h.capacidad',
                     'h.activo',
+                    'h.limpieza_inicio',
                     'r.id as reserva_actual_id',
                     'c.nombre_completo as cliente_actual'
                 ]);
@@ -229,22 +236,28 @@ class HabitacionModel extends Eloquent
                         $q->whereIn('r.estado', ['en_estadia', 'checkout_pendiente']);
                     } elseif ($estadoNorm === 'Reservada') {
                         $q->whereIn('r.estado', ['confirmada', 'checkin_realizado', 'pendiente'])
-                          ->whereNotIn('h.id', function ($sub) {
-                              $sub->select('rh3.id_habitacion')
-                                  ->from('reserva_habitacion as rh3')
-                                  ->join('reserva as r3', 'r3.id', '=', 'rh3.id_reserva')
-                                  ->whereIn('r3.estado', ['en_estadia', 'checkout_pendiente'])
-                                  ->where('rh3.activo', 1);
-                          });
+                            ->whereNotIn('h.id', function ($sub) {
+                                $sub->select('rh3.id_habitacion')
+                                    ->from('reserva_habitacion as rh3')
+                                    ->join('reserva as r3', 'r3.id', '=', 'rh3.id_reserva')
+                                    ->whereIn('r3.estado', ['en_estadia', 'checkout_pendiente'])
+                                    ->where('rh3.activo', 1);
+                            });
                     } else {
-                        $q->whereNull('sr.id_reserva_activa')
-                          ->where('h.estado', $estadoNorm);
+                        // Mantenimiento incluye también "En Limpieza"
+                        if ($estadoNorm === 'Mantenimiento') {
+                            $q->whereNull('sr.id_reserva_activa')
+                                ->whereIn('h.estado', ['Mantenimiento', 'En Limpieza']);
+                        } else {
+                            $q->whereNull('sr.id_reserva_activa')
+                                ->where('h.estado', $estadoNorm);
+                        }
                     }
                 });
             }
 
             $query->orderBy('h.piso', 'asc')
-                  ->orderBy('h.numero_habitacion', 'asc');
+                ->orderBy('h.numero_habitacion', 'asc');
 
             return $query->get()->map(function ($item) {
                 return (array) $item;
@@ -270,7 +283,7 @@ class HabitacionModel extends Eloquent
                     ->where('rh.id_habitacion', (int) $id)
                     ->where(function ($q) {
                         $q->whereNull('rh.check_out')
-                          ->orWhere('rh.check_out', '>', DB::raw('NOW()'));
+                            ->orWhere('rh.check_out', '>', DB::raw('NOW()'));
                     })
                     ->exists();
 
@@ -280,7 +293,7 @@ class HabitacionModel extends Eloquent
                         ->where('rh.id_habitacion', (int) $id)
                         ->where(function ($q) {
                             $q->whereNull('rh.check_out')
-                              ->orWhere('rh.check_out', '>', DB::raw('NOW()'));
+                                ->orWhere('rh.check_out', '>', DB::raw('NOW()'));
                         })
                         ->select(['r.id as id_reserva', 'r.estado as estado_reserva', 'rh.check_in', 'rh.check_out'])
                         ->orderBy('rh.check_out', 'asc')
@@ -317,7 +330,7 @@ class HabitacionModel extends Eloquent
                             ->whereIn('r.estado', ['checkin_realizado', 'en_estadia', 'checkout_pendiente'])
                             ->where(function ($q) {
                                 $q->whereNull('rh.check_out')
-                                  ->orWhere('rh.check_out', '>', DB::raw('NOW()'));
+                                    ->orWhere('rh.check_out', '>', DB::raw('NOW()'));
                             });
                     })
                     ->update($updateData);
@@ -353,7 +366,7 @@ class HabitacionModel extends Eloquent
             $ok = $habitacion->update($updateData);
 
             return [
-                'exito'   => $ok,
+                'exito' => $ok,
                 'mensaje' => $ok ? 'Estado actualizado correctamente.' : 'No se pudo actualizar el estado.'
             ];
         } catch (\Throwable $e) {
@@ -420,16 +433,16 @@ class HabitacionModel extends Eloquent
     {
         try {
             return DB::table('historial_habitacion')->insert([
-                'id_habitacion'             => (int) $idHabitacion,
-                'id_reserva'                => $idReserva ? (int) $idReserva : null,
-                'estado_anterior'           => $estadoAnterior,
-                'estado_nuevo'              => $estadoNuevo,
-                'estado_limpieza_anterior'  => $limpiezaAnterior,
-                'estado_limpieza_nuevo'     => $limpiezaNueva,
-                'accion'                    => $accion,
-                'comentario'                => $comentario,
-                'id_usuario'                => $idUsuario ? (int) $idUsuario : null,
-                'fecha_registro'            => DB::raw('NOW()')
+                'id_habitacion' => (int) $idHabitacion,
+                'id_reserva' => $idReserva ? (int) $idReserva : null,
+                'estado_anterior' => $estadoAnterior,
+                'estado_nuevo' => $estadoNuevo,
+                'estado_limpieza_anterior' => $limpiezaAnterior,
+                'estado_limpieza_nuevo' => $limpiezaNueva,
+                'accion' => $accion,
+                'comentario' => $comentario,
+                'id_usuario' => $idUsuario ? (int) $idUsuario : null,
+                'fecha_registro' => DB::raw('NOW()')
             ]);
         } catch (\Throwable $e) {
             error_log("Error al registrar historial de habitación: " . $e->getMessage());
@@ -460,6 +473,41 @@ class HabitacionModel extends Eloquent
     public function validarDisponibilidadHabitacion($idHabitacion, $checkIn, $checkOut, $idReservaExcluir = null)
     {
         return (new ReporteOcupacionModel())->validarDisponibilidadHabitacion($idHabitacion, $checkIn, $checkOut, $idReservaExcluir);
+    }
+
+    /**
+     * Termina el período de limpieza de una habitación en Mantenimiento
+     * con motivo de limpieza (limpieza_inicio != null) y la pasa a Disponible.
+     * También se llama automáticamente cuando el polling detecta que pasó 1 hora.
+     */
+    public function terminarLimpieza($id)
+    {
+        try {
+            $habitacion = self::find((int) $id);
+            if (!$habitacion) {
+                return ['exito' => false, 'mensaje' => 'Habitación no encontrada.'];
+            }
+
+            $estadoActual = strtolower($habitacion->estado);
+            if ($estadoActual !== 'mantenimiento' && $estadoActual !== 'en limpieza') {
+                return ['exito' => false, 'mensaje' => 'La habitación no está en Mantenimiento o Limpieza.'];
+            }
+
+            $ok = DB::table('habitacion')
+                ->where('id', (int) $id)
+                ->update([
+                    'estado' => 'Disponible',
+                    'limpieza_inicio' => null,
+                    'descripcion_habitacion' => '',
+                ]);
+
+            return [
+                'exito' => (bool) $ok,
+                'mensaje' => $ok ? 'Limpieza finalizada. Habitación disponible.' : 'No se pudo actualizar la habitación.',
+            ];
+        } catch (\Throwable $e) {
+            return ['exito' => false, 'mensaje' => 'Error: ' . $e->getMessage()];
+        }
     }
 
     private function normalizarEstado($estado)
