@@ -120,6 +120,46 @@ class ComprobanteModel
         return $comprobante ? $this->formatearComprobante($comprobante) : null;
     }
 
+    public function obtenerEmitidosPorReserva($idReserva): array
+    {
+        try {
+            return DB::table('comprobante as c')
+                ->join('pago as p', 'p.id', '=', 'c.id_pago')
+                ->where('p.id_reserva', (int) $idReserva)
+                ->orderBy('p.fecha_pago', 'asc')
+                ->orderBy('c.id', 'asc')
+                ->select([
+                    'c.id',
+                    'c.id_pago',
+                    'c.numero_ticket',
+                    'c.fecha_emision',
+                    'c.descripcion',
+                    'c.total',
+                    'c.id_forma_pago',
+                    'c.id_usuario',
+                    'p.fecha_pago',
+                ])
+                ->get()
+                ->map(function ($comprobante) {
+                    return [
+                        'id' => (int) $comprobante->id,
+                        'id_pago' => (int) $comprobante->id_pago,
+                        'tipo' => 'Ticket',
+                        'numero' => $comprobante->numero_ticket,
+                        'fecha' => $comprobante->fecha_pago ?: $comprobante->fecha_emision,
+                        'estado' => 'emitido',
+                        'monto' => (float) $comprobante->total,
+                        'descripcion' => $comprobante->descripcion ?? '',
+                        'id_forma_pago' => $comprobante->id_forma_pago ?? null,
+                        'id_usuario' => $comprobante->id_usuario ?? null,
+                    ];
+                })
+                ->toArray();
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
     public function formatearComprobante($comprobante): array
     {
         $pago = $comprobante->pago ?? null;

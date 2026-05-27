@@ -4,47 +4,27 @@
     position: fixed;
     inset: 0;
     z-index: 10010;
-    background:
-      radial-gradient(
-        circle at top left,
-        rgba(45, 74, 30, 0.28),
-        transparent 34%
-      ),
-      radial-gradient(
-        circle at bottom right,
-        rgba(196, 164, 74, 0.2),
-        transparent 28%
-      ),
-      rgba(18, 24, 16, 0.64);
-    backdrop-filter: blur(2px);
+    background: rgba(18, 24, 16, 0.56);
     padding: 14px;
     overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .modal-ver-detalles {
     width: min(1240px, 100%);
-    max-height: calc(100vh - 28px);
     margin: 14px auto;
-    background: linear-gradient(180deg, var(--bg-light) 0%, var(--bg-light) 100%);
+    background: var(--bg-light);
     border: 1px solid var(--border-gold);
-    border-radius: 24px;
-    box-shadow: 0 28px 70px rgba(20, 31, 17, 0.35);
+    border-radius: 16px;
+    box-shadow: 0 14px 34px rgba(20, 31, 17, 0.22);
     padding: 20px;
     position: relative;
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
+    overflow-y: visible;
     overflow-x: hidden;
-    scrollbar-gutter: stable;
   }
 
   .modal-ver-detalles::before {
-    content: "";
-    position: absolute;
-    inset: 12px;
-    border-radius: 18px;
-    border: 1px solid rgba(45, 74, 30, 0.08);
-    pointer-events: none;
+    content: none;
   }
 
   .modal-ver-detalles-cabecera {
@@ -93,7 +73,7 @@
     font-size: 28px;
     line-height: 1;
     cursor: pointer;
-    box-shadow: 0 8px 18px rgba(45, 74, 30, 0.12);
+    box-shadow: 0 3px 10px rgba(45, 74, 30, 0.1);
   }
 
   .cerrar-modal-ver-detalles:hover {
@@ -111,9 +91,8 @@
   .resumen-chip {
     background: var(--bg-light);
     border: 1px solid var(--border-gold);
-    border-radius: 16px;
+    border-radius: 12px;
     padding: 14px 16px;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
   }
 
   .resumen-chip-etiqueta,
@@ -133,10 +112,7 @@
   }
 
   .modal-ver-detalles-grid {
-    display: grid;
-    grid-template-columns: minmax(320px, 0.95fr) minmax(360px, 1.05fr);
-    gap: 14px;
-    align-items: stretch;
+    display: block;
     flex: 1 1 auto;
     min-height: 0;
   }
@@ -144,7 +120,7 @@
   .panel-ver-detalles {
     background: var(--bg-light);
     border: 1px solid var(--border-gold);
-    border-radius: 20px;
+    border-radius: 14px;
     padding: 16px;
     display: flex;
     flex-direction: column;
@@ -167,108 +143,6 @@
     font-size: 18px;
   }
 
-  .panel-historial {
-    min-height: 100%;
-  }
-
-  .timeline-reserva {
-    position: relative;
-    display: grid;
-    gap: 8px;
-    padding-left: 12px;
-    flex: 1 1 auto;
-    overflow-y: auto;
-    min-height: 0;
-    padding-right: 4px;
-    max-height: 290px;
-  }
-
-  .timeline-reserva::before {
-    content: "";
-    position: absolute;
-    top: 8px;
-    bottom: 8px;
-    left: 11px;
-    width: 1px;
-    background: linear-gradient(
-      180deg,
-      rgba(45, 74, 30, 0.12),
-      rgba(45, 74, 30, 0.28)
-    );
-  }
-
-  .timeline-item {
-    position: relative;
-    display: grid;
-    grid-template-columns: 14px 1fr;
-    gap: 8px;
-    align-items: start;
-  }
-
-  .timeline-marker {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: var(--primary-dark);
-    border: 2px solid var(--bg-light);
-    box-shadow: 0 0 0 1px rgba(45, 74, 30, 0.08);
-    margin-top: 9px;
-    position: relative;
-    z-index: 1;
-  }
-
-  .timeline-card {
-    background: linear-gradient(180deg, #ffffff 0%, var(--bg-light) 100%);
-    border: 1px solid var(--border-gold);
-    border-radius: 12px;
-    padding: 10px 12px;
-  }
-
-  .timeline-card-top {
-    display: flex;
-    justify-content: space-between;
-    gap: 8px;
-    align-items: flex-start;
-    margin-bottom: 6px;
-  }
-
-  .timeline-card-top strong {
-    color: var(--text-dark);
-    font-size: 12px;
-    line-height: 1.2;
-  }
-
-  .timeline-card-fecha {
-    color: var(--text-secondary);
-    font-size: 10px;
-    white-space: nowrap;
-  }
-
-  .timeline-card p {
-    margin: 0;
-    color: var(--text-secondary);
-    font-size: 11px;
-    line-height: 1.28;
-  }
-
-  .timeline-card-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-    margin-top: 6px;
-  }
-
-  .timeline-meta-chip {
-    display: inline-flex;
-    align-items: center;
-    padding: 4px 8px;
-    border-radius: 999px;
-    background: var(--primary-bg);
-    color: var(--primary-dark);
-    font-size: 10px;
-    font-weight: 700;
-  }
-
   .info-reserva-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -277,9 +151,9 @@
   }
 
   .info-reserva-card {
-    background: linear-gradient(180deg, #ffffff 0%, var(--bg-light) 100%);
+    background: var(--bg-white);
     border: 1px solid var(--border-gold);
-    border-radius: 14px;
+    border-radius: 10px;
     padding: 12px 14px;
     display: grid;
     gap: 4px;
@@ -320,11 +194,9 @@
   .tabla-documentos-wrap {
     overflow-x: auto;
     border: 1px solid var(--border);
-    border-radius: 14px;
+    border-radius: 10px;
     background: var(--bg-white);
-    max-height: 220px;
-    overflow-y: auto;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    overflow-y: visible;
   }
 
   .tabla-documentos-reserva {
@@ -403,7 +275,6 @@
     font-weight: 700;
     transition:
       transform 0.15s ease,
-      box-shadow 0.15s ease,
       opacity 0.15s ease;
   }
 
@@ -414,7 +285,6 @@
   .boton-documento.enviar {
     background: var(--primary-dark);
     color: #fff;
-    box-shadow: 0 8px 16px rgba(45, 74, 30, 0.16);
   }
 
   .boton-documento.imprimir {
@@ -455,10 +325,6 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .modal-ver-detalles-grid {
-      grid-template-columns: 1fr;
-    }
-
   }
 
   @media (max-width: 720px) {
@@ -468,8 +334,7 @@
 
     .modal-ver-detalles {
       padding: 14px;
-      border-radius: 18px;
-      max-height: calc(100vh - 20px);
+      border-radius: 14px;
     }
 
     .modal-ver-detalles-cabecera {
@@ -487,10 +352,6 @@
 
     .tabla-documentos-reserva {
       min-width: 620px;
-    }
-
-    .timeline-reserva {
-      max-height: 260px;
     }
 
   }

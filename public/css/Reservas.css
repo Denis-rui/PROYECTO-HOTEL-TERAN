@@ -170,27 +170,22 @@
   border-radius: 6px;
   padding: 6px 8px;
   margin: 2px;
-  cursor: pointer;
 }
 
 .estado-reserva {
+  display: inline-block;
   min-width: 140px;
   font-weight: 700;
-  transition:
-    transform 0.15s ease,
-    opacity 0.15s ease;
+  text-align: center;
 }
 
-select.estado-reserva {
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  padding-right: 24px;
-}
-
-.estado-reserva:hover {
-  transform: translateY(-1px);
-  opacity: 0.95;
+.boton-checkin-reserva,
+.boton-checkout-reserva,
+.boton-extender-reserva,
+.boton-consumo-reserva,
+.boton-cambio-habitacion,
+.boton-cancelar-reserva {
+  cursor: pointer;
 }
 
 .estado-confirmada {
@@ -201,6 +196,11 @@ select.estado-reserva {
 .estado-en-estadia {
   background: var(--success-bg);
   color: var(--success);
+}
+
+.estado-ausente {
+  background: var(--danger-bg);
+  color: var(--danger);
 }
 
 .estado-checkout-realizado {

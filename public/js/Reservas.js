@@ -20,22 +20,6 @@ const configurarEventosReservas = () => {
     });
   };
 
-  const pedirConfirmacionCambioEstado = async (estadoAnterior, estadoNuevo) => {
-    const etiquetas = {
-      confirmada: "Confirmada",
-      en_estadia: "En estadía",
-      checkout_realizado: "Checkout realizado",
-    };
-
-    const mensaje = `¿Deseas cambiar el estado de la reserva de ${etiquetas[estadoAnterior] || estadoAnterior} a ${etiquetas[estadoNuevo] || estadoNuevo}?`;
-
-    if (typeof window.Confirmar === "function") {
-      return window.Confirmar(mensaje);
-    }
-
-    return Promise.resolve(confirm(mensaje));
-  };
-
   if (btnNuevaReserva) {
     btnNuevaReserva.addEventListener("click", () => {
       window.abrirModalReserva("nuevo");
@@ -43,37 +27,6 @@ const configurarEventosReservas = () => {
   }
 
   if (cuerpoTabla) {
-    cuerpoTabla.addEventListener("change", (e) => {
-      const selectEstado = e.target.closest(".estado-reserva");
-      if (!selectEstado || selectEstado.tagName !== "SELECT") return;
-
-      const idReserva = selectEstado.dataset.id;
-      const estadoActual = (selectEstado.dataset.estado || "").toLowerCase();
-      const nuevoEstado = (selectEstado.value || "").toLowerCase();
-
-      if (!nuevoEstado || nuevoEstado === estadoActual) {
-        return;
-      }
-
-      if (typeof window.SolicitarDato === "function") {
-        // Solo aprovechamos el modal bonito si existe; la confirmación sí usa Confirmar.
-      }
-
-      pedirConfirmacionCambioEstado(estadoActual, nuevoEstado).then(
-        (confirmado) => {
-          if (!confirmado) {
-            selectEstado.value = estadoActual;
-            return;
-          }
-
-          ejecutarAccionReserva("actualizarEstado", {
-            id_reserva: idReserva,
-            nuevo_estado: nuevoEstado,
-          });
-        },
-      );
-    });
-
     cuerpoTabla.addEventListener("click", async (e) => {
       const btnDetalles = e.target.closest(".boton-mas-opciones");
       if (btnDetalles) {
@@ -109,22 +62,40 @@ const configurarEventosReservas = () => {
       const accionMarcarAusente = e.target.closest(".accion-marcar-ausente");
       if (accionMarcarAusente) {
         cerrarMenusOpciones();
-        if (typeof window.Notificar === "function") {
-          window.Notificar("Acción de frontend: marcar ausente", "info");
+        let confirmado = true;
+        if (typeof window.Confirmar === "function") {
+          confirmado = await window.Confirmar(
+            "¿Marcar esta reserva como ausente?",
+          );
         } else {
-          alert("Acción de frontend: marcar ausente");
+          confirmado = confirm("¿Marcar esta reserva como ausente?");
         }
+        if (!confirmado) return;
+
+        ejecutarAccionReserva("marcarAusente", {
+          id_reserva: accionMarcarAusente.dataset.id,
+        });
         return;
       }
 
-      const accionMarcarOcupado = e.target.closest(".accion-marcar-ocupado");
-      if (accionMarcarOcupado) {
+      const accionMarcarRegreso = e.target.closest(".accion-marcar-regreso");
+      if (accionMarcarRegreso) {
         cerrarMenusOpciones();
-        if (typeof window.Notificar === "function") {
-          window.Notificar("Acción de frontend: marcar ocupado", "info");
+        let confirmado = true;
+        if (typeof window.Confirmar === "function") {
+          confirmado = await window.Confirmar(
+            "¿Marcar regreso y volver la reserva a en estadía?",
+          );
         } else {
-          alert("Acción de frontend: marcar ocupado");
+          confirmado = confirm(
+            "¿Marcar regreso y volver la reserva a en estadía?",
+          );
         }
+        if (!confirmado) return;
+
+        ejecutarAccionReserva("marcarRegreso", {
+          id_reserva: accionMarcarRegreso.dataset.id,
+        });
         return;
       }
 
@@ -151,8 +122,6 @@ const configurarEventosReservas = () => {
           cliente: fila.dataset.cliente,
           habitacion: fila.dataset.habitacion,
           habitaciones: parseArray(fila.dataset.habitaciones),
-          historial: parseArray(fila.dataset.historial),
-          documentos: parseArray(fila.dataset.documentos),
           check_in: fila.dataset.checkin,
           check_out: fila.dataset.checkout,
           email: fila.dataset.email,

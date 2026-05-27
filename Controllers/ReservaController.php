@@ -116,6 +116,28 @@ class ReservaController extends Controller
         echo json_encode($resultado);
     }
 
+    public function marcarAusente($params = '')
+    {
+        header('Content-Type: application/json');
+        $datos = json_decode(file_get_contents('php://input'), true);
+        $resultado = $this->model->marcarAusente(
+            (int) ($datos['id_reserva'] ?? 0),
+            $_SESSION['id_usuario'] ?? null
+        );
+        echo json_encode($resultado);
+    }
+
+    public function marcarRegreso($params = '')
+    {
+        header('Content-Type: application/json');
+        $datos = json_decode(file_get_contents('php://input'), true);
+        $resultado = $this->model->marcarRegreso(
+            (int) ($datos['id_reserva'] ?? 0),
+            $_SESSION['id_usuario'] ?? null
+        );
+        echo json_encode($resultado);
+    }
+
     public function actualizarEstado($params = '')
     {
         header('Content-Type: application/json');

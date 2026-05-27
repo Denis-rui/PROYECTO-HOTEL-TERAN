@@ -13,4 +13,12 @@ class ComprobanteController extends Controller
         $model = new ComprobanteModel();
         echo json_encode($model->obtenerPorPago($idPago));
     }
+
+    public function emitidosPorReserva($params = '')
+    {
+        header('Content-Type: application/json');
+        $idReserva = (int) ($params ?? 0);
+        $model = new ComprobanteModel();
+        echo json_encode($model->obtenerEmitidosPorReserva($idReserva));
+    }
 }

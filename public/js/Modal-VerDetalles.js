@@ -4,6 +4,7 @@
   };
 
   const safeParseArray = (valor, fallback = []) => {
+    if (Array.isArray(valor)) return valor;
     if (!valor) return fallback;
 
     try {
@@ -60,6 +61,7 @@
     const mapa = {
       confirmada: "Confirmada",
       en_estadia: "En estadía",
+      ausente: "Ausente",
       checkout_realizado: "Checkout realizado",
       cancelada: "Cancelada",
       emitido: "Emitido",
@@ -69,139 +71,31 @@
     return mapa[normalizarEstado(estado)] || "Pendiente";
   };
 
-  const descripcionTipo = (tipo) => {
-    const mapa = {
-      CREACION: "Reserva realizada",
-      EDICION: "Reserva actualizada",
-      CHECK_IN: "Entrada confirmada",
-      CHECK_OUT: "Salida confirmada",
-      CANCELACION: "Reserva cancelada",
-      NO_SHOW: "No show registrado",
-      PAGO: "Pago registrado",
-      COMPROBANTE: "Documento emitido",
-      PENALIDAD: "Penalidad aplicada",
-    };
-
-    return mapa[String(tipo || "").toUpperCase()] || String(tipo || "Evento");
-  };
-
-  const iconoTipo = (tipo) => {
-    const normalizado = String(tipo || "").toUpperCase();
-    if (normalizado.includes("CHECK_IN")) return "Entrada";
-    if (normalizado.includes("CHECK_OUT")) return "Salida";
-    if (normalizado.includes("PAGO")) return "Pago";
-    if (normalizado.includes("COMPROBANTE")) return "Documento";
-    if (normalizado.includes("CANCEL")) return "Cancelación";
-    return "Reserva";
-  };
-
-  const generarHistorialBase = (reserva) => {
-    const historial = safeParseArray(reserva.historial, []);
-    if (historial.length > 0) return historial;
-
-    const eventos = [];
-    const fechaInicial =
-      reserva.fecha_reserva || reserva.created_at || reserva.check_in || "";
-
-    eventos.push({
-      tipo: "CREACION",
-      descripcion: "Reserva realizada",
-      fecha: fechaInicial,
-      estado_nuevo: reserva.estado || "",
-      monto: reserva.total || null,
-      id_usuario: reserva.usuario || "",
-    });
-
-    if (reserva.check_in) {
-      eventos.push({
-        tipo: "CHECK_IN",
-        descripcion: "Check-in confirmado",
-        fecha: reserva.check_in,
-        estado_nuevo: "en_estadia",
-      });
-    }
-
-    if (reserva.porcentaje_pago && toNumber(reserva.porcentaje_pago) > 0) {
-      eventos.push({
-        tipo: "PAGO",
-        descripcion: "Pago registrado",
-        fecha: reserva.fecha_pago || reserva.check_in || "",
-        monto:
-          (toNumber(reserva.total) * toNumber(reserva.porcentaje_pago)) / 100,
-      });
-    }
-
-    if (normalizarEstado(reserva.estado) === "cancelada") {
-      eventos.push({
-        tipo: "CANCELACION",
-        descripcion: "Reserva cancelada",
-        fecha:
-          reserva.fecha_cancelacion ||
-          reserva.check_out ||
-          reserva.check_in ||
-          "",
-        estado_nuevo: "cancelada",
-      });
-    }
-
-    if (reserva.check_out) {
-      eventos.push({
-        tipo: "CHECK_OUT",
-        descripcion: "Checkout confirmado",
-        fecha: reserva.check_out,
-        estado_nuevo: "checkout_realizado",
-      });
-    }
-
-    return eventos;
-  };
-
   const generarDocumentosBase = (reserva) => {
     const documentos = safeParseArray(reserva.documentos, []);
-    if (documentos.length > 0) return documentos;
+    return documentos.filter(
+      (documento) => normalizarEstado(documento.estado) === "emitido",
+    );
+  };
 
-    const porcentajePago = toNumber(reserva.porcentaje_pago);
-    const total = toNumber(reserva.total);
-    const saldo = toNumber(reserva.saldo_pendiente);
-    const email = reserva.email || reserva.correo_electronico || "";
+  const cargarComprobantesEmitidos = async (idReserva) => {
+    if (!idReserva) return [];
 
-    const docs = [
-      {
-        tipo: "Voucher",
-        numero: `V-${reserva.id || "0000"}`,
-        fecha:
-          reserva.fecha_pago || reserva.check_in || reserva.fecha_reserva || "",
-        estado: porcentajePago > 0 ? "emitido" : "pendiente",
-        monto: total > 0 ? (total * porcentajePago) / 100 : 0,
-        correo: email,
-      },
-    ];
+    try {
+      const respuesta = await fetch(
+        `${BASE_URL}Comprobante/emitidosPorReserva/${encodeURIComponent(idReserva)}`,
+      );
 
-    if (normalizarEstado(reserva.estado) !== "cancelada") {
-      docs.push({
-        tipo: "Comprobante",
-        numero: `C-${reserva.id || "0000"}`,
-        fecha:
-          reserva.check_out || reserva.check_in || reserva.fecha_reserva || "",
-        estado: "pendiente",
-        monto: total,
-        correo: email,
-      });
+      if (!respuesta.ok) {
+        return [];
+      }
+
+      const datos = await respuesta.json();
+      return Array.isArray(datos) ? datos : [];
+    } catch (error) {
+      console.error("Error cargando comprobantes emitidos:", error);
+      return [];
     }
-
-    if (saldo > 0) {
-      docs.push({
-        tipo: "Saldo",
-        numero: `S-${reserva.id || "0000"}`,
-        fecha:
-          reserva.check_out || reserva.check_in || reserva.fecha_reserva || "",
-        estado: "pendiente",
-        monto: saldo,
-        correo: email,
-      });
-    }
-
-    return docs;
   };
 
   const setText = (selector, texto) => {
@@ -217,56 +111,9 @@
 
     contenedor.innerHTML = `
 			<tr class="fila-vacia-documentos">
-				<td colspan="5">No hay documentos cargados aún.</td>
+				<td colspan="5">No hay comprobantes emitidos aún.</td>
 			</tr>
 		`;
-  };
-
-  const renderizarHistorial = (reserva) => {
-    const contenedor = document.getElementById("timelineReservaHistorial");
-    if (!contenedor) return;
-
-    const historial = generarHistorialBase(reserva);
-
-    if (!historial.length) {
-      contenedor.innerHTML = `
-				<article class="timeline-item">
-					<div class="timeline-marker"></div>
-					<div class="timeline-card">
-						<div class="timeline-card-top">
-							<strong>Sin historial registrado</strong>
-							<span class="timeline-card-fecha">---</span>
-						</div>
-						<p>Cuando el backend envíe los eventos, se mostrarán aquí ordenados de forma cronológica.</p>
-					</div>
-				</article>
-			`;
-      return;
-    }
-
-    contenedor.innerHTML = historial
-      .map((item) => {
-        const fecha =
-          item.fecha || item.fecha_evento || item.fecha_registro || "";
-        return `
-					<article class="timeline-item">
-						<div class="timeline-marker"></div>
-						<div class="timeline-card">
-							<div class="timeline-card-top">
-								<strong>${descripcionTipo(item.tipo)}</strong>
-								<span class="timeline-card-fecha">${formatDateTime(fecha)}</span>
-							</div>
-							<p>${item.descripcion || "Sin descripción disponible."}</p>
-							<div class="timeline-card-meta">
-								<span class="timeline-meta-chip">${iconoTipo(item.tipo)}</span>
-								${item.estado_nuevo ? `<span class="timeline-meta-chip">${etiquetaEstado(item.estado_nuevo)}</span>` : ""}
-								${item.monto !== null && item.monto !== undefined ? `<span class="timeline-meta-chip">${formatMoney(item.monto)}</span>` : ""}
-							</div>
-						</div>
-					</article>
-				`;
-      })
-      .join("");
   };
 
   const renderizarDocumentos = (reserva) => {
@@ -279,14 +126,12 @@
     const porcentajePago = toNumber(reserva.porcentaje_pago);
 
     if (contador) {
-      contador.textContent = `${documentos.length} documento${documentos.length === 1 ? "" : "s"}`;
+      contador.textContent = `${documentos.length} emitido${documentos.length === 1 ? "" : "s"}`;
     }
 
     if (resumenPago) {
       resumenPago.textContent =
-        porcentajePago > 0
-          ? `Pago registrado ${porcentajePago}%`
-          : "Pago no registrado";
+        porcentajePago > 0 ? `Pago registrado ${porcentajePago}%` : "";
     }
 
     if (!documentos.length) {
@@ -490,18 +335,22 @@
     window.print();
   };
 
-  const abrirModalVerDetalles = (datos = {}) => {
+  const abrirModalVerDetalles = async (datos = {}) => {
     estadoModal.ultimaReserva = {
       ...datos,
-      historial: safeParseArray(datos.historial, datos.historial || []),
-      documentos: safeParseArray(datos.documentos, datos.documentos || []),
+      documentos: [],
       habitaciones: Array.isArray(datos.habitaciones) ? datos.habitaciones : [],
     };
 
     cargarResumen(estadoModal.ultimaReserva);
-    renderizarHistorial(estadoModal.ultimaReserva);
-    renderizarDocumentos(estadoModal.ultimaReserva);
+    limpiarTablaDocumentos();
     mostrarModal();
+
+    const documentos = await cargarComprobantesEmitidos(
+      estadoModal.ultimaReserva.id,
+    );
+    estadoModal.ultimaReserva.documentos = documentos;
+    renderizarDocumentos(estadoModal.ultimaReserva);
   };
 
   const configurarEventos = () => {
