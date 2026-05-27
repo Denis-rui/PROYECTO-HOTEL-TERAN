@@ -1,10 +1,16 @@
 <?php
+
 namespace Controllers;
 
 use Libraries\Core\Controller;
 use Models\DashboardModel;
 use Models\HabitacionModel;
 use Models\ClienteModel;
+use Models\PagoModel;
+use Models\NotificacionModel;
+use Models\ReservaNuevaModel;
+use Models\ReporteOcupacionModel;
+use Models\ActualizarReservaModel;
 
 class ReservaController extends Controller
 {
@@ -14,17 +20,31 @@ class ReservaController extends Controller
             header('Location: ' . BASE_URL . 'Login/index');
             exit();
         }
-        $data['page_title'] = "Gestión de Reservas";
-        $data['reservas'] = $this->model->obtenerReservas();
-        $data['page_js'] = ['Clientes.js', 'Modal-Clientes.js', 'Modal-NuevaReserva.js', 'Pago.js', 'Comprobante.js', 'Reservas.js'];
+
+        $data['reservas'] = [];
+        $data['error_reservas'] = '';
+
+        try {
+            $resultado = $this->model->obtenerReservas();
+
+            if (!is_array($resultado)) {
+                throw new \RuntimeException('Resultado no es un array');
+            }
+
+            if (count($resultado) === 1 && is_string($resultado[0])) {
+                $data['error_reservas'] = 'Error al cargar las reservas. Intenta nuevamente en unos minutos.';
+            } else {
+                $data['reservas'] = $resultado;
+            }
+        } catch (\Throwable $e) {
+            error_log('ReservaController::index -> ' . $e->getMessage());
+            $data['error_reservas'] = 'Error al cargar las reservas. Intenta nuevamente en unos minutos.';
+        }
+
+        $data['page_js'] = ['Clientes.js', 'Modal-Clientes.js', 'Modal-NuevaReserva.js', 'Pago.js', 'Comprobante.js', 'Modal-VerDetalles.js', 'Reservas.js'];
         $this->views->render($this, 'index', $data);
     }
 
-    // public function listar($params = '')
-    // {
-    //     header('Content-Type: application/json');
-    //     echo json_encode($this->model->obtenerReservas());
-    // }
 
     public function registrar($params = '')
     {
@@ -39,7 +59,8 @@ class ReservaController extends Controller
     {
         header('Content-Type: application/json');
         $datos     = json_decode(file_get_contents('php://input'), true);
-        $resultado = $this->model->actualizarReserva($datos);
+        $modeloActualizarReserva = new ActualizarReservaModel();
+        $resultado = $modeloActualizarReserva->actualizarReserva($datos);
         echo json_encode($resultado);
     }
 
@@ -87,7 +108,7 @@ class ReservaController extends Controller
     {
         header('Content-Type: application/json');
         $datos     = json_decode(file_get_contents('php://input'), true);
-        $resultado = $this->model->actualizarEstado(
+        $resultado = $this->model->actualizarEstadoReserva(
             (int) ($datos['id_reserva'] ?? 0),
             $datos['nuevo_estado'] ?? ''
         );

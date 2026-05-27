@@ -1,5 +1,3 @@
-# PROYECTO-HOTEL-TERAN
-
 <?php -- config Denis Teran -- ?>
 
 const BASE_URL = "http://localhost/DAW-II/Proyecto-Hotel-TERAN/";

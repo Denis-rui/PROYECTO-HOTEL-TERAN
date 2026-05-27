@@ -2,19 +2,10 @@
 namespace Models;
 
 use Illuminate\Database\Capsule\Manager as DB;
+use Helpers\ReservaHelper;
 
 class ReporteOcupacionModel
 {
-    private function normalizarFecha($fecha)
-    {
-        $fecha = trim((string) $fecha);
-        if ($fecha === '') {
-            return null;
-        }
-
-        return substr($fecha, 0, 10);
-    }
-
     public function obtenerReser_EstadiaHab($idHabitacion)
     {
         try {
@@ -40,16 +31,7 @@ class ReporteOcupacionModel
                 ->where('h.id', (int) $idHabitacion)
                 ->value('t.precio_base');
 
-            $inicioTexto = $this->normalizarFecha($checkIn);
-            $finTexto = $this->normalizarFecha($checkOut);
-            $inicio = $inicioTexto ? \DateTime::createFromFormat('Y-m-d', $inicioTexto) : null;
-            $fin = $finTexto ? \DateTime::createFromFormat('Y-m-d', $finTexto) : null;
-
-            if (!$inicio || !$fin || $fin <= $inicio) {
-                return 0;
-            }
-
-            $dias = (int) $inicio->diff($fin)->days;
+            $dias = ReservaHelper::obtenerDiasEstadia($checkIn, $checkOut);
             return $dias * $precio;
         } catch (\Throwable $e) {
             error_log('Error en calcularTotalReserva: ' . $e->getMessage());

@@ -23,13 +23,25 @@
   }
 }
 .buscar-filtro {
-  display: flex;
-  gap: 20px;
   .filtro-estado {
     margin-bottom: 20px;
     padding: 10px;
     width: 200px;
     border: none;
+    margin: 0 2%;
+  }
+  .btn {
+    background-color: #4f6422;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+
+    &:hover {
+      background-color: #3d4e1a;
+    }
   }
 }
 
@@ -113,7 +125,9 @@
 .estado-reserva {
   min-width: 140px;
   font-weight: 700;
-  transition: transform 0.15s ease, opacity 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease;
 }
 
 select.estado-reserva {
@@ -180,4 +194,100 @@ select.estado-reserva {
 .boton-cambio-habitacion {
   background: #ede9fe;
   color: #5b21b6;
+}
+
+.acciones-reserva-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.menu-mas-opciones-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  z-index: 5;
+}
+
+.menu-mas-opciones-wrap.menu-abierto {
+  z-index: 120;
+}
+
+.acciones-reserva-wrap .boton-editar-reserva,
+.acciones-reserva-wrap .boton-checkin-reserva,
+.acciones-reserva-wrap .boton-checkout-reserva,
+.acciones-reserva-wrap .boton-mas-opciones {
+  height: 32px;
+  min-height: 32px;
+  padding: 6px 10px;
+  font-size: 12px;
+  line-height: 1;
+  margin: 0;
+}
+
+.boton-mas-opciones {
+  border: 0;
+  border-radius: 6px;
+  padding: 6px 8px;
+  cursor: pointer;
+  background: #f3f4f6;
+  color: #2f3e1f;
+}
+
+.boton-mas-opciones:hover {
+  background: #e5e7eb;
+}
+
+.menu-mas-opciones-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 220px;
+  background: #fffdf7;
+  border: 1px solid #d8cfb2;
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(20, 31, 17, 0.18);
+  padding: 6px;
+  display: none;
+  z-index: 9999;
+}
+
+.menu-mas-opciones-wrap.menu-abierto .menu-mas-opciones-panel {
+  display: grid;
+  gap: 4px;
+}
+
+.tabla,
+.tabla .tbl-reservas,
+.tabla .tbl-reservas tbody,
+.tabla .tbl-reservas tr,
+.tabla .tbl-reservas td {
+  overflow: visible;
+}
+
+.item-menu-opcion {
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  background: #fffdf7;
+  color: #2f3e1f;
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.item-menu-opcion:hover {
+  background: #eef5ea;
+}
+
+.item-menu-opcion.accion-cancelar-reserva {
+  color: #9f1239;
+}
+
+.item-menu-opcion.accion-cancelar-reserva:hover {
+  background: #fee2e2;
 }
