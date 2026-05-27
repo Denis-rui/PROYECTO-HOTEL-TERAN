@@ -13,15 +13,17 @@ const configurarEventosDevoluciones = () => {
       const btnEditar = e.target.closest(".btnEditarDevolucion");
       if (btnEditar) {
         abrirModalDevolucion("editar", {
-          id:          btnEditar.dataset.id,
-          reserva:     btnEditar.dataset.reserva,
-          fecha:       btnEditar.dataset.fecha,
-          diasUsados:  btnEditar.dataset.diasUsados,
-          diasNoUsados:btnEditar.dataset.diasNoUsados,
-          total:       btnEditar.dataset.total,
-          porcentaje:  btnEditar.dataset.porcentaje,
-          penalidad:   btnEditar.dataset.penalidad,
-          devuelto:    btnEditar.dataset.devuelto,
+          id: btnEditar.dataset.id,
+          reserva: btnEditar.dataset.reserva,
+          fechaInicio: btnEditar.dataset.fechaInicio,
+          fechaPrevista: btnEditar.dataset.fechaPrevista,
+          fecha: btnEditar.dataset.fecha,
+          diasUsados: btnEditar.dataset.diasUsados,
+          diasNoUsados: btnEditar.dataset.diasNoUsados,
+          total: btnEditar.dataset.total,
+          porcentaje: btnEditar.dataset.porcentaje,
+          penalidad: btnEditar.dataset.penalidad,
+          devuelto: btnEditar.dataset.devuelto,
         });
         return;
       }
@@ -51,24 +53,33 @@ const configurarEventosDevoluciones = () => {
 };
 
 window.abrirModalDevolucion = (modo, datos = {}) => {
-  const modal  = document.getElementById("contenedor-modal-devolucion");
+  const modal = document.getElementById("contenedor-modal-devolucion");
   const titulo = document.getElementById("titulo-modal-devolucion");
-  const msg    = document.getElementById("error-exito-modal-devolucion");
+  const msg = document.getElementById("error-exito-modal-devolucion");
 
   // Formatear fecha para datetime-local (quitar los segundos si vienen)
   let fecha = datos.fecha ?? "";
   if (fecha && fecha.length === 19) fecha = fecha.slice(0, 16); // "YYYY-MM-DD HH:MM"
   if (fecha) fecha = fecha.replace(" ", "T");
 
-  document.getElementById("id-devolucion").value                   = datos.id ?? "";
-  document.getElementById("reserva-devolucion").value              = datos.reserva ?? "";
-  document.getElementById("fecha-cancelacion-devolucion").value    = fecha;
-  document.getElementById("dias-usados-devolucion").value          = datos.diasUsados ?? 0;
-  document.getElementById("dias-no-usados-devolucion").value       = datos.diasNoUsados ?? 0;
-  document.getElementById("total-no-ocupado-devolucion").value     = datos.total ?? 0;
+  // Helper para formatear fecha a datetime-local
+  const fmtFecha = (f) => {
+    if (!f) return "";
+    if (f.length === 19) f = f.slice(0, 16);
+    return f.replace(" ", "T");
+  };
+
+  document.getElementById("id-devolucion").value = datos.id ?? "";
+  document.getElementById("reserva-devolucion").value = datos.reserva ?? "";
+  document.getElementById("fecha-inicio-devolucion").value = fmtFecha(datos.fechaInicio ?? "");
+  document.getElementById("fecha-prevista-devolucion").value = fmtFecha(datos.fechaPrevista ?? "");
+  document.getElementById("fecha-cancelacion-devolucion").value = fecha;
+  document.getElementById("dias-usados-devolucion").value = datos.diasUsados ?? 0;
+  document.getElementById("dias-no-usados-devolucion").value = datos.diasNoUsados ?? 0;
+  document.getElementById("total-no-ocupado-devolucion").value = datos.total ?? 0;
   document.getElementById("porcentaje-penalidad-devolucion").value = datos.porcentaje ?? 0;
-  document.getElementById("monto-penalidad-devolucion").value      = datos.penalidad ?? 0;
-  document.getElementById("monto-devuelto-devolucion").value       = datos.devuelto ?? 0;
+  document.getElementById("monto-penalidad-devolucion").value = datos.penalidad ?? 0;
+  document.getElementById("monto-devuelto-devolucion").value = datos.devuelto ?? 0;
 
   titulo.textContent = modo === "editar" ? "Editar Devolución" : "Nueva Devolución";
   msg.textContent = "";
@@ -94,18 +105,20 @@ document.addEventListener("DOMContentLoaded", () => {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const msg = document.getElementById("error-exito-modal-devolucion");
-    const id  = document.getElementById("id-devolucion").value;
+    const id = document.getElementById("id-devolucion").value;
 
     const datos = {
-      id:                   id || undefined,
-      id_reserva:           document.getElementById("reserva-devolucion").value,
-      fecha_cancelacion:    document.getElementById("fecha-cancelacion-devolucion").value.replace("T", " "),
-      dias_usados:          document.getElementById("dias-usados-devolucion").value,
-      dias_no_usados:       document.getElementById("dias-no-usados-devolucion").value,
-      total_no_ocupado:     document.getElementById("total-no-ocupado-devolucion").value,
+      id: id || undefined,
+      id_reserva: document.getElementById("reserva-devolucion").value,
+      fecha_inicio: document.getElementById("fecha-inicio-devolucion").value.replace("T", " ") || null,
+      fecha_prevista: document.getElementById("fecha-prevista-devolucion").value.replace("T", " ") || null,
+      fecha_cancelacion: document.getElementById("fecha-cancelacion-devolucion").value.replace("T", " "),
+      dias_usados: document.getElementById("dias-usados-devolucion").value,
+      dias_no_usados: document.getElementById("dias-no-usados-devolucion").value,
+      total_no_ocupado: document.getElementById("total-no-ocupado-devolucion").value,
       porcentaje_penalidad: document.getElementById("porcentaje-penalidad-devolucion").value,
-      monto_penalidad:      document.getElementById("monto-penalidad-devolucion").value,
-      monto_devuelto:       document.getElementById("monto-devuelto-devolucion").value,
+      monto_penalidad: document.getElementById("monto-penalidad-devolucion").value,
+      monto_devuelto: document.getElementById("monto-devuelto-devolucion").value,
     };
 
     const url = id

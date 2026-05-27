@@ -7,13 +7,8 @@
   <div class="buscar">
     <form action="<?= BASE_URL ?>" method="GET">
       <input type="hidden" name="url" value="Devolucion/index">
-      <input
-        id="inputBuscarDevolucion"
-        name="busqueda"
-        type="text"
-        placeholder="🔍 Buscar por cliente o N° reserva"
-        value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>"
-      />
+      <input id="inputBuscarDevolucion" name="busqueda" type="text" placeholder="🔍 Buscar por cliente o N° reserva"
+        value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>" />
     </form>
   </div>
 
@@ -24,6 +19,8 @@
           <th>ID</th>
           <th>N° Reserva</th>
           <th>Cliente</th>
+          <th>Fecha Inicio</th>
+          <th>Fecha Prevista Checkout</th>
           <th>Fecha Cancelación</th>
           <th>Días Usados</th>
           <th>Días No Usados</th>
@@ -40,6 +37,8 @@
               <td><?= $d['id'] ?></td>
               <td>#<?= $d['id_reserva'] ?></td>
               <td><?= htmlspecialchars($d['cliente'] ?? '—') ?></td>
+              <td><?= $d['fecha_inicio'] ?? '—' ?></td>
+              <td><?= $d['fecha_prevista'] ?? '—' ?></td>
               <td><?= $d['fecha_cancelacion'] ?></td>
               <td><?= $d['dias_usados'] ?></td>
               <td><?= $d['dias_no_usados'] ?></td>
@@ -50,7 +49,9 @@
             </tr>
           <?php endforeach; ?>
         <?php else: ?>
-          <tr><td colspan="10" style="text-align:center">No se encontraron devoluciones.</td></tr>
+          <tr>
+            <td colspan="12" style="text-align:center">No se encontraron devoluciones.</td>
+          </tr>
         <?php endif; ?>
       </tbody>
     </table>

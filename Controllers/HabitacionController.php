@@ -13,25 +13,26 @@ class HabitacionController extends Controller
         }
 
         $numero = $_GET['numero_habitacion'] ?? '';
-        $tipo   = $_GET['id_tipo_habitacion'] ?? '';
-        $estado = $_GET['estado'] ?? '';
-        $piso   = $_GET['piso']   ?? '';
+        $tipo = $_GET['id_tipo_habitacion'] ?? '';
+        $estado = $_GET['estado'] ?? 'Disponible';
+        $piso = $_GET['piso'] ?? '';
+
 
         $data['page_title'] = "Habitaciones";
         $data['filtros'] = $this->model->obtenerFiltros();
         $data['habitaciones'] = $this->model->buscar($numero, $tipo, $estado, $piso);
         $data['page_js'] = ['Modal-Habitaciones.js', 'Habitaciones.js'];
-        
+
         $this->views->render($this, 'index', $data);
     }
 
     public function buscar($params = '')
     {
         $numero = $_GET['numero_habitacion'] ?? ($_GET['numero'] ?? '');
-        $tipo   = $_GET['id_tipo_habitacion'] ?? ($_GET['tipo'] ?? '');
+        $tipo = $_GET['id_tipo_habitacion'] ?? ($_GET['tipo'] ?? '');
         $estado = $_GET['estado'] ?? '';
-        $piso   = $_GET['piso']   ?? '';
-        
+        $piso = $_GET['piso'] ?? '';
+
         $habitaciones = $this->model->buscar($numero, $tipo, $estado, $piso);
 
         if (isset($_GET['html'])) {
@@ -52,7 +53,7 @@ class HabitacionController extends Controller
             try {
                 $ok = $this->model->registrar($datos);
                 echo json_encode([
-                    'exito'   => (bool) $ok,
+                    'exito' => (bool) $ok,
                     'mensaje' => $ok ? 'Habitación registrada correctamente.' : 'No se pudo registrar la habitación.',
                 ]);
             } catch (\Throwable $e) {
@@ -88,7 +89,7 @@ class HabitacionController extends Controller
     public function actualizarEstado($params = '')
     {
         header('Content-Type: application/json');
-        $datos     = json_decode(file_get_contents('php://input'), true);
+        $datos = json_decode(file_get_contents('php://input'), true);
         $resultado = $this->model->actualizarEstado((int) ($datos['id'] ?? 0), $datos['estado'] ?? '', $datos['motivo'] ?? '');
         echo json_encode($resultado);
     }
@@ -96,12 +97,25 @@ class HabitacionController extends Controller
     public function disponiblesPorRango($params = '')
     {
         header('Content-Type: application/json');
-        $checkIn  = $_GET['check_in']  ?? '';
+        $checkIn = $_GET['check_in'] ?? '';
         $checkOut = $_GET['check_out'] ?? '';
-        $tipo     = $_GET['tipo']      ?? null;
-        $piso     = $_GET['piso']      ?? null;
+        $tipo = $_GET['tipo'] ?? null;
+        $piso = $_GET['piso'] ?? null;
         $habitaciones = $this->model->disponiblesPorRango($checkIn, $checkOut, $tipo, $piso);
         echo json_encode(['habitaciones' => $habitaciones]);
+    }
+
+    public function terminarLimpieza($params = '')
+    {
+        header('Content-Type: application/json');
+        $datos = json_decode(file_get_contents('php://input'), true);
+        $id = (int) ($datos['id'] ?? 0);
+        if (!$id) {
+            echo json_encode(['exito' => false, 'mensaje' => 'ID inválido.']);
+            return;
+        }
+        $resultado = $this->model->terminarLimpieza($id);
+        echo json_encode($resultado);
     }
 
     public function obtenerFiltros()

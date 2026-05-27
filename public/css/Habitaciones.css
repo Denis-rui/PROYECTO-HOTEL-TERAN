@@ -80,20 +80,32 @@ select {
   flex-direction: column;
   gap: 12px;
   border: 2px solid #ccc;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .tarjeta-habitacion:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
 }
 
 /* Bordes por estado */
-.tarjeta-habitacion.disponible { border-color: #00b853; }
-.tarjeta-habitacion.ocupada, .tarjeta-habitacion.ocupado { border-color: #ff3b3b; }
-.tarjeta-habitacion.mantenimiento { border-color: #ff9d2e; }
-.tarjeta-habitacion.reservada { border-color: #8c8c8c; }
+.tarjeta-habitacion.disponible {
+  border-color: #00b853;
+}
+
+.tarjeta-habitacion.ocupada,
+.tarjeta-habitacion.ocupado {
+  border-color: #ff3b3b;
+}
+
+.tarjeta-habitacion.mantenimiento {
+  border-color: #ff9d2e;
+}
+
+.tarjeta-habitacion.reservada {
+  border-color: #8c8c8c;
+}
 
 /* Número Habitación */
 .habitacion-numero {
@@ -104,10 +116,22 @@ select {
   font-size: 14px;
   width: fit-content;
 }
-.tarjeta-habitacion.disponible .habitacion-numero { background-color: #00b853; }
-.tarjeta-habitacion.ocupada .habitacion-numero { background-color: #ff3b3b; }
-.tarjeta-habitacion.mantenimiento .habitacion-numero { background-color: #ff9d2e; }
-.tarjeta-habitacion.reservada .habitacion-numero { background-color: #8c8c8c; }
+
+.tarjeta-habitacion.disponible .habitacion-numero {
+  background-color: #00b853;
+}
+
+.tarjeta-habitacion.ocupada .habitacion-numero {
+  background-color: #ff3b3b;
+}
+
+.tarjeta-habitacion.mantenimiento .habitacion-numero {
+  background-color: #ff9d2e;
+}
+
+.tarjeta-habitacion.reservada .habitacion-numero {
+  background-color: #8c8c8c;
+}
 
 /* Tipo y Capacidad */
 .habitacion-tipo {
@@ -115,10 +139,22 @@ select {
   font-weight: 600;
   margin-top: 5px;
 }
-.tarjeta-habitacion.disponible .habitacion-tipo { color: #00b853; }
-.tarjeta-habitacion.ocupada .habitacion-tipo { color: #ff3b3b; }
-.tarjeta-habitacion.mantenimiento .habitacion-tipo { color: #ff9d2e; }
-.tarjeta-habitacion.reservada .habitacion-tipo { color: #8c8c8c; }
+
+.tarjeta-habitacion.disponible .habitacion-tipo {
+  color: #00b853;
+}
+
+.tarjeta-habitacion.ocupada .habitacion-tipo {
+  color: #ff3b3b;
+}
+
+.tarjeta-habitacion.mantenimiento .habitacion-tipo {
+  color: #ff9d2e;
+}
+
+.tarjeta-habitacion.reservada .habitacion-tipo {
+  color: #8c8c8c;
+}
 
 /* Precio */
 .habitacion-precio {
@@ -136,33 +172,41 @@ select {
 
 /* Status Badges */
 .habitacion-status-badges {
-    display: flex;
-    justify-content: center;
-    margin-top: 10px;
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
 }
 
 .badge-status {
-    padding: 10px 25px;
-    border-radius: 25px;
-    font-size: 14px;
-    font-weight: bold;
-    color: white;
-    width: 100%;
-    text-align: center;
+  padding: 10px 25px;
+  border-radius: 25px;
+  font-size: 14px;
+  font-weight: bold;
+  color: white;
+  width: 100%;
+  text-align: center;
 }
 
 /* Colores Badges */
 .tarjeta-habitacion.disponible .badge-status.operativo,
-.tarjeta-habitacion.limpia .badge-status.limpieza { background-color: #00b853; }
+.tarjeta-habitacion.limpia .badge-status.limpieza {
+  background-color: #00b853;
+}
 
 .tarjeta-habitacion.ocupada .badge-status.operativo,
-.tarjeta-habitacion.sucia .badge-status.limpieza { background-color: #ff3b3b; }
+.tarjeta-habitacion.sucia .badge-status.limpieza {
+  background-color: #ff3b3b;
+}
 
 .tarjeta-habitacion.mantenimiento .badge-status.operativo,
-.tarjeta-habitacion.en_limpieza .badge-status.limpieza { background-color: #ff9d2e; }
+.tarjeta-habitacion.en_limpieza .badge-status.limpieza {
+  background-color: #ff9d2e;
+}
 
 .tarjeta-habitacion.reservada .badge-status.operativo,
-.tarjeta-habitacion.inspeccion_pendiente .badge-status.limpieza { background-color: #8c8c8c; }
+.tarjeta-habitacion.inspeccion_pendiente .badge-status.limpieza {
+  background-color: #8c8c8c;
+}
 
 /* Acciones */
 .habitacion-acciones {
@@ -172,7 +216,8 @@ select {
   margin-top: 15px;
 }
 
-.selector-estado, .selector-limpieza {
+.selector-estado,
+.selector-limpieza {
   background-color: #e8e2c8;
   border: 1px solid #ccc;
   padding: 8px 12px;
@@ -194,12 +239,64 @@ select {
   width: fit-content;
 }
 
-.grupo-piso {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 20px;
+/* Carrusel por piso */
+.carrusel-piso-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 35px;
 }
+
+.grupo-piso.carrusel-piso {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 20px;
+  overflow: hidden;
+  scroll-behavior: smooth;
+  padding: 6px 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.grupo-piso.carrusel-piso .tarjeta-habitacion {
+  min-width: 240px;
+  max-width: 240px;
+  flex-shrink: 0;
+}
+
+/* Botones de flecha */
+.btn-carrusel {
+  background-color: #3f5c2d;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, transform 0.15s, opacity 0.2s;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+  opacity: 0.85;
+  line-height: 1;
+}
+
+.btn-carrusel:hover {
+  background-color: #2e3d1f;
+  transform: scale(1.1);
+  opacity: 1;
+}
+
+.btn-carrusel:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  transform: none;
+}
+
 
 .habitacion-alerta {
   margin-top: 10px;
@@ -230,6 +327,7 @@ select {
   background-color: #3f5c2d;
   color: white;
 }
+
 /* Cabecera de tarjeta: número + botón lápiz */
 .habitacion-cabecera {
   display: flex;
@@ -256,4 +354,52 @@ select {
   transform: scale(1.2);
   background: transparent;
   color: inherit;
+}
+
+/* ─── BLOQUE LIMPIEZA AUTOMÁTICA ─────────────────────────────────────────── */
+.limpieza-timer-bloque {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.limpieza-icono {
+  font-size: 13px;
+  font-weight: 600;
+  color: #5a3e00;
+  letter-spacing: 0.3px;
+}
+
+.limpieza-countdown {
+  font-size: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #3b2600;
+  letter-spacing: 2px;
+  line-height: 1;
+}
+
+.btn-terminar-limpieza {
+  margin-top: 4px;
+  padding: 5px 14px;
+  background: #2e7d32;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  width: 100%;
+}
+
+.btn-terminar-limpieza:hover {
+  background: #1b5e20;
+  transform: scale(1.03);
 }

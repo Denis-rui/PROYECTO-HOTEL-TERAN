@@ -246,15 +246,48 @@ const configurarEventosReservas = () => {
             }
             return { id_reserva: id, motivo };
           },
-        }).then((result) => {
+        }).then(async (result) => {
           if (!result.isConfirmed) return;
 
-          Swal.fire({
-            icon: "success",
-            title: "Cancelación preparada",
-            text: "Frontend listo. Luego conectamos el backend.",
-            confirmButtonColor: "#185025",
-          });
+          try {
+            const res = await fetch(BASE_URL + "Reserva/cancelar", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                id_reserva: result.value.id_reserva,
+                motivo: result.value.motivo,
+              }),
+            });
+            const resultado = await res.json();
+
+            if (resultado.exito) {
+              await Swal.fire({
+                toast: true,
+                position: "top-end",
+                icon: "success",
+                title: resultado.mensaje || "Reserva cancelada correctamente",
+                showConfirmButton: false,
+                timer: 2500,
+                timerProgressBar: true,
+              });
+              window.location.reload();
+            } else {
+              Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: resultado.mensaje || "No se pudo cancelar la reserva.",
+                confirmButtonColor: "#8f2f2f",
+              });
+            }
+          } catch (err) {
+            console.error(err);
+            Swal.fire({
+              icon: "error",
+              title: "Error de conexión",
+              text: "No se pudo conectar con el servidor.",
+              confirmButtonColor: "#8f2f2f",
+            });
+          }
         });
 
         return;
@@ -377,17 +410,27 @@ const ejecutarAccionReserva = async (accion, datos) => {
     });
     const resultado = await res.json();
 
-    if (typeof Notificar === "function") {
-      Notificar(
-        resultado.mensaje || "Acción procesada",
-        resultado.exito ? "exito" : "error",
-      );
-    } else {
-      alert(resultado.mensaje || "Acción procesada");
-    }
-
     if (resultado.exito) {
+      if (typeof Swal !== "undefined") {
+        await Swal.fire({
+          toast: true,
+          position: "top-end",
+          icon: "success",
+          title: resultado.mensaje || "Acción procesada",
+          showConfirmButton: false,
+          timer: 2500,
+          timerProgressBar: true,
+        });
+      } else {
+        alert(resultado.mensaje || "Acción procesada");
+      }
       window.location.reload();
+    } else {
+      if (typeof Notificar === "function") {
+        Notificar(resultado.mensaje || "Error al procesar", "error");
+      } else {
+        alert(resultado.mensaje || "Error al procesar");
+      }
     }
   } catch (error) {
     console.error(error);
