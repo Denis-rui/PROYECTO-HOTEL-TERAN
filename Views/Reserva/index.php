@@ -76,6 +76,7 @@ if (!function_exists('formatearEstadoReserva')) {
     $mapa = [
       'confirmada' => 'Confirmada',
       'en_estadia' => 'En estadía',
+      'ausente' => 'Ausente',
       'checkout_realizado' => 'Checkout realizado',
       'cancelada' => 'Cancelada',
     ];
@@ -91,6 +92,7 @@ if (!function_exists('claseEstadoReserva')) {
     $mapa = [
       'confirmada' => 'estado-confirmada',
       'en_estadia' => 'estado-en-estadia',
+      'ausente' => 'estado-ausente',
       'checkout_realizado' => 'estado-checkout-realizado',
       'cancelada' => 'estado-cancelada',
     ];
@@ -99,25 +101,6 @@ if (!function_exists('claseEstadoReserva')) {
   }
 }
 
-if (!function_exists('esEstadoBloqueadoReserva')) {
-  function esEstadoBloqueadoReserva(string $estadoActual, string $opcion): bool
-  {
-    $orden = [
-      'confirmada' => 1,
-      'en_estadia' => 2,
-      'checkout_realizado' => 3,
-    ];
-
-    $estadoActual = strtolower(trim($estadoActual));
-    $opcion = strtolower(trim($opcion));
-
-    if (!isset($orden[$estadoActual], $orden[$opcion])) {
-      return false;
-    }
-
-    return $orden[$opcion] < $orden[$estadoActual];
-  }
-}
 ?>
 <section class="reservas">
   <header class="header-reservas">
@@ -176,7 +159,7 @@ if (!function_exists('esEstadoBloqueadoReserva')) {
       </thead>
       <tbody id="contenido-reservas">
         <?php foreach ($reservas as $reserva) : ?>
-          <tr data-id="<?= (int) $reserva["id"] ?>" data-estado="<?= htmlspecialchars($reserva["estado"]) ?>" data-porcentajepago="<?= htmlspecialchars($reserva["porcentaje_pago"]) ?>" data-total="<?= htmlspecialchars($reserva["total"]) ?>" data-saldo-pendiente="<?= htmlspecialchars($reserva["saldo_pendiente"] ?? 0) ?>" data-cliente="<?= htmlspecialchars($reserva["cliente"]) ?>" data-habitacion="<?= htmlspecialchars($reserva["habitacion"]) ?>" data-habitaciones='<?= htmlspecialchars(json_encode($reserva["habitaciones"] ?? [], JSON_UNESCAPED_UNICODE), ENT_QUOTES, "UTF-8") ?>' data-historial='<?= htmlspecialchars(json_encode($reserva["historial"] ?? [], JSON_UNESCAPED_UNICODE), ENT_QUOTES, "UTF-8") ?>' data-documentos='<?= htmlspecialchars(json_encode($reserva["documentos"] ?? [], JSON_UNESCAPED_UNICODE), ENT_QUOTES, "UTF-8") ?>' data-checkin="<?= htmlspecialchars($reserva["check_in"]) ?>" data-checkout="<?= htmlspecialchars($reserva["check_out"]) ?>" data-email="<?= htmlspecialchars($reserva["correo_electronico"] ?? '') ?>">
+          <tr data-id="<?= (int) $reserva["id"] ?>" data-estado="<?= htmlspecialchars($reserva["estado"]) ?>" data-porcentajepago="<?= htmlspecialchars($reserva["porcentaje_pago"]) ?>" data-total="<?= htmlspecialchars($reserva["total"]) ?>" data-saldo-pendiente="<?= htmlspecialchars($reserva["saldo_pendiente"] ?? 0) ?>" data-cliente="<?= htmlspecialchars($reserva["cliente"]) ?>" data-habitacion="<?= htmlspecialchars($reserva["habitacion"]) ?>" data-habitaciones='<?= htmlspecialchars(json_encode($reserva["habitaciones"] ?? [], JSON_UNESCAPED_UNICODE), ENT_QUOTES, "UTF-8") ?>' data-checkin="<?= htmlspecialchars($reserva["check_in"]) ?>" data-checkout="<?= htmlspecialchars($reserva["check_out"]) ?>" data-email="<?= htmlspecialchars($reserva["correo_electronico"] ?? '') ?>">
             <td><?= htmlspecialchars($reserva["cliente"]) ?></td>
             <td><?= formatearListaHabitacionesReserva($reserva) ?></td>
             <td><?= htmlspecialchars(formatearFechaReserva($reserva["check_in"])) ?></td>
@@ -187,15 +170,11 @@ if (!function_exists('esEstadoBloqueadoReserva')) {
               <?php endif; ?>
             </td>
             <td>
-              <select
+              <span
                 class="estado-reserva <?= claseEstadoReserva((string) $reserva["estado"]) ?>"
-                data-id="<?= (int) $reserva["id"] ?>"
-                data-estado="<?= htmlspecialchars($reserva["estado"]) ?>"
-                title="Cambiar estado de la reserva">
-                <option value="confirmada" <?= $reserva["estado"] === "confirmada" ? 'selected' : '' ?> <?= esEstadoBloqueadoReserva((string) $reserva["estado"], "confirmada") ? 'disabled' : '' ?>>Confirmada</option>
-                <option value="en_estadia" <?= $reserva["estado"] === "en_estadia" ? 'selected' : '' ?> <?= esEstadoBloqueadoReserva((string) $reserva["estado"], "en_estadia") ? 'disabled' : '' ?>>En estadía</option>
-                <option value="checkout_realizado" <?= $reserva["estado"] === "checkout_realizado" ? 'selected' : '' ?> <?= esEstadoBloqueadoReserva((string) $reserva["estado"], "checkout_realizado") ? 'disabled' : '' ?>>Checkout realizado</option>
-              </select>
+                data-estado="<?= htmlspecialchars($reserva["estado"]) ?>">
+                <?= htmlspecialchars(formatearEstadoReserva((string) $reserva["estado"])) ?>
+              </span>
             </td>
             <td>
               <div class="celda-pago">
@@ -233,10 +212,10 @@ if (!function_exists('esEstadoBloqueadoReserva')) {
                   </button>
 
                   <div class="menu-mas-opciones-panel" data-id="<?= (int) $reserva["id"] ?>">
-                    <?php if ($reserva["estado"] === "confirmada"): ?>
+                    <?php if ($reserva["estado"] === "en_estadia"): ?>
                       <button type="button" class="item-menu-opcion accion-marcar-ausente" data-id="<?= (int) $reserva["id"] ?>">Marcar ausente</button>
-                    <?php else: ?>
-                      <button type="button" class="item-menu-opcion accion-marcar-ocupado" data-id="<?= (int) $reserva["id"] ?>">Marcar ocupado</button>
+                    <?php elseif ($reserva["estado"] === "ausente"): ?>
+                      <button type="button" class="item-menu-opcion accion-marcar-regreso" data-id="<?= (int) $reserva["id"] ?>">Marcar regreso</button>
                     <?php endif; ?>
 
                     <button type="button" class="item-menu-opcion accion-ver-detalles" data-id="<?= (int) $reserva["id"] ?>">Ver detalles</button>

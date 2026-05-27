@@ -7,7 +7,7 @@
             <div class="modal-ver-detalles-encabezado-texto">
                 <span class="modal-ver-detalles-badge">Detalle de reserva</span>
                 <h2 id="tituloModalVerDetalles">Reserva #<span id="detalleReservaCodigo">---</span></h2>
-                <p id="subtituloModalVerDetalles">Información general, historial y documentos asociados.</p>
+                <p id="subtituloModalVerDetalles">Información general y documentos asociados.</p>
             </div>
 
             <button type="button" id="cerrarModalVerDetalles" class="cerrar-modal-ver-detalles" aria-label="Cerrar detalles de reserva">&times;</button>
@@ -33,16 +33,6 @@
         </div>
 
         <div class="modal-ver-detalles-grid">
-            <section class="panel-ver-detalles panel-historial">
-                <div class="panel-ver-detalles-cabecera">
-                    <div>
-                        <h3>Historial de la reserva</h3>
-                    </div>
-                </div>
-
-                <div id="timelineReservaHistorial" class="timeline-reserva"></div>
-            </section>
-
             <section class="panel-ver-detalles panel-info">
                 <div class="panel-ver-detalles-cabecera">
                     <div>
@@ -93,11 +83,11 @@
         <section class="panel-ver-detalles panel-documentos">
             <div class="panel-ver-detalles-cabecera panel-documentos-cabecera">
                 <div>
-                    <h3>Detalle de pagos y comprobantes</h3>
+                    <h3>Comprobantes emitidos</h3>
                 </div>
 
                 <div class="resumen-documentos">
-                    <span id="contadorDocumentosReserva">0 documentos</span>
+                    <span id="contadorDocumentosReserva">0 emitidos</span>
                     <span id="resumenPagoReserva">Pago no registrado</span>
                 </div>
             </div>
@@ -115,7 +105,7 @@
                     </thead>
                     <tbody id="listaDocumentosReserva">
                         <tr class="fila-vacia-documentos">
-                            <td colspan="5">No hay documentos cargados aún.</td>
+                            <td colspan="5">No hay comprobantes emitidos aún.</td>
                         </tr>
                     </tbody>
                 </table>

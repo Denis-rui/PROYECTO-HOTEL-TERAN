@@ -508,6 +508,72 @@ class ReservaModel
         }
     }
 
+    public function marcarAusente($idReserva, $idUsuario = null)
+    {
+        try {
+            $reservaActual = Reserva::find((int) $idReserva);
+            if (!$reservaActual) {
+                return ['exito' => false, 'mensaje' => 'Reserva no encontrada.'];
+            }
+
+            if ($reservaActual->estado !== 'en_estadia') {
+                return ['exito' => false, 'mensaje' => 'Solo se puede marcar ausente una reserva en estadía.'];
+            }
+
+            DB::connection()->beginTransaction();
+
+            $reservaActual->estado = 'ausente';
+            $reservaActual->save();
+
+            DB::connection()->commit();
+
+            return [
+                'exito' => true,
+                'mensaje' => 'Reserva marcada como ausente.',
+                'reserva' => $this->obtenerReservaPorId($idReserva),
+            ];
+        } catch (\Throwable $e) {
+            $con = DB::connection();
+            if ($con->getPdo()->inTransaction()) {
+                $con->rollBack();
+            }
+            return ['exito' => false, 'mensaje' => 'Error al marcar ausente: ' . $e->getMessage()];
+        }
+    }
+
+    public function marcarRegreso($idReserva, $idUsuario = null)
+    {
+        try {
+            $reservaActual = Reserva::find((int) $idReserva);
+            if (!$reservaActual) {
+                return ['exito' => false, 'mensaje' => 'Reserva no encontrada.'];
+            }
+
+            if ($reservaActual->estado !== 'ausente') {
+                return ['exito' => false, 'mensaje' => 'Solo se puede marcar regreso de una reserva ausente.'];
+            }
+
+            DB::connection()->beginTransaction();
+
+            $reservaActual->estado = 'en_estadia';
+            $reservaActual->save();
+
+            DB::connection()->commit();
+
+            return [
+                'exito' => true,
+                'mensaje' => 'Reserva marcada como regreso a estadía.',
+                'reserva' => $this->obtenerReservaPorId($idReserva),
+            ];
+        } catch (\Throwable $e) {
+            $con = DB::connection();
+            if ($con->getPdo()->inTransaction()) {
+                $con->rollBack();
+            }
+            return ['exito' => false, 'mensaje' => 'Error al marcar regreso: ' . $e->getMessage()];
+        }
+    }
+
     public function extenderEstadia($idReserva, $nuevoCheckOut, $idUsuario = null)
     {
         try {
