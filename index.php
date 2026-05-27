@@ -1,6 +1,7 @@
 <?php
 ob_start();
 session_start();
+date_default_timezone_set('America/Lima');
 
 // Parsear la URL: ?url=Controller/metodo/param
 $url = $_GET['url'] ?? 'Login';
@@ -8,8 +9,8 @@ $url = $_GET['url'] ?? 'Login';
 $arrUrl = explode('/', $url);
 
 $controller = ucwords($arrUrl[0]) ?: 'Login';
-$method     = $arrUrl[1] ?? 'index';
-$params     = '';
+$method = $arrUrl[1] ?? 'index';
+$params = '';
 
 if (!empty($arrUrl[2])) {
     for ($i = 2; $i < count($arrUrl); $i++) {

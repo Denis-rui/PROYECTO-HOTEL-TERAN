@@ -481,7 +481,8 @@ class ReservaModel
                 }
 
                 Habitacion::where('id', (int) $reservaHabitacion->id_habitacion)->update([
-                    'estado' => 'Mantenimiento',
+                    'estado' => 'En Limpieza',
+                    'limpieza_inicio' => $fechaCheckout,
                 ]);
 
                 $habitacionModel->registrarHistorial((int) $reservaHabitacion->id_habitacion, (int) $idReserva, 'Ocupada', 'Mantenimiento', null, null, 'checkout', 'Checkout manual confirmado.', $idUsuario);
