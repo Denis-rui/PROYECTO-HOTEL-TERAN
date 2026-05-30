@@ -87,7 +87,7 @@ class ClienteController extends Controller
         curl_close($curl);
 
         if ($respuesta === false || $errorCurl) {
-            $this->responderJson(['success' => false, 'message' => 'No se pudo consultar Apis Peru'], 500);
+            $this->responderJson(['success' => false, 'message' => 'No se pudo completar la consulta'], 500);
             return;
         }
 
@@ -101,7 +101,7 @@ class ClienteController extends Controller
                     $mensaje = $mensajeApi;
                 }
             } elseif (is_string($respuesta) && stripos($respuesta, 'Ocurrió un Error') === false) {
-                $mensaje = 'No se pudo consultar Apis Peru.';
+                $mensaje = 'No se pudo completar la consulta.';
             }
 
             $this->responderJson(['success' => false, 'message' => $mensaje], 200);
@@ -109,7 +109,7 @@ class ClienteController extends Controller
         }
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            $this->responderJson(['success' => false, 'message' => 'Respuesta invalida de Apis Peru'], 500);
+            $this->responderJson(['success' => false, 'message' => 'No se pudo procesar la respuesta'], 500);
             return;
         }
 
@@ -141,12 +141,7 @@ class ClienteController extends Controller
             return;
         }
 
-        if (empty($datos['gmail'])) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'El correo es obligatorio'], 422);
-            return;
-        }
-
-        if (!filter_var($datos['gmail'], FILTER_VALIDATE_EMAIL)) {
+        if (!empty($datos['gmail']) && !filter_var($datos['gmail'], FILTER_VALIDATE_EMAIL)) {
             $this->responderJson(['exito' => false, 'mensaje' => 'Correo invalido'], 422);
             return;
         }
@@ -210,12 +205,7 @@ class ClienteController extends Controller
             return;
         }
 
-        if (empty($datos['gmail'])) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'El correo es obligatorio'], 422);
-            return;
-        }
-
-        if (!filter_var($datos['gmail'], FILTER_VALIDATE_EMAIL)) {
+        if (!empty($datos['gmail']) && !filter_var($datos['gmail'], FILTER_VALIDATE_EMAIL)) {
             $this->responderJson(['exito' => false, 'mensaje' => 'Correo invalido'], 422);
             return;
         }

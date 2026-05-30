@@ -42,26 +42,7 @@ const formatearProcedenciaRuc = (datos = {}) =>
     .join(" - ");
 
 const formatearObservacionesApi = (datos = {}, tipoDocumento = "") => {
-  const partes = [];
-
-  if (tipoDocumento === "DNI") {
-    if (datos.codVerifica)
-      partes.push(`Código de verificación: ${datos.codVerifica}`);
-    partes.push("Datos consultados desde Apis Peru");
-    return partes.join(" | ");
-  }
-
-  if (tipoDocumento === "RUC") {
-    if (datos.nombreComercial)
-      partes.push(`Nombre comercial: ${datos.nombreComercial}`);
-    if (datos.estado) partes.push(`Estado: ${datos.estado}`);
-    if (datos.condicion) partes.push(`Condición: ${datos.condicion}`);
-    if (datos.ubigeo) partes.push(`Ubigeo: ${datos.ubigeo}`);
-    if (datos.capital) partes.push(`Capital: ${datos.capital}`);
-    return partes.join(" | ");
-  }
-
-  return "Datos consultados desde Apis Peru";
+  return "";
 };
 
 const consultarApisPeru = async (documento) => {
@@ -266,14 +247,8 @@ const validarFormularioCliente = (datos) => {
     tieneErrores = true;
   }
 
-  // Validar correo electrónico
-  if (!datos.gmail || datos.gmail.length === 0) {
-    mostrarErrorValidacion(
-      "gmail-cliente",
-      "El correo electrónico es obligatorio",
-    );
-    tieneErrores = true;
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datos.gmail)) {
+  // Validar correo electrónico solo si se ingresa
+  if (datos.gmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datos.gmail)) {
     mostrarErrorValidacion("gmail-cliente", "Correo electrónico no válido");
     tieneErrores = true;
   }
@@ -407,22 +382,22 @@ const buscarDatosClientePorDocumento = async () => {
 
       if (esNoEncontrado) {
         await mostrarAlertaCliente(
-          "Sin resultados",
-          "No existe en la API. Puedes registrar el cliente manualmente.",
+          "Sin coincidencias",
+          "No se encontró un cliente con ese documento. Puedes registrarlo manualmente.",
           "warning",
         );
         establecerMensajeBusquedaCliente(
-          "No existe en la API. Puedes registrar el cliente manualmente.",
+          "No se encontró un cliente con ese documento. Puedes registrarlo manualmente.",
           "error",
         );
       } else {
         await mostrarAlertaCliente(
           "Error",
-          "No se pudo consultar la API en este momento.",
+          "No se pudo completar la búsqueda en este momento.",
           "error",
         );
         establecerMensajeBusquedaCliente(
-          "No se pudo consultar la API en este momento.",
+          "No se pudo completar la búsqueda en este momento.",
           "error",
         );
       }
@@ -435,8 +410,12 @@ const buscarDatosClientePorDocumento = async () => {
 
     if (!tieneDatosDni && !tieneDatosRuc) {
       const mensajeSinDatos =
-        "No existe en la API. Puedes registrar el cliente manualmente.";
-      await mostrarAlertaCliente("Sin resultados", mensajeSinDatos, "warning");
+        "No se encontró un cliente con ese documento. Puedes registrarlo manualmente.";
+      await mostrarAlertaCliente(
+        "Sin coincidencias",
+        mensajeSinDatos,
+        "warning",
+      );
       establecerMensajeBusquedaCliente(mensajeSinDatos, "error");
       return;
     }
@@ -477,12 +456,12 @@ const buscarDatosClientePorDocumento = async () => {
 
     limpiarErroresValidacion();
     establecerMensajeBusquedaCliente(
-      "Datos cargados desde Apis Peru. Completa los campos faltantes.",
+      "Datos cargados correctamente. Completa los campos faltantes.",
       "exito",
     );
     await mostrarAlertaCliente(
       "Datos encontrados",
-      "Se cargaron los datos desde Apis Peru. Revisa los campos faltantes antes de guardar.",
+      "Se cargaron los datos. Revisa los campos faltantes antes de guardar.",
       "success",
     );
   } catch (error) {
@@ -492,7 +471,7 @@ const buscarDatosClientePorDocumento = async () => {
     );
     await mostrarAlertaCliente(
       "Error",
-      "No se pudo validar el documento ni consultar Apis Peru.",
+      "No se pudo validar el documento ni completar la búsqueda.",
       "error",
     );
   }
@@ -558,9 +537,7 @@ const configurarValidacionesTiempoReal = () => {
   });
 
   validarCampoEnTiempoReal("gmail-cliente", (valor) => {
-    if (!valor) {
-      return "El correo electrónico es obligatorio";
-    }
+    if (!valor) return "";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor)) {
       return "Correo electrónico no válido";
     }

@@ -471,7 +471,7 @@ const cargarClientes = (texto = "") => {
 
         if (estado.clientes.length === 0) {
           mensajeBusquedaCliente.textContent = esDniCompleto
-            ? "No se encontró un cliente con ese documento. Se abrirá el registro nuevo con el DNI cargado."
+            ? "No se encontró un cliente con ese documento."
             : "No se encontraron clientes.";
 
           if (esDniCompleto) {
