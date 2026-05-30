@@ -111,7 +111,7 @@ const aplicarReservaEdicion = (reserva) => {
   });
 
   if (estado.elementos?.inputBuscarCliente) {
-    estado.elementos.inputBuscarCliente.value = reserva.cliente || "";
+    estado.elementos.inputBuscarCliente.value = "";
   }
 
   if (estado.elementos?.selectorCliente) {
@@ -126,6 +126,20 @@ const aplicarReservaEdicion = (reserva) => {
 
   if (estado.elementos?.campoNombre) {
     estado.elementos.campoNombre.value = reserva.cliente || "";
+  }
+
+  if (estado.elementos?.campoDni) {
+    estado.elementos.campoDni.value = reserva.documento || "";
+  }
+
+  // mostrar tipo de documento en label si viene
+  const etiquetaDni = document.getElementById("label-dni");
+  if (etiquetaDni) {
+    etiquetaDni.textContent = reserva.documento_tipo_nombre || "DNI";
+  }
+
+  if (estado.elementos?.procedencia) {
+    estado.elementos.procedencia.value = reserva.procedencia || "";
   }
 
   if (estado.elementos?.campoEmail) {
@@ -238,12 +252,11 @@ const renderizarClientes = () => {
   const estado = obtenerEstadoModalReserva();
   const selectorCliente = estado.elementos?.selectorCliente;
   if (!selectorCliente) return;
-
+  // Siempre dejar la opción por defecto
   selectorCliente.innerHTML = '<option value="">Seleccionar cliente</option>';
 
+  // Si no hay clientes cargados, no agregamos más opciones (evita mostrar "Sin resultados")
   if (!estado.clientes || estado.clientes.length === 0) {
-    selectorCliente.innerHTML +=
-      '<option value="" disabled>Sin resultados</option>';
     return;
   }
 
@@ -381,6 +394,16 @@ const cargarClientes = (texto = "") => {
   const estado = obtenerEstadoModalReserva();
   const mensajeBusquedaCliente = estado.elementos?.mensajeBusquedaCliente;
   const textoBusqueda = String(texto || "").trim();
+  // No cargar la lista completa si el usuario no ha escrito nada
+  if (textoBusqueda === "") {
+    estado.clientes = [];
+    renderizarClientes();
+    if (mensajeBusquedaCliente) {
+      mensajeBusquedaCliente.textContent =
+        "Escribe un nombre o DNI para buscar clientes.";
+    }
+    return Promise.resolve();
+  }
 
   return fetch(
     BASE_URL + `Cliente/buscar&q=${encodeURIComponent(textoBusqueda)}`,
@@ -422,6 +445,7 @@ const seleccionarCliente = () => {
   const selectorCliente = estado.elementos?.selectorCliente;
   const idClienteReserva = estado.elementos?.idClienteReserva;
   const campoNombre = estado.elementos?.campoNombre;
+  const campoDni = estado.elementos?.campoDni;
   const campoEmail = estado.elementos?.campoEmail;
   const mensajeBusquedaCliente = estado.elementos?.mensajeBusquedaCliente;
 
@@ -432,6 +456,7 @@ const seleccionarCliente = () => {
 
   if (!idSeleccionado) {
     if (campoNombre) campoNombre.value = "";
+    if (campoDni) campoDni.value = "";
     if (campoEmail) campoEmail.value = "";
     return;
   }
@@ -444,6 +469,12 @@ const seleccionarCliente = () => {
 
   if (idClienteReserva) idClienteReserva.value = cliente.id;
   if (campoNombre) campoNombre.value = cliente.nombre || "";
+  if (campoDni) campoDni.value = cliente.documento || "";
+  if (estado.elementos?.procedencia)
+    estado.elementos.procedencia.value = cliente.procedencia || "";
+  const etiquetaDni2 = document.getElementById("label-dni");
+  if (etiquetaDni2)
+    etiquetaDni2.textContent = cliente.tipo_documento_nombre || "DNI";
   if (campoEmail) campoEmail.value = cliente.correo || "";
   if (mensajeBusquedaCliente)
     mensajeBusquedaCliente.textContent = "Cliente seleccionado correctamente.";
@@ -598,7 +629,9 @@ const validarYContinuarPago = () => {
   const selectorCliente = estado.elementos?.selectorCliente;
   const idClienteReserva = estado.elementos?.idClienteReserva;
   const campoNombre = estado.elementos?.campoNombre;
+  const campoDni = estado.elementos?.campoDni;
   const campoEmail = estado.elementos?.campoEmail;
+  const procedenciaCampo = estado.elementos?.procedencia;
   const fechaEntrada = estado.elementos?.fechaEntrada;
   const horaEntrada = estado.elementos?.horaEntrada;
   const fechaSalida = estado.elementos?.fechaSalida;
@@ -608,11 +641,14 @@ const validarYContinuarPago = () => {
 
   const cliente = idClienteReserva?.value || selectorCliente?.value || "";
   const nombre = campoNombre?.value.trim() || "";
+  const dni = campoDni?.value.trim() || "";
   const email = campoEmail?.value.trim() || "";
+  const procedencia = procedenciaCampo?.value.trim() || "";
   const habitaciones = estado.habitacionesSeleccionadas || [];
 
   if (!cliente) return alert("Selecciona un cliente");
   if (!nombre) return alert("Nombre y apellido obligatorio");
+  if (!dni) return alert("DNI obligatorio");
   if (!email) return alert("Correo electronico obligatorio");
   if (habitaciones.length === 0)
     return alert("Selecciona al menos una habitacion");
@@ -635,6 +671,8 @@ const validarYContinuarPago = () => {
     idCliente: cliente,
     clienteTexto: textoClienteSeleccionado,
     nombre,
+    dni,
+    procedencia,
     email,
     checkIn: fechaEntrada.value,
     horaEntrada: horaEntrada.value,
@@ -695,6 +733,8 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
     selectorCliente: document.getElementById("selectorClienteReserva"),
     idClienteReserva: document.getElementById("idClienteReserva"),
     campoNombre: document.getElementById("nombre"),
+    campoDni: document.getElementById("dni"),
+    procedencia: document.getElementById("procedencia"),
     campoEmail: document.getElementById("email"),
     fechaEntrada: document.getElementById("fechaEntrada"),
     horaEntrada: document.getElementById("horaEntrada"),
@@ -729,8 +769,9 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
 
   actualizarMinimosFecha();
 
+  estado.elementos.form?.reset();
+
   if (modo === "nuevo") {
-    estado.elementos.form?.reset();
     limpiarSeleccionHabitaciones();
     establecerHorasPorDefectoEstadia(true);
     const titulo = document.querySelector(".titulo-modal");
@@ -738,6 +779,9 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
     if (estado.elementos.btnContinuarPago) {
       estado.elementos.btnContinuarPago.textContent = "Continuar con pago";
     }
+    const etiquetaDni = document.getElementById("label-dni");
+    if (etiquetaDni) etiquetaDni.textContent = "DNI";
+    if (estado.elementos?.procedencia) estado.elementos.procedencia.value = "";
   }
 
   if (modo === "editar" && datos) {

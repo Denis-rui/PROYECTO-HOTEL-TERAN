@@ -175,7 +175,17 @@ class ReservaModel
             'codigo_reserva' => $reserva->codigo_reserva,
             'id_cliente' => $reserva->id_cliente,
             'cliente' => $cliente->nombre_completo ?? '',
+            'documento' => $cliente->documento ?? '',
+            'documento_tipo_nombre' => (function() use ($cliente) {
+                try {
+                    if (empty($cliente->id_tipo_documento)) return null;
+                    return DB::table('tipo_documento')->where('id', $cliente->id_tipo_documento)->value('nombre');
+                } catch (\Throwable $e) {
+                    return null;
+                }
+            })(),
             'correo_electronico' => $cliente->correo_electronico ?? '',
+            'procedencia' => $cliente->procedencia ?? '',
             'id_habitacion' => $habitacionPrincipal['id'] ?? null,
             'habitacion' => $habitacionPrincipal ? 'Hab. ' . $habitacionPrincipal['numero_habitacion'] . ' - Piso ' . $habitacionPrincipal['piso'] : '',
             'habitaciones' => $habitaciones,
