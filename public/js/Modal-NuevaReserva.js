@@ -4,6 +4,44 @@ window.__modalReservaState = window.__modalReservaState || {};
 
 const obtenerEstadoModalReserva = () => window.__modalReservaState;
 
+const limpiarResaltadoRegistrarCliente = () => {
+  const estado = obtenerEstadoModalReserva();
+  const botonRegistrar = estado.elementos?.btnRegistrarCliente;
+  if (!botonRegistrar) return;
+
+  botonRegistrar.classList.remove("resaltar-boton");
+  if (estado.temporizadorResaltadoRegistrarCliente) {
+    clearTimeout(estado.temporizadorResaltadoRegistrarCliente);
+    estado.temporizadorResaltadoRegistrarCliente = null;
+  }
+};
+
+const resaltarBotonRegistrarCliente = () => {
+  const estado = obtenerEstadoModalReserva();
+  const botonRegistrar = estado.elementos?.btnRegistrarCliente;
+  if (!botonRegistrar) return;
+
+  botonRegistrar.classList.add("resaltar-boton");
+  if (estado.temporizadorResaltadoRegistrarCliente) {
+    clearTimeout(estado.temporizadorResaltadoRegistrarCliente);
+  }
+
+  estado.temporizadorResaltadoRegistrarCliente = window.setTimeout(() => {
+    botonRegistrar.classList.remove("resaltar-boton");
+    estado.temporizadorResaltadoRegistrarCliente = null;
+  }, 5000);
+};
+
+const abrirModalNuevoClienteConDocumento = (documento = "") => {
+  if (typeof window.abrirModalCliente !== "function") return;
+
+  window.abrirModalCliente("nuevo", {
+    documento,
+  });
+};
+
+const esDocumentoCompletoOchoDigitos = (texto = "") => /^\d{8}$/.test(String(texto || "").trim());
+
 const obtenerFechaActualISO = () => {
   const hoy = new Date();
   const anio = hoy.getFullYear();
@@ -394,6 +432,11 @@ const cargarClientes = (texto = "") => {
   const estado = obtenerEstadoModalReserva();
   const mensajeBusquedaCliente = estado.elementos?.mensajeBusquedaCliente;
   const textoBusqueda = String(texto || "").trim();
+  const btnRegistrar = estado.elementos?.btnRegistrarCliente;
+  const esDniCompleto = esDocumentoCompletoOchoDigitos(textoBusqueda);
+
+  limpiarResaltadoRegistrarCliente();
+
   // No cargar la lista completa si el usuario no ha escrito nada
   if (textoBusqueda === "") {
     estado.clientes = [];
@@ -426,16 +469,29 @@ const cargarClientes = (texto = "") => {
           return;
         }
 
-        mensajeBusquedaCliente.textContent =
-          textoBusqueda !== "" && estado.clientes.length === 0
-            ? "No se encontraron clientes."
-            : "Selecciona un cliente de la lista.";
+        if (estado.clientes.length === 0) {
+          mensajeBusquedaCliente.textContent = esDniCompleto
+            ? "No se encontró un cliente con ese documento. Se abrirá el registro nuevo con el DNI cargado."
+            : "No se encontraron clientes.";
+
+          if (esDniCompleto) {
+            abrirModalNuevoClienteConDocumento(textoBusqueda);
+          } else if (btnRegistrar) {
+            resaltarBotonRegistrarCliente();
+          }
+          return;
+        }
+
+        mensajeBusquedaCliente.textContent = "Selecciona un cliente de la lista.";
       }
     })
     .catch(() => {
       if (mensajeBusquedaCliente) {
         mensajeBusquedaCliente.textContent =
           "No se pudieron cargar los clientes.";
+      }
+      if (!esDniCompleto && textoBusqueda !== "") {
+        resaltarBotonRegistrarCliente();
       }
     });
 };
@@ -746,6 +802,7 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
       "mensajeHabitacionesDisponibles",
     ),
     mensajeBusquedaCliente: document.getElementById("mensajeBusquedaCliente"),
+    btnRegistrarCliente: document.getElementById("btn-registrar-cliente-manual"),
     listaHabitacionesDisponibles: document.getElementById(
       "listaHabitacionesDisponibles",
     ),

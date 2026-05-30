@@ -1,4 +1,5 @@
 <?php
+
 namespace Controllers;
 
 use Libraries\Core\Controller;
@@ -51,6 +52,70 @@ class ClienteController extends Controller
             'clientes' => $clientes,
             'cliente_inhabilitado' => $clienteInhabilitado
         ]);
+    }
+
+    public function consultarApiPeru($params = '')
+    {
+        $tipo = strtolower(trim((string) ($_GET['tipo'] ?? 'dni')));
+        $documento = preg_replace('/\D+/', '', trim((string) ($_GET['documento'] ?? '')));
+        $token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImRlbmlzcnVpbWUuMjBAZ21haWwuY29tIn0.D61eKsOn1hVPtzBFRhHrylY4Wa6b_-OUn1lnzkrp7qU';
+
+        if (!in_array($tipo, ['dni', 'ruc'], true)) {
+            $this->responderJson(['success' => false, 'message' => 'Tipo de documento invalido'], 422);
+            return;
+        }
+
+        if ($documento === '' || ($tipo === 'dni' && strlen($documento) !== 8) || ($tipo === 'ruc' && strlen($documento) !== 11)) {
+            $this->responderJson(['success' => false, 'message' => 'Documento invalido'], 422);
+            return;
+        }
+
+        $url = 'https://dniruc.apisperu.com/api/v1/' . $tipo . '/' . $documento . '?token=' . urlencode($token);
+
+        $curl = curl_init($url);
+        curl_setopt_array($curl, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_TIMEOUT => 15,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_HTTPHEADER => ['Accept: application/json'],
+        ]);
+
+        $respuesta = curl_exec($curl);
+        $errorCurl = curl_error($curl);
+        $codigoHttp = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        curl_close($curl);
+
+        if ($respuesta === false || $errorCurl) {
+            $this->responderJson(['success' => false, 'message' => 'No se pudo consultar Apis Peru'], 500);
+            return;
+        }
+
+        $datos = json_decode($respuesta, true);
+        if ($codigoHttp >= 400) {
+            $mensaje = 'No se encontró información para ese documento.';
+
+            if (json_last_error() === JSON_ERROR_NONE && is_array($datos)) {
+                $mensajeApi = trim((string) ($datos['message'] ?? $datos['mensaje'] ?? ''));
+                if ($mensajeApi !== '' && stripos($mensajeApi, 'ocurrió un error') === false) {
+                    $mensaje = $mensajeApi;
+                }
+            } elseif (is_string($respuesta) && stripos($respuesta, 'Ocurrió un Error') === false) {
+                $mensaje = 'No se pudo consultar Apis Peru.';
+            }
+
+            $this->responderJson(['success' => false, 'message' => $mensaje], 200);
+            return;
+        }
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $this->responderJson(['success' => false, 'message' => 'Respuesta invalida de Apis Peru'], 500);
+            return;
+        }
+
+        http_response_code($codigoHttp > 0 ? $codigoHttp : 200);
+        header('Content-Type: application/json');
+        echo json_encode($datos);
     }
 
     public function registrar($params = '')

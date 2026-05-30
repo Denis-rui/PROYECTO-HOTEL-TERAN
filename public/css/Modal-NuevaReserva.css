@@ -125,6 +125,23 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
+.btn-registrar.resaltar-boton {
+  background: #c65d00;
+  box-shadow: 0 0 0 4px rgba(198, 93, 0, 0.22), 0 6px 16px rgba(198, 93, 0, 0.35);
+  transform: translateY(-1px) scale(1.02);
+  animation: pulseRegistrar 1.2s ease-in-out infinite;
+}
+
+@keyframes pulseRegistrar {
+  0%,
+  100% {
+    box-shadow: 0 0 0 4px rgba(198, 93, 0, 0.22), 0 6px 16px rgba(198, 93, 0, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(198, 93, 0, 0.1), 0 8px 20px rgba(198, 93, 0, 0.45);
+  }
+}
+
 .formRE {
   display: flex;
   justify-content: space-between;

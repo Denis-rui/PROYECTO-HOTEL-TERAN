@@ -18,7 +18,7 @@
             type="text"
             id="buscarCliente"
             name="buscarCliente"
-            placeholder="🔍 Escribe un nombre para buscar..." />
+            placeholder="🔍 Ingresa el numero de documento o nombre del cliente" />
         </div>
 
         <div class="form-group">
