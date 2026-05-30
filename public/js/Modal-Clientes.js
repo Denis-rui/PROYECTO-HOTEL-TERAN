@@ -14,6 +14,70 @@ const limpiarMensajeModalCliente = () => {
   mostrarMensajeModalCliente("", "");
 };
 
+const establecerMensajeBusquedaCliente = (mensaje, tipo = "") => {
+  const elemento = document.getElementById("mensaje-busqueda-cliente");
+  if (!elemento) return;
+
+  elemento.textContent = mensaje;
+  elemento.classList.remove("error", "exito");
+
+  if (tipo) {
+    elemento.classList.add(tipo);
+  }
+};
+
+const limpiarFormularioCliente = () => {
+  const campos = [
+    "id-cliente",
+    "nombre-cliente",
+    "tipo-documento-cliente",
+    "dni-cliente",
+    "gmail-cliente",
+    "telefono-cliente",
+    "procedencia-cliente",
+    "observaciones-cliente",
+  ];
+
+  campos.forEach((idCampo) => {
+    const campo = document.getElementById(idCampo);
+    if (!campo) return;
+
+    if (idCampo === "tipo-documento-cliente") {
+      campo.value = "1";
+      return;
+    }
+
+    campo.value = "";
+  });
+};
+
+const aplicarDatosClienteFormulario = (datos = {}) => {
+  const mapeo = {
+    "id-cliente": datos.id || "",
+    "nombre-cliente": datos.nombre || "",
+    "tipo-documento-cliente": datos.id_tipo_documento || "1",
+    "dni-cliente": datos.documento || "",
+    "gmail-cliente": datos.gmail || "",
+    "telefono-cliente": datos.telefono || "",
+    "procedencia-cliente": datos.procedencia || "",
+    "observaciones-cliente": datos.observaciones || "",
+  };
+
+  Object.entries(mapeo).forEach(([idCampo, valor]) => {
+    const campo = document.getElementById(idCampo);
+    if (campo) {
+      campo.value = valor;
+    }
+  });
+};
+
+const manejarEnterBusquedaCliente = (evento) => {
+  if (evento.key === "Enter") {
+    evento.preventDefault();
+    buscarDatosClientePorDocumento();
+  }
+};
+
 const limpiarErroresValidacion = () => {
   const erroresElementos = document.querySelectorAll(".error-validation");
   erroresElementos.forEach((elemento) => {
@@ -144,18 +208,11 @@ const completarFormularioCliente = (datos = null) => {
   if (!titulo) return;
 
   limpiarErroresValidacion();
+  establecerMensajeBusquedaCliente("Escribe un documento y pulsa buscar para autocompletar el formulario.");
 
   if (modoFormularioCliente === "editar" && datos) {
     titulo.textContent = "Editar Cliente";
-
-    document.getElementById("id-cliente").value = datos.id;
-    document.getElementById("tipo-documento-cliente").value = datos.id_tipo_documento || "";
-    document.getElementById("nombre-cliente").value = datos.nombre || "";
-    document.getElementById("dni-cliente").value = datos.documento || "";
-    document.getElementById("gmail-cliente").value = datos.gmail || "";
-    document.getElementById("telefono-cliente").value = datos.telefono || "";
-    document.getElementById("procedencia-cliente").value = datos.procedencia || "";
-    document.getElementById("observaciones-cliente").value = datos.observaciones || "";
+    aplicarDatosClienteFormulario(datos);
     
     configurarValidacionesTiempoReal();
     return;
@@ -164,10 +221,59 @@ const completarFormularioCliente = (datos = null) => {
   titulo.textContent = "Nuevo Cliente";
   if (formElement) {
     formElement.reset();
-    document.getElementById("id-cliente").value = "";
+    limpiarFormularioCliente();
+  }
+
+  const campoTipoDocumento = document.getElementById("tipo-documento-cliente");
+  if (campoTipoDocumento) {
+    campoTipoDocumento.value = "1";
   }
 
   configurarValidacionesTiempoReal();
+};
+
+const buscarDatosClientePorDocumento = async () => {
+  const documento = document.getElementById("dni-cliente")?.value.trim() || "";
+  if (!documento) {
+    establecerMensajeBusquedaCliente("Ingresa un documento para buscar.", "error");
+    return;
+  }
+
+  establecerMensajeBusquedaCliente("Buscando datos del cliente...");
+
+  try {
+    const respuesta = await fetch(BASE_URL + `Cliente/buscar&q=${encodeURIComponent(documento)}`);
+    const data = await respuesta.json();
+    const clientes = Array.isArray(data.clientes) ? data.clientes : [];
+    const cliente = clientes.find((item) => String(item.documento || "") === documento) || clientes[0] || null;
+
+    if (!cliente) {
+      establecerMensajeBusquedaCliente("No se encontraron datos para ese documento.", "error");
+      return;
+    }
+
+    modoFormularioCliente = "editar";
+    const titulo = document.getElementById("titulo-modal-cliente");
+    if (titulo) {
+      titulo.textContent = "Editar Cliente";
+    }
+
+    aplicarDatosClienteFormulario({
+      id: cliente.id,
+      id_tipo_documento: cliente.id_tipo_documento || 1,
+      nombre: cliente.nombre || "",
+      documento: cliente.documento || documento,
+      gmail: cliente.correo || cliente.gmail || "",
+      telefono: cliente.telefono || "",
+      procedencia: cliente.procedencia || "",
+      observaciones: cliente.observaciones || "",
+    });
+
+    establecerMensajeBusquedaCliente("Cliente encontrado. Revisa y guarda los cambios.", "exito");
+    limpiarErroresValidacion();
+  } catch (error) {
+    establecerMensajeBusquedaCliente("No se pudieron cargar los datos del cliente.", "error");
+  }
 };
 
 const manejarEnvioFormularioCliente = async (e) => {
@@ -263,13 +369,26 @@ const configurarValidacionesTiempoReal = () => {
 const configurarEventosModalCliente = () => {
   const form = document.getElementById("form-nuevo-editar-cliente");
   const btnCancelar = document.getElementById("btn-cancelar-cliente");
+  const btnBuscarDatos = document.getElementById("btn-buscar-datos-cliente");
+  const inputDocumento = document.getElementById("dni-cliente");
   if (!form || !btnCancelar) return;
 
   form.removeEventListener("submit", manejarEnvioFormularioCliente);
   btnCancelar.removeEventListener("click", cerrarModalCliente);
+  if (btnBuscarDatos) {
+    btnBuscarDatos.removeEventListener("click", buscarDatosClientePorDocumento);
+  }
 
   form.addEventListener("submit", manejarEnvioFormularioCliente);
   btnCancelar.addEventListener("click", cerrarModalCliente);
+  if (btnBuscarDatos) {
+    btnBuscarDatos.addEventListener("click", buscarDatosClientePorDocumento);
+  }
+
+  if (inputDocumento) {
+    inputDocumento.removeEventListener("keydown", manejarEnterBusquedaCliente);
+    inputDocumento.addEventListener("keydown", manejarEnterBusquedaCliente);
+  }
 };
 
 const abrirModalCliente = (modo, datos = null) => {
