@@ -167,6 +167,8 @@ if (!function_exists('claseEstadoReserva')) {
                 <?= htmlspecialchars(formatearFechaReserva($reserva["check_out"])) ?>
               <?php if ((int) ($reserva["minutos_checkout_vencido"] ?? 0) > 0): ?>
                 <span class="badge-vencido" data-checkout="<?= htmlspecialchars($reserva["check_out"]) ?>">Checkout vencido</span>
+              <?php elseif (!empty($reserva["checkout_hoy"])): ?>
+                <span class="badge-checkout-hoy" data-checkout="<?= htmlspecialchars($reserva["check_out"]) ?>">Checkout hoy</span>
               <?php endif; ?>
             </td>
             <td>

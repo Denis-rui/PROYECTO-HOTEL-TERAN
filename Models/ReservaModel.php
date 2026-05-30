@@ -161,13 +161,32 @@ class ReservaModel
         $saldoPendiente = $total + $cargoTarde - $totalPagado;
 
         $minutosCheckoutVencido = 0;
+        $checkoutHoy = false;
+        $zonaHoraria = new \DateTimeZone('America/Lima');
+        $ahora = new \DateTimeImmutable('now', $zonaHoraria);
+        $checkoutProgramadoFecha = null;
+
+        if ($checkOut) {
+            try {
+                $checkoutProgramadoFecha = new \DateTimeImmutable((string) $checkOut, $zonaHoraria);
+            } catch (\Exception $e) {
+                $checkoutProgramadoFecha = null;
+            }
+        }
+
         if (
             in_array($estado, ['en_estadia', 'checkout_pendiente'], true)
-            && $checkOut
-            && strtotime((string) $checkOut) < time()
+            && $checkoutProgramadoFecha
             && empty($reserva->checkout_real)
         ) {
-            $minutosCheckoutVencido = (int) floor((time() - strtotime((string) $checkOut)) / 60);
+            if ($checkoutProgramadoFecha < $ahora) {
+                $minutosCheckoutVencido = (int) floor(($ahora->getTimestamp() - $checkoutProgramadoFecha->getTimestamp()) / 60);
+            } elseif (
+                $checkoutProgramadoFecha->format('Y-m-d') === $ahora->format('Y-m-d')
+                && (int) $ahora->format('H') < 12
+            ) {
+                $checkoutHoy = true;
+            }
         }
 
         return [
@@ -206,6 +225,7 @@ class ReservaModel
             'porcentaje_pago' => $total + $cargoTarde > 0 ? round(($totalPagado / ($total + $cargoTarde)) * 100, 0) : 0,
             'pagos' => $pagos,
             'minutos_checkout_vencido' => $minutosCheckoutVencido,
+            'checkout_hoy' => $checkoutHoy,
         ];
     }
 

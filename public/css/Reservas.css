@@ -159,6 +159,17 @@
   font-weight: 700;
 }
 
+.badge-checkout-hoy {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: var(--warning-bg);
+  color: var(--warning);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
 .boton-checkin-reserva,
 .boton-checkout-reserva,
 .boton-extender-reserva,
