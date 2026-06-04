@@ -13,9 +13,10 @@ use Helpers\ReservaHelper;
 class ActualizarReservaModel extends ReservaModel
 {
     private const ESTADOS_ACTIVOS = ['pendiente', 'confirmada', 'checkin_realizado', 'en_estadia', 'checkout_pendiente'];
-    public function actualizarReserva($datos)
+    public function actualizarReserva($datos, $idUsuario = null)
     {
         try {
+            $idUsuarioActual = $idUsuario ?? ($_SESSION['id_usuario'] ?? null);
             $idReserva = (int) ($datos['id_reserva'] ?? 0);
             if ($idReserva <= 0) {
                 return ['exito' => false, 'mensaje' => 'No se recibió el ID de la reserva.'];
@@ -28,7 +29,7 @@ class ActualizarReservaModel extends ReservaModel
 
             $estadoReserva = strtolower(trim((string) $reservaActual->estado));
             if (in_array($estadoReserva, ['en_estadia', 'checkout_pendiente'], true)) {
-                return $this->actualizarEstadiaActiva($reservaActual, $datos);
+                return $this->actualizarEstadiaActiva($reservaActual, $datos, $idUsuarioActual);
             }
 
             if ($estadoReserva !== 'confirmada') {
@@ -157,7 +158,7 @@ class ActualizarReservaModel extends ReservaModel
                     'estado' => 'activa',
                     'precio_aplicado' => $habitacionNormalizada['precio'],
                     'subtotal' => $habitacionNormalizada['precio'] * $dias,
-                    'id_usuario_movimiento' => $_SESSION['id_usuario'] ?? null,
+                    'id_usuario_movimiento' => $idUsuarioActual,
                     'fecha_movimiento' => date('Y-m-d H:i:s'),
                 ]);
             }
@@ -239,9 +240,10 @@ class ActualizarReservaModel extends ReservaModel
         }
     }
 
-    private function actualizarEstadiaActiva(Reserva $reservaActual, array $datos): array
+    private function actualizarEstadiaActiva(Reserva $reservaActual, array $datos, $idUsuario = null): array
     {
         try {
+            $idUsuarioActual = $idUsuario ?? ($_SESSION['id_usuario'] ?? null);
             $idReserva = (int) $reservaActual->id;
             $checkOut = ReservaHelper::combinarFechaHora($datos['checkOut'] ?? null, $datos['horaSalida'] ?? null);
             if (!$checkOut) {
@@ -251,12 +253,6 @@ class ActualizarReservaModel extends ReservaModel
             $clienteNuevo = (int) ($datos['cliente'] ?? $datos['id_cliente'] ?? $reservaActual->id_cliente);
             if ($clienteNuevo !== (int) $reservaActual->id_cliente) {
                 return ['exito' => false, 'mensaje' => 'No se puede cambiar el cliente cuando la reserva está en estadía.'];
-            }
-
-            $checkInSolicitado = ReservaHelper::combinarFechaHora($datos['checkIn'] ?? null, $datos['horaEntrada'] ?? null);
-            $checkInActual = $reservaActual->reservaHabitacion->first()->check_in ?? null;
-            if ($checkInSolicitado && substr((string) $checkInSolicitado, 0, 16) !== substr((string) $checkInActual, 0, 16)) {
-                return ['exito' => false, 'mensaje' => 'No se puede cambiar la fecha de entrada cuando el cliente ya está en estadía.'];
             }
 
             $habitacionesIngresadas = $datos['habitaciones'] ?? [];
@@ -356,7 +352,7 @@ class ActualizarReservaModel extends ReservaModel
                     'tipo_asignacion' => 'agregada',
                     'estado' => 'activa',
                     'motivo_cambio' => 'Habitación agregada durante estadía',
-                    'id_usuario_movimiento' => $_SESSION['id_usuario'] ?? null,
+                    'id_usuario_movimiento' => $idUsuarioActual,
                     'fecha_movimiento' => $fechaAlta,
                     'precio_aplicado' => $precio,
                     'subtotal' => $subtotal,
@@ -454,6 +450,7 @@ class ActualizarReservaModel extends ReservaModel
     public function cambiarHabitacion($idReserva, $idHabitacionActual, $idHabitacionNueva, $tipoMotivo, $motivo, $idUsuario = null)
     {
         try {
+            $idUsuarioActual = $idUsuario ?? ($_SESSION['id_usuario'] ?? null);
             $reservaActual = Reserva::with(['reservaHabitacion.habitacion', 'pagos'])->find((int) $idReserva);
             if (!$reservaActual || !in_array($reservaActual->estado, ['en_estadia', 'checkout_pendiente'], true)) {
                 return ['exito' => false, 'mensaje' => 'Solo se puede cambiar habitación de una estadía activa.'];
@@ -489,6 +486,13 @@ class ActualizarReservaModel extends ReservaModel
 
             $fechaCambio = $this->obtenerAhoraHotelero();
             $checkOut = $relacionActual->check_out ?? null;
+            if (
+                $tipoMotivo === 'solicitud_cliente'
+                && substr((string) $fechaCambio, 0, 10) === substr((string) $checkOut, 0, 10)
+            ) {
+                return ['exito' => false, 'mensaje' => 'No se puede cambiar la habitación por solicitud del cliente el mismo día de salida. Primero actualice la fecha de checkout.'];
+            }
+
             $disponibilidad = $reporteOcupacionModel->validarDisponibilidadHabitacion($idHabitacionNueva, $fechaCambio, $checkOut, (int) $idReserva);
             if (!$disponibilidad['disponible']) {
                 return ['exito' => false, 'mensaje' => $disponibilidad['mensaje']];
@@ -514,7 +518,7 @@ class ActualizarReservaModel extends ReservaModel
             $relacionActual->activo = 0;
             $relacionActual->estado = 'cambiada';
             $relacionActual->motivo_cambio = $tipoMotivo . ': ' . trim((string) $motivo);
-            $relacionActual->id_usuario_movimiento = $idUsuario;
+            $relacionActual->id_usuario_movimiento = $idUsuarioActual;
             $relacionActual->fecha_movimiento = $fechaCambio;
             $relacionActual->subtotal = $subtotalAnterior;
             $relacionActual->save();
@@ -528,7 +532,7 @@ class ActualizarReservaModel extends ReservaModel
                 'tipo_asignacion' => 'cambio',
                 'estado' => 'activa',
                 'motivo_cambio' => $tipoMotivo . ': ' . trim((string) $motivo),
-                'id_usuario_movimiento' => $idUsuario,
+                'id_usuario_movimiento' => $idUsuarioActual,
                 'fecha_movimiento' => $fechaCambio,
                 'precio_aplicado' => $precioNuevoAplicado,
                 'subtotal' => $subtotalNuevo,
@@ -547,8 +551,8 @@ class ActualizarReservaModel extends ReservaModel
             $reservaActual->observaciones = trim((string) ($reservaActual->observaciones ?? '') . "\nCambio de habitación: Hab. " . ($habitacionAnterior['numero_habitacion'] ?? $idHabitacionActual) . " por Hab. " . ($habitacionNueva['numero_habitacion'] ?? $idHabitacionNueva) . ". Motivo: " . $motivo);
             $reservaActual->save();
 
-            $habitacionModel->registrarHistorial((int) $idHabitacionActual, (int) $idReserva, $habitacionAnterior['estado'] ?? 'Ocupada', 'Mantenimiento', null, null, 'cambio_habitacion_salida', $motivo, $idUsuario);
-            $habitacionModel->registrarHistorial((int) $idHabitacionNueva, (int) $idReserva, $habitacionNueva['estado'] ?? 'Disponible', 'Ocupada', null, null, 'cambio_habitacion_entrada', $motivo, $idUsuario);
+            $habitacionModel->registrarHistorial((int) $idHabitacionActual, (int) $idReserva, $habitacionAnterior['estado'] ?? 'Ocupada', 'Mantenimiento', null, null, 'cambio_habitacion_salida', $motivo, $idUsuarioActual);
+            $habitacionModel->registrarHistorial((int) $idHabitacionNueva, (int) $idReserva, $habitacionNueva['estado'] ?? 'Disponible', 'Ocupada', null, null, 'cambio_habitacion_entrada', $motivo, $idUsuarioActual);
 
             DB::connection()->commit();
             return [

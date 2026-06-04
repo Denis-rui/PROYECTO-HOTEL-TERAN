@@ -317,8 +317,53 @@
   font-size: 0.9rem;
 }
 
+.habitacion-cambio-pendiente {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid #d7b75f;
+  border-radius: 8px;
+  background: #fff8df;
+  color: var(--text-primary);
+}
+
+.habitacion-cambio-etiqueta {
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #ffe9a6;
+  color: #7a5200;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.habitacion-cambio-par {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.habitacion-cambio-par div {
+  display: grid;
+  gap: 2px;
+  padding: 8px;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.habitacion-cambio-par small,
+.habitacion-cambio-pendiente p {
+  color: var(--text-muted);
+  margin: 0;
+}
+
 @media (max-width: 900px) {
   .habitaciones-reserva-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .habitacion-cambio-par {
     grid-template-columns: 1fr;
   }
 }

@@ -24,6 +24,14 @@
     return `S/ ${toNumber(valor).toFixed(2)}`;
   };
 
+  const escapeHtml = (valor) =>
+    String(valor ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+
   const formatDateTime = (valor) => {
     if (!valor) return "---";
 
@@ -69,6 +77,23 @@
     };
 
     return mapa[normalizarEstado(estado)] || "Pendiente";
+  };
+
+  const formatearMotivoCambio = (motivo) => {
+    const texto = String(motivo || "").trim();
+    if (!texto) return "Cambio de habitación";
+
+    const partes = texto.split(":");
+    const tipo = partes.shift()?.trim().toLowerCase() || "";
+    const descripcion = partes.join(":").trim();
+    const etiquetas = {
+      falla_hotel: "Falla Hotel",
+      solicitud_cliente: "Cambio elegido por el cliente",
+    };
+
+    return etiquetas[tipo]
+      ? `${etiquetas[tipo]}${descripcion ? `: ${descripcion}` : ""}`
+      : texto;
   };
 
   const generarDocumentosBase = (reserva) => {
@@ -168,20 +193,23 @@
       Array.isArray(reserva.habitaciones) && reserva.habitaciones.length > 0
         ? reserva.habitaciones
         : [];
+    const habitacionesHistorial = Array.isArray(reserva.habitaciones_historial)
+      ? reserva.habitaciones_historial
+      : habitaciones;
+
+    const formatearHabitacion = (habitacion) => {
+      if (typeof habitacion !== "object" || habitacion === null) return "";
+      const numero = habitacion.numero_habitacion || habitacion.numero || "";
+      const piso = habitacion.piso ? `Piso ${habitacion.piso}` : "";
+      const tipo = habitacion.tipo_nombre || habitacion.tipo || "";
+      return [numero ? `Hab. ${numero}` : "", piso, tipo]
+        .filter(Boolean)
+        .join(" - ");
+    };
 
     const habitacionesTexto = habitaciones.length
       ? habitaciones
-          .map((habitacion) => {
-            if (typeof habitacion !== "object" || habitacion === null)
-              return "";
-            const numero =
-              habitacion.numero_habitacion || habitacion.numero || "";
-            const piso = habitacion.piso ? `Piso ${habitacion.piso}` : "";
-            const tipo = habitacion.tipo_nombre || habitacion.tipo || "";
-            return [numero ? `Hab. ${numero}` : "", piso, tipo]
-              .filter(Boolean)
-              .join(" - ");
-          })
+          .map(formatearHabitacion)
           .filter(Boolean)
           .join(" | ")
       : reserva.habitacion || "---";
@@ -193,26 +221,79 @@
     setText("#detalleReservaSaldo", formatMoney(reserva.saldo_pendiente));
     setText("#detalleReservaClienteNombre", reserva.cliente || "---");
     setText(
+      "#detalleReservaClienteDocumento",
+      [
+        reserva.documento_tipo_nombre || "Documento",
+        reserva.documento || "",
+      ]
+        .filter(Boolean)
+        .join(": ") || "---",
+    );
+    setText("#detalleReservaClienteTelefono", reserva.telefono || "---");
+    setText(
       "#detalleReservaClienteEmail",
       reserva.email || reserva.correo_electronico || "---",
     );
+    setText("#detalleReservaClienteProcedencia", reserva.procedencia || "---");
     const listaHabitaciones = document.getElementById(
       "detalleReservaHabitacionesLista",
     );
     if (listaHabitaciones) {
-      if (habitaciones.length) {
-        listaHabitaciones.innerHTML = habitaciones
+      if (habitacionesHistorial.length) {
+        const cambiosActivos = habitacionesHistorial.filter(
+          (habitacion) => habitacion.tipo_asignacion === "cambio",
+        );
+        const habitacionesOrdenadas = [
+          ...habitacionesHistorial.filter((habitacion) => {
+            const estadoAsignacion = normalizarEstado(
+              habitacion.estado_asignacion || habitacion.estado,
+            );
+            return estadoAsignacion === "activa";
+          }),
+          ...habitacionesHistorial.filter((habitacion) => {
+            const estadoAsignacion = normalizarEstado(
+              habitacion.estado_asignacion || habitacion.estado,
+            );
+            return estadoAsignacion !== "activa";
+          }),
+        ];
+
+        listaHabitaciones.innerHTML = habitacionesOrdenadas
           .map((habitacion) => {
-            if (typeof habitacion !== "object" || habitacion === null)
-              return "";
-            const numero =
-              habitacion.numero_habitacion || habitacion.numero || "";
-            const piso = habitacion.piso ? `Piso ${habitacion.piso}` : "";
-            const tipo = habitacion.tipo_nombre || habitacion.tipo || "";
-            const texto = [numero ? `Hab. ${numero}` : "", piso, tipo]
-              .filter(Boolean)
-              .join(" - ");
-            return texto ? `<li>${texto}</li>` : "";
+            const texto = formatearHabitacion(habitacion);
+            if (!texto) return "";
+
+            const estadoAsignacion = normalizarEstado(
+              habitacion.estado_asignacion || habitacion.estado,
+            );
+            if (estadoAsignacion === "cambiada") {
+              const reemplazo = cambiosActivos.find(
+                (item) =>
+                  item.motivo_cambio === habitacion.motivo_cambio &&
+                  item.fecha_movimiento === habitacion.fecha_movimiento,
+              );
+              return `
+                <li class="detalle-habitacion-cambiada">
+                  <span class="detalle-habitacion-badge">Cambiada</span>
+                  <div><small>Habitación anterior</small><strong>${escapeHtml(texto)}</strong></div>
+                  ${
+                    reemplazo
+                      ? `<div><small>Actualizada por</small><strong>${escapeHtml(formatearHabitacion(reemplazo))}</strong></div>`
+                      : ""
+                  }
+                  <p>${escapeHtml(formatearMotivoCambio(habitacion.motivo_cambio))}</p>
+                </li>`;
+            }
+
+            if (habitacion.tipo_asignacion === "cambio") {
+              return `
+                <li class="detalle-habitacion-nueva">
+                  <span class="detalle-habitacion-badge">Actual</span>
+                  ${escapeHtml(texto)}
+                </li>`;
+            }
+
+            return `<li>${escapeHtml(texto)}</li>`;
           })
           .filter(Boolean)
           .join("");
@@ -341,6 +422,24 @@
       documentos: [],
       habitaciones: Array.isArray(datos.habitaciones) ? datos.habitaciones : [],
     };
+
+    if (estadoModal.ultimaReserva.id) {
+      try {
+        const respuesta = await fetch(
+          BASE_URL + `Reserva/obtener/${encodeURIComponent(estadoModal.ultimaReserva.id)}`,
+        );
+        const reservaCompleta = await respuesta.json();
+        if (reservaCompleta?.id) {
+          estadoModal.ultimaReserva = {
+            ...estadoModal.ultimaReserva,
+            ...reservaCompleta,
+            documentos: [],
+          };
+        }
+      } catch (error) {
+        console.error("No se pudo cargar el detalle completo de la reserva:", error);
+      }
+    }
 
     cargarResumen(estadoModal.ultimaReserva);
     limpiarTablaDocumentos();

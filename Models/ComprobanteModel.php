@@ -83,6 +83,7 @@ class ComprobanteModel
 
     public function crearDesdePago(Pago $pago, array $reserva, array $habitaciones = [], ?int $idUsuario = null): ?Comprobante
     {
+        $idUsuarioActual = $idUsuario ?? ($_SESSION['id_usuario'] ?? null);
         $totalReserva = (float) ($reserva['total'] ?? 0);
         $monto = (float) ($pago->monto ?? 0);
         $idMetodo = (int) ($pago->id_metodo_pago ?? 0);
@@ -107,7 +108,7 @@ class ComprobanteModel
             'descripcion' => $descripcion,
             'total' => $monto,
             'id_forma_pago' => $idMetodo,
-            'id_usuario' => $idUsuario,
+            'id_usuario' => $idUsuarioActual,
         ]);
     }
 

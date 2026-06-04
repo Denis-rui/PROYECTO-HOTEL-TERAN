@@ -8,6 +8,10 @@ use function Illuminate\Support\now;
 
 class DevolucionModel
 {
+    private function usuarioActual()
+    {
+        return $_SESSION['id_usuario'] ?? null;
+    }
 
 
     public function listar($busqueda = '')
@@ -56,6 +60,7 @@ class DevolucionModel
             'porcentaje_penalidad' => $data['porcentaje_penalidad'] ?? 0,
             'monto_penalidad' => $data['monto_penalidad'] ?? 0,
             'monto_devuelto' => $data['monto_devuelto'] ?? 0,
+            'id_usuario' => $data['id_usuario'] ?? $this->usuarioActual(),
         ]) !== null;
     }
 
@@ -70,6 +75,7 @@ class DevolucionModel
             'porcentaje_penalidad' => $data['porcentaje_penalidad'] ?? 0,
             'monto_penalidad' => $data['monto_penalidad'] ?? 0,
             'monto_devuelto' => $data['monto_devuelto'] ?? 0,
+            'id_usuario' => $data['id_usuario'] ?? $this->usuarioActual(),
         ]) !== false;
     }
 

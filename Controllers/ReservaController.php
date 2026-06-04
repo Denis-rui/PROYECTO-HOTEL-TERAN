@@ -72,7 +72,7 @@ class ReservaController extends Controller
         header('Content-Type: application/json');
         $datos     = json_decode(file_get_contents('php://input'), true);
         $modeloActualizarReserva = new ActualizarReservaModel();
-        $resultado = $modeloActualizarReserva->actualizarReserva($datos);
+        $resultado = $modeloActualizarReserva->actualizarReserva($datos, $_SESSION['id_usuario'] ?? null);
         echo json_encode($resultado);
     }
 

@@ -33,7 +33,7 @@ class ReservaModel
             $estadosPermitidos = ['confirmada', 'en_estadia', 'checkout_realizado', 'checkout_pendiente', 'ausente', 'cancelada'];
             $limite = max(30, $limite);
 
-            $query = Reserva::with(['cliente', 'pagos', 'reservaHabitacion.habitacion']);
+            $query = Reserva::with(['cliente', 'usuario', 'pagos', 'reservaHabitacion.habitacion']);
 
             if ($estado === '' || $estado !== 'cancelada') {
                 $query->where('estado', '!=', 'cancelada');
@@ -104,7 +104,7 @@ class ReservaModel
     // se queda sirve par ala edicion y pagar
     public function obtenerReservaPorId($idReserva)
     {
-        $reserva = Reserva::with(['cliente', 'habitacion', 'pagos', 'reservaHabitacion'])
+        $reserva = Reserva::with(['cliente', 'usuario', 'habitacion', 'pagos', 'reservaHabitacion'])
             ->find((int) $idReserva);
 
         return $reserva ? $this->formatearReserva($reserva) : null;
@@ -118,25 +118,23 @@ class ReservaModel
     {
 
         $cliente = $reserva->cliente;
+        $usuario = $reserva->usuario ?? null;
 
         $reservaHabitacion = $reserva->reservaHabitacion;
         $habitacionesRelacionadas = is_iterable($reservaHabitacion) ? $reservaHabitacion : [$reservaHabitacion];
         $habitaciones = [];
+        $habitacionesHistorial = [];
+        $habitacionModel = new HabitacionModel();
         foreach ($habitacionesRelacionadas as $itemHabitacion) {
             if (!$itemHabitacion) {
                 continue;
             }
 
-            if (($itemHabitacion->estado ?? 'activa') !== 'activa') {
-                continue;
-            }
-
             $habitacion = $itemHabitacion->habitacion ?? null;
             if ($habitacion) {
-                $habitacionModel = new HabitacionModel();
                 $info = $habitacionModel->obtenerPorId($habitacion->id) ?? [];
                 $precioHabit = (float) ($info['precio'] ?? 0);
-                $habitaciones[] = [
+                $datosHabitacion = [
                     'reserva_habitacion_id' => $itemHabitacion->id ?? null,
                     'id' => $habitacion->id,
                     'numero_habitacion' => $habitacion->numero_habitacion,
@@ -150,7 +148,12 @@ class ReservaModel
                     'motivo_cambio' => $itemHabitacion->motivo_cambio ?? null,
                     'check_in' => $itemHabitacion->check_in ?? null,
                     'check_out' => $itemHabitacion->check_out ?? null,
+                    'fecha_movimiento' => $itemHabitacion->fecha_movimiento ?? null,
                 ];
+                $habitacionesHistorial[] = $datosHabitacion;
+                if (($itemHabitacion->estado ?? 'activa') === 'activa') {
+                    $habitaciones[] = $datosHabitacion;
+                }
             }
         }
 
@@ -228,10 +231,15 @@ class ReservaModel
                 }
             })(),
             'correo_electronico' => $cliente->correo_electronico ?? '',
+            'telefono' => $cliente->telefono ?? '',
             'procedencia' => $cliente->procedencia ?? '',
+            'id_usuario' => $reserva->id_usuario ?? null,
+            'usuario' => $usuario->nombre_completo ?? $usuario->nombre_usuario ?? '',
+            'usuario_nombre' => $usuario->nombre_completo ?? $usuario->nombre_usuario ?? '',
             'id_habitacion' => $habitacionPrincipal['id'] ?? null,
             'habitacion' => $habitacionPrincipal ? 'Hab. ' . $habitacionPrincipal['numero_habitacion'] . ' - Piso ' . $habitacionPrincipal['piso'] : '',
             'habitaciones' => $habitaciones,
+            'habitaciones_historial' => $habitacionesHistorial,
             'piso' => $habitacionPrincipal['piso'] ?? null,
             'check_in' => $checkIn,
             'check_out' => $checkOut,
@@ -524,14 +532,30 @@ class ReservaModel
             $minutosDemora = max(0, (int) floor((time() - strtotime((string) $checkOut)) / 60));
             $cargoTarde = ReservaHelper::calcularCargoCheckoutTarde($minutosDemora, (float) $reservaActual->total);
             $saldoFinal = max(0, ((float) $reservaActual->total - (float) $reservaActual->pagos->sum('monto')) + $cargoTarde);
+            $fechaCheckout = $this->fechaHoraActual();
 
             if ($saldoFinal > 0.01 && !$autorizarSaldo) {
-                return ['exito' => false, 'mensaje' => 'No se puede confirmar checkout porque existe saldo pendiente de S/ ' . number_format($saldoFinal, 2) . '.'];
+                DB::connection()->beginTransaction();
+
+                $reservaActual->minutos_demora_checkout = $minutosDemora;
+                $reservaActual->cargo_checkout_tarde = $cargoTarde;
+                $reservaActual->save();
+
+                DB::connection()->commit();
+
+                return [
+                    'exito' => false,
+                    'requiere_pago' => true,
+                    'mensaje' => 'Existe saldo pendiente de S/ ' . number_format($saldoFinal, 2) . '. Registre el pago completo antes de confirmar el checkout.',
+                    'saldo_pendiente' => round($saldoFinal, 2),
+                    'cargo_checkout_tarde' => $cargoTarde,
+                    'minutos_demora' => $minutosDemora,
+                    'reserva' => $this->obtenerReservaPorId($idReserva),
+                ];
             }
 
             DB::connection()->beginTransaction();
 
-            $fechaCheckout = $this->fechaHoraActual();
             $reservaActual->estado = 'checkout_realizado';
             $reservaActual->checkout_real = $fechaCheckout;
             $reservaActual->minutos_demora_checkout = $minutosDemora;

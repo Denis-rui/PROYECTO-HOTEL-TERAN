@@ -358,6 +358,50 @@ const ejecutarAccionReserva = async (accion, datos) => {
       }
       window.location.reload();
     } else {
+      if (accion === "checkout" && resultado.requiere_pago) {
+        let abrirPago = false;
+        if (typeof Swal !== "undefined") {
+          const decisionPago = await Swal.fire({
+            icon: "warning",
+            title: "Pago pendiente",
+            text:
+              resultado.mensaje ||
+              "La reserva tiene saldo pendiente. Registre el pago antes del checkout.",
+            showCancelButton: true,
+            confirmButtonText: "Registrar pago",
+            cancelButtonText: "Cancelar",
+          });
+          abrirPago = decisionPago.isConfirmed;
+        } else {
+          abrirPago = confirm(
+            resultado.mensaje ||
+              "La reserva tiene saldo pendiente. ¿Desea registrar el pago ahora?",
+          );
+        }
+
+        if (abrirPago && typeof window.abrirModalPago === "function") {
+          const reserva = resultado.reserva || {};
+          const saldoPendiente = Number(
+            resultado.saldo_pendiente ?? reserva.saldo_pendiente ?? 0,
+          );
+          window.abrirModalPago({
+            idReserva: datos.id_reserva,
+            ...reserva,
+            totalReserva:
+              Number(reserva.total || 0) +
+              Number(resultado.cargo_checkout_tarde || reserva.cargo_checkout_tarde || 0),
+            saldoPendiente,
+            montoAutomatico: saldoPendiente,
+            descripcionPago: "Pago de saldo pendiente para checkout",
+            confirmarCheckoutDespuesPago: true,
+            recargarAlCerrar: true,
+          });
+        } else {
+          window.location.reload();
+        }
+        return;
+      }
+
       if (typeof Notificar === "function") {
         Notificar(resultado.mensaje || "Error al procesar", "error");
       } else {

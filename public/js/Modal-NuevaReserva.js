@@ -389,9 +389,16 @@ const renderizarHabitacionesSeleccionadas = () => {
   }
 
   habitaciones.forEach((habitacion) => {
-    const botonAccion = esEdicionEnEstadia()
-      ? `<button type="button" class="boton-habitacion cambiar" data-id="${habitacion.id}">Cambiar habitación</button>`
-      : `<button type="button" class="boton-habitacion quitar" data-id="${habitacion.id}">Quitar</button>`;
+    const cambioPendiente =
+      estado.habitacionCambioPendiente &&
+      String(estado.habitacionCambioPendiente.actual?.id) === String(habitacion.id)
+        ? estado.habitacionCambioPendiente
+        : null;
+    const botonAccion = cambioPendiente
+      ? `<button type="button" class="boton-habitacion cancelar-cambio-pendiente" data-id="${habitacion.id}">Cancelar cambio</button>`
+      : esEdicionEnEstadia()
+        ? `<button type="button" class="boton-habitacion cambiar" data-id="${habitacion.id}">Cambiar habitación</button>`
+        : `<button type="button" class="boton-habitacion quitar" data-id="${habitacion.id}">Quitar</button>`;
     const cambioActual =
       estado.habitacionCambioActual &&
       String(estado.habitacionCambioActual.id) === String(habitacion.id)
@@ -409,10 +416,25 @@ const renderizarHabitacionesSeleccionadas = () => {
           </div>`
         : "";
     const reemplazo =
-      estado.habitacionCambioActual &&
-      String(estado.habitacionCambioActual.id) === String(habitacion.id) &&
-      estado.habitacionCambioNueva
-        ? `<div class="habitacion-reemplazo">Cambiada por: <strong>${formatearHabitacionTexto(estado.habitacionCambioNueva)}</strong></div>`
+      cambioPendiente
+        ? `<div class="habitacion-cambio-pendiente">
+            <span class="habitacion-cambio-etiqueta">Cambio pendiente</span>
+            <div class="habitacion-cambio-par">
+              <div>
+                <small>Habitación actual</small>
+                <strong>${formatearHabitacionTexto(cambioPendiente.actual)}</strong>
+              </div>
+              <div>
+                <small>Se cambiará por</small>
+                <strong>${formatearHabitacionTexto(cambioPendiente.nueva)}</strong>
+              </div>
+            </div>
+            <p>${cambioPendiente.tipo_motivo === "falla_hotel" ? "Falla de habitación" : "Solicitud del cliente"} - ${cambioPendiente.motivo}</p>
+          </div>`
+        : estado.habitacionCambioActual &&
+          String(estado.habitacionCambioActual.id) === String(habitacion.id) &&
+          estado.habitacionCambioNueva
+          ? `<div class="habitacion-reemplazo">Se cambiará por: <strong>${formatearHabitacionTexto(estado.habitacionCambioNueva)}</strong></div>`
         : "";
     const card = document.createElement("article");
     card.className = "habitacion-card seleccionada";
@@ -493,6 +515,11 @@ const agregarHabitacionSeleccionada = (idHabitacion) => {
 
 const iniciarCambioHabitacion = (idHabitacion) => {
   const estado = obtenerEstadoModalReserva();
+  if (estado.habitacionCambioPendiente) {
+    Swal.fire("Cambio pendiente", "Primero guarda o cancela el cambio de habitación pendiente.", "info");
+    return;
+  }
+
   const habitacion = obtenerHabitacionSeleccionadaPorId(idHabitacion);
   if (!habitacion) return;
 
@@ -510,6 +537,15 @@ const cancelarCambioHabitacion = () => {
   renderizarHabitacionesSeleccionadas();
 };
 
+const cancelarCambioHabitacionPendiente = () => {
+  const estado = obtenerEstadoModalReserva();
+  estado.habitacionCambioPendiente = null;
+  estado.habitacionCambioActual = null;
+  estado.habitacionCambioNueva = null;
+  cargarHabitacionesDisponibles();
+  renderizarHabitacionesSeleccionadas();
+};
+
 const confirmarCambioHabitacion = async () => {
   const estado = obtenerEstadoModalReserva();
   const actual = estado.habitacionCambioActual;
@@ -520,6 +556,17 @@ const confirmarCambioHabitacion = async () => {
   const motivo = document.getElementById("motivoCambioHabitacion")?.value?.trim() || "";
   if (!motivo) {
     Swal.fire("Motivo requerido", "Indica el detalle del cambio de habitación.", "warning");
+    return;
+  }
+
+  const fechaSalida = estado.elementos?.fechaSalida?.value || "";
+  const hoy = obtenerFechaActualISO();
+  if (tipoMotivo === "solicitud_cliente" && fechaSalida === hoy) {
+    Swal.fire(
+      "No se puede cambiar",
+      "Si el cambio es por solicitud del cliente y la salida es hoy, primero actualiza la fecha de checkout.",
+      "warning",
+    );
     return;
   }
 
@@ -556,30 +603,17 @@ const confirmarCambioHabitacion = async () => {
 
   if (!resultado.isConfirmed) return;
 
-  const respuesta = await fetch(BASE_URL + "Reserva/cambiarHabitacion", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      id_reserva: estado.reservaEditandoId,
-      id_habitacion_actual: actual.id,
-      id_habitacion_nueva: nueva.id,
-      tipo_motivo: tipoMotivo,
-      motivo,
-    }),
-  }).then((res) => res.json());
-
-  if (!respuesta.exito) {
-    Swal.fire("No se pudo cambiar", respuesta.mensaje || "Intenta nuevamente.", "error");
-    return;
-  }
-
+  estado.habitacionCambioPendiente = {
+    actual,
+    nueva,
+    tipo_motivo: tipoMotivo,
+    motivo,
+  };
   estado.habitacionCambioActual = null;
   estado.habitacionCambioNueva = null;
-  if (respuesta.reserva) {
-    aplicarReservaEdicion(respuesta.reserva);
-    estado.reservaTotalOriginal = Number(respuesta.reserva.total || 0);
-  }
-  Swal.fire("Cambio registrado", respuesta.mensaje || "Habitación cambiada correctamente.", "success");
+  await Swal.fire("Cambio preparado", "El cambio se aplicará cuando guardes la actualización.", "success");
+  renderizarHabitacionesDisponibles();
+  renderizarHabitacionesSeleccionadas();
 };
 
 const quitarHabitacionSeleccionada = (idHabitacion) => {
@@ -762,7 +796,8 @@ const cargarHabitacionesDisponibles = () => {
 
   if (
     new Date(`${checkOut.slice(0, 10)}T00:00:00`) <=
-    new Date(`${checkIn.slice(0, 10)}T00:00:00`)
+    new Date(`${checkIn.slice(0, 10)}T00:00:00`) &&
+    !estado.habitacionCambioActual
   ) {
     if (mensajeHabitaciones)
       mensajeHabitaciones.textContent =
@@ -857,7 +892,7 @@ const prepararResumenReserva = () => {
   };
 };
 
-const validarYContinuarPago = () => {
+const validarYContinuarPago = async () => {
   const estado = obtenerEstadoModalReserva();
   const selectorCliente = estado.elementos?.selectorCliente;
   const idClienteReserva = estado.elementos?.idClienteReserva;
@@ -899,7 +934,7 @@ const validarYContinuarPago = () => {
     selectorCliente?.options?.[selectorCliente.selectedIndex]?.text || "";
   const resumen = prepararResumenReserva();
 
-  abrirModalPagoConDatos({
+  const datosReserva = {
     cliente,
     idCliente: cliente,
     clienteTexto: textoClienteSeleccionado,
@@ -916,11 +951,113 @@ const validarYContinuarPago = () => {
     habitacionPrincipal: resumen.habitacionPrincipal,
     totalReserva: resumen.totalReserva,
     idReserva: estado.reservaEditandoId || "",
-    guardarCambiosReserva: Boolean(estado.reservaEditandoId),
-  });
+  };
+
+  if (estado.reservaEditandoId) {
+    await confirmarGuardarEdicionReserva(datosReserva);
+    return;
+  }
+
+  abrirModalPagoConDatos(datosReserva);
 
   if (modal) modal.style.display = "none";
   if (contenedor) contenedor.style.display = "none";
+};
+
+const guardarEdicionReserva = async (datosReserva) => {
+  const respuesta = await fetch(BASE_URL + "Reserva/actualizar", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ...datosReserva,
+      id_reserva: datosReserva.idReserva,
+    }),
+  });
+
+  return respuesta.json();
+};
+
+const aplicarCambioHabitacionPendiente = async () => {
+  const estado = obtenerEstadoModalReserva();
+  const cambio = estado.habitacionCambioPendiente;
+  if (!cambio) {
+    return { exito: true };
+  }
+
+  const respuesta = await fetch(BASE_URL + "Reserva/cambiarHabitacion", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      id_reserva: estado.reservaEditandoId,
+      id_habitacion_actual: cambio.actual.id,
+      id_habitacion_nueva: cambio.nueva.id,
+      tipo_motivo: cambio.tipo_motivo,
+      motivo: cambio.motivo,
+    }),
+  });
+
+  return respuesta.json();
+};
+
+const confirmarGuardarEdicionReserva = async (datosReserva) => {
+  const estado = obtenerEstadoModalReserva();
+  const modal = estado.elementos?.modal;
+  const contenedor = estado.elementos?.contenedor;
+
+  const resultadoConfirmacion = await Swal.fire({
+    title: "Guardar cambios",
+    text: "¿Desea guardar los cambios de la reserva?",
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonText: "Sí, guardar",
+    cancelButtonText: "Cancelar",
+  });
+
+  if (!resultadoConfirmacion.isConfirmed) return;
+
+  try {
+    const resultado = await guardarEdicionReserva(datosReserva);
+    if (!resultado.exito) {
+      Swal.fire({
+        icon: "error",
+        title: "No se pudo guardar",
+        text: resultado.mensaje || "No se pudieron guardar los cambios.",
+      });
+      return;
+    }
+
+    const resultadoCambio = await aplicarCambioHabitacionPendiente();
+    if (!resultadoCambio.exito) {
+      Swal.fire({
+        icon: "error",
+        title: "No se pudo cambiar la habitación",
+        text: resultadoCambio.mensaje || "La reserva se guardó, pero no se pudo aplicar el cambio de habitación.",
+      });
+      return;
+    }
+
+    await Swal.fire({
+      toast: true,
+      position: "top-end",
+      icon: "success",
+      title: resultado.mensaje || "Reserva actualizada correctamente",
+      showConfirmButton: false,
+      timer: 2200,
+      timerProgressBar: true,
+    });
+
+    estado.habitacionCambioPendiente = null;
+    if (modal) modal.style.display = "none";
+    if (contenedor) contenedor.style.display = "none";
+    window.location.reload();
+  } catch (error) {
+    console.error(error);
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "Error de conexión al guardar la reserva.",
+    });
+  }
 };
 
 const abrirModalPagoConDatos = (datosReserva) => {
@@ -1000,6 +1137,7 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
   estado.habitacionesSeleccionadas = [];
   estado.habitacionCambioActual = null;
   estado.habitacionCambioNueva = null;
+  estado.habitacionCambioPendiente = null;
   estado.reservaEstado = "";
   estado.reservaTotalOriginal = Number(datos?.total || 0);
   estado.modo = modo;
@@ -1128,6 +1266,12 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
         const botonCancelarCambio = evento.target.closest(".boton-habitacion.cancelar-cambio");
         if (botonCancelarCambio) {
           cancelarCambioHabitacion();
+          return;
+        }
+
+        const botonCancelarCambioPendiente = evento.target.closest(".boton-habitacion.cancelar-cambio-pendiente");
+        if (botonCancelarCambioPendiente) {
+          cancelarCambioHabitacionPendiente();
           return;
         }
 

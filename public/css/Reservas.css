@@ -219,6 +219,11 @@
   color: var(--warning);
 }
 
+.estado-checkout-pendiente {
+  background: #fff3cd;
+  color: #9a6700;
+}
+
 .estado-cancelada {
   background: var(--danger-bg);
   color: var(--danger);

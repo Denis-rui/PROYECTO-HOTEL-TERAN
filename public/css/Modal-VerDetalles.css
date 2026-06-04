@@ -148,6 +148,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
     min-height: 0;
+    align-items: start;
   }
 
   .info-reserva-card {
@@ -169,6 +170,42 @@
   .info-reserva-card small {
     color: var(--text-secondary);
     font-size: 12px;
+  }
+
+  .cliente-detalle-card {
+    grid-column: 1 / -1;
+  }
+
+  .cliente-detalle-card > strong {
+    font-size: 17px;
+  }
+
+  .cliente-detalle-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .cliente-detalle-grid div {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: var(--bg-light);
+    border: 1px solid var(--border-light);
+  }
+
+  .cliente-detalle-grid strong {
+    overflow-wrap: anywhere;
+    font-size: 13px;
+  }
+
+  .habitaciones-detalle-card {
+    grid-column: 1 / -1;
+    max-height: 360px;
+    min-height: 0;
   }
 
   .panel-documentos {
@@ -255,15 +292,64 @@
 
   .habitaciones-lista-detalle {
     margin: 0;
-    padding-left: 18px;
+    padding-left: 0;
     display: grid;
-    gap: 4px;
+    gap: 6px;
     color: #243120;
     font-size: 13px;
+    overflow-y: auto;
+    max-height: 285px;
+    min-height: 0;
+    padding-right: 4px;
   }
 
   .habitaciones-lista-detalle li {
+    list-style-position: inside;
     line-height: 1.35;
+  }
+
+  .habitaciones-lista-detalle .detalle-habitacion-cambiada,
+  .habitaciones-lista-detalle .detalle-habitacion-nueva {
+    list-style: none;
+    display: grid;
+    gap: 6px;
+    padding: 10px;
+    border-radius: 8px;
+  }
+
+  .detalle-habitacion-cambiada {
+    border: 1px dashed #c9b98f;
+    background: #f8f3e7;
+    color: #6b6145;
+  }
+
+  .detalle-habitacion-cambiada strong {
+    color: #4d4634;
+  }
+
+  .detalle-habitacion-cambiada p {
+    margin: 0;
+    color: #776b4f;
+  }
+
+  .detalle-habitacion-nueva {
+    border: 1px solid #b8d7c2;
+    background: #eef8f0;
+    color: #24462d;
+  }
+
+  .detalle-habitacion-badge {
+    width: fit-content;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: #fff;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .habitaciones-lista-detalle small {
+    display: block;
+    color: #777;
   }
 
   .boton-documento {
@@ -346,12 +432,24 @@
       grid-template-columns: 1fr;
     }
 
+    .cliente-detalle-grid {
+      grid-template-columns: 1fr;
+    }
+
     .panel-ver-detalles {
       padding: 12px;
     }
 
     .tabla-documentos-reserva {
       min-width: 620px;
+    }
+
+    .habitaciones-detalle-card {
+      max-height: 320px;
+    }
+
+    .habitaciones-lista-detalle {
+      max-height: 245px;
     }
 
   }
@@ -390,5 +488,11 @@
   .modal-ver-detalles-acciones,
   .documento-acciones {
     display: none !important;
+  }
+
+  .habitaciones-detalle-card,
+  .habitaciones-lista-detalle {
+    max-height: none !important;
+    overflow: visible !important;
   }
 }
