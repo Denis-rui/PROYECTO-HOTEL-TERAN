@@ -50,6 +50,10 @@ class ReporteOcupacionModel
                 ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
                 ->where('rh.id_habitacion', (int) $idHabitacion)
                 ->where('rh.activo', 1)
+                ->where(function ($q) {
+                    $q->whereNull('rh.estado')
+                      ->orWhere('rh.estado', 'activa');
+                })
                 ->whereIn('r.estado', ['pendiente', 'confirmada', 'checkin_realizado', 'en_estadia', 'checkout_pendiente'])
                 ->where('rh.check_in', '<', $checkOut)
                 ->where(function ($q) use ($checkIn) {
@@ -73,12 +77,16 @@ class ReporteOcupacionModel
         }
     }
 
-    public function obtenerDisponiblesPorRango($checkIn, $checkOut, $tipo = null, $piso = null)
+    public function obtenerDisponiblesPorRango($checkIn, $checkOut, $tipo = null, $piso = null, array $referencia = [])
     {
         try {
             $habitacionesOcupadas = DB::table('reserva_habitacion as rh')
                 ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
                 ->where('rh.activo', 1)
+                ->where(function ($q) {
+                    $q->whereNull('rh.estado')
+                      ->orWhere('rh.estado', 'activa');
+                })
                 ->whereIn('r.estado', ['pendiente', 'confirmada', 'checkin_realizado', 'en_estadia', 'checkout_pendiente'])
                 ->where('rh.check_in', '<', $checkOut)
                 ->where('rh.check_out', '>', $checkIn)
@@ -95,6 +103,7 @@ class ReporteOcupacionModel
                     'h.id',
                     'h.numero_habitacion',
                     'h.piso',
+                    'h.id_tipo_habitacion',
                     DB::raw('t.precio_base as precio'),
                     'h.capacidad',
                     't.tipo as tipo_nombre',
@@ -106,6 +115,23 @@ class ReporteOcupacionModel
 
             if ($piso) {
                 $query->where('h.piso', (int) $piso);
+            }
+
+            $precioReferencia = is_numeric($referencia['precio'] ?? null) ? (float) $referencia['precio'] : null;
+            $tipoReferencia = !empty($referencia['tipo']) ? (int) $referencia['tipo'] : null;
+            $pisoReferencia = !empty($referencia['piso']) ? (int) $referencia['piso'] : null;
+
+            if ($precioReferencia !== null) {
+                $query->orderByRaw('CASE WHEN t.precio_base = ? THEN 0 WHEN t.precio_base > ? THEN 1 ELSE 2 END', [$precioReferencia, $precioReferencia])
+                    ->orderByRaw('ABS(t.precio_base - ?)', [$precioReferencia]);
+            }
+
+            if ($tipoReferencia) {
+                $query->orderByRaw('CASE WHEN h.id_tipo_habitacion = ? THEN 0 ELSE 1 END', [$tipoReferencia]);
+            }
+
+            if ($pisoReferencia) {
+                $query->orderByRaw('CASE WHEN h.piso = ? THEN 0 ELSE 1 END', [$pisoReferencia]);
             }
 
             return $query->orderBy('h.piso', 'asc')

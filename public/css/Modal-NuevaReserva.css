@@ -125,6 +125,23 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
+.btn-registrar.resaltar-boton {
+  background: #c65d00;
+  box-shadow: 0 0 0 4px rgba(198, 93, 0, 0.22), 0 6px 16px rgba(198, 93, 0, 0.35);
+  transform: translateY(-1px) scale(1.02);
+  animation: pulseRegistrar 1.2s ease-in-out infinite;
+}
+
+@keyframes pulseRegistrar {
+  0%,
+  100% {
+    box-shadow: 0 0 0 4px rgba(198, 93, 0, 0.22), 0 6px 16px rgba(198, 93, 0, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(198, 93, 0, 0.1), 0 8px 20px rgba(198, 93, 0, 0.45);
+  }
+}
+
 .formRE {
   display: flex;
   justify-content: space-between;
@@ -243,6 +260,17 @@
   color: #fff;
 }
 
+.boton-habitacion.cambiar,
+.boton-habitacion.confirmar-cambio {
+  background: var(--info);
+  color: #fff;
+}
+
+.boton-habitacion.cancelar-cambio {
+  background: var(--border);
+  color: var(--text-primary);
+}
+
 .boton-habitacion:disabled {
   opacity: 0.55;
   cursor: not-allowed;
@@ -267,8 +295,75 @@
   padding: 8px;
 }
 
+.habitacion-cambio-panel {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-white);
+  border-radius: 6px;
+}
+
+.habitacion-cambio-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.habitacion-reemplazo {
+  margin-top: 6px;
+  color: var(--primary-dark);
+  font-size: 0.9rem;
+}
+
+.habitacion-cambio-pendiente {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid #d7b75f;
+  border-radius: 8px;
+  background: #fff8df;
+  color: var(--text-primary);
+}
+
+.habitacion-cambio-etiqueta {
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #ffe9a6;
+  color: #7a5200;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.habitacion-cambio-par {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.habitacion-cambio-par div {
+  display: grid;
+  gap: 2px;
+  padding: 8px;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.habitacion-cambio-par small,
+.habitacion-cambio-pendiente p {
+  color: var(--text-muted);
+  margin: 0;
+}
+
 @media (max-width: 900px) {
   .habitaciones-reserva-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .habitacion-cambio-par {
     grid-template-columns: 1fr;
   }
 }

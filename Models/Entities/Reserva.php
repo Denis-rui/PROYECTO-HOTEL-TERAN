@@ -33,4 +33,9 @@ class Reserva extends Eloquent
     {
         return $this->hasMany(ReservaHabitacion::class, 'id_reserva');
     }
+
+    public function usuario()
+    {
+        return $this->belongsTo(Usuario::class, 'id_usuario');
+    }
 }

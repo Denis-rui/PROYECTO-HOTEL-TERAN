@@ -18,49 +18,76 @@
             type="text"
             id="buscarCliente"
             name="buscarCliente"
-            placeholder="🔍 Escribe un nombre para buscar..." />
+            placeholder="🔍 Ingresa el numero de documento o nombre del cliente" />
         </div>
 
         <div class="form-group">
-          <select id="selectorClienteReserva" name="cliente" required>
-            <option value="">Seleccionar cliente</option>
-          </select>
-          <small id="mensajeBusquedaCliente">Selecciona un cliente de la lista.</small>
+          <div style="display:flex; gap:12px; align-items:center;">
+            <div style="flex:1; min-width:0;">
+              <select id="selectorClienteReserva" name="cliente" required style="width:100%;">
+                <option value="">Seleccionar cliente</option>
+              </select>
+            </div>
+            <div style="width:110px; display:flex; align-items:center; justify-content:flex-end;">
+              <button
+                type="button"
+                class="btn-registrar btn-registrar-al-lado"
+                id="btn-registrar-cliente-manual"
+                title="Registrar cliente"
+                style="white-space:nowrap; height:34px; padding:6px 10px; font-size:14px;">
+                + Registrar
+              </button>
+            </div>
+          </div>
+          <small id="mensajeBusquedaCliente" style="display:block; margin-top:8px;">Selecciona un cliente de la lista.</small>
         </div>
 
         <input type="hidden" id="idClienteReserva" name="idClienteReserva" />
 
-        <!-- NOMBRE -->
-        <div class="form-row">
-          <div class="form-group">
-            <div class="formRE">
+        <!-- NOMBRE, DNI, EMAIL, PROCEDENCIA (dos columnas) -->
+        <div class="form-row form-row-cols-2" style="display:flex; gap:16px;">
+          <div class="form-col" style="flex:1;">
+            <div class="form-group">
               <label for="nombre">NOMBRES Y APELLIDOS:</label>
-              <button
-                type="button"
-                class="btn-registrar"
-                id="btn-registrar-cliente-manual">
-                + Registrar
-              </button>
+              <input
+                type="text"
+                id="nombre"
+                name="nombre"
+                placeholder="Ingrese el nombre del cliente"
+                readonly />
             </div>
-            <input
-              type="text"
-              id="nombre"
-              name="nombre"
-              placeholder="Ingrese el nombre del cliente"
-              required />
+
+            <div class="form-group">
+              <label for="dni" id="label-dni">DNI:</label>
+              <input
+                type="text"
+                id="dni"
+                name="dni"
+                placeholder="Documento"
+                readonly />
+            </div>
           </div>
 
-          <!-- EMAIL -->
-          <div class="form-group">
-            <div class="formCORREO">
+          <div class="form-col" style="flex:1;">
+            <div class="form-group">
               <label for="email">CORREO ELECTRÓNICO:</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                placeholder="abejita@gmail.com"
+                readonly />
             </div>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              placeholder="abejita@gmail.com"
-              required />
+
+            <div class="form-group">
+              <label for="procedencia">LUGAR DE PROCEDENCIA:</label>
+              <input
+                type="text"
+                id="procedencia"
+                name="procedencia"
+                placeholder="Ciudad / Procedencia"
+                readonly />
+            </div>
           </div>
         </div>
 

@@ -45,14 +45,19 @@ class ClienteModel
     {
         $textoBusqueda = trim((string) $textoBusqueda);
 
-        $query = Cliente::query()
+        $query = DB::table('cliente as c')
+            ->leftJoin('tipo_documento as td', 'c.id_tipo_documento', '=', 'td.id')
             ->select([
-                'id',
-                'nombre_completo as nombre',
-                'correo_electronico as correo',
+                'c.id',
+                'c.nombre_completo as nombre',
+                'c.documento',
+                'c.procedencia',
+                'c.correo_electronico as correo',
+                'c.id_tipo_documento',
+                'td.nombre as tipo_documento_nombre',
             ])
-            ->where('activo', 1)
-            ->orderBy('nombre_completo', 'asc')
+            ->where('c.activo', 1)
+            ->orderBy('c.nombre_completo', 'asc')
             ->limit(50);
 
         if ($textoBusqueda !== '') {

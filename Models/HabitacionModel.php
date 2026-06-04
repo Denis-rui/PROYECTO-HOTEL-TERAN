@@ -432,6 +432,7 @@ class HabitacionModel extends Eloquent
     public function registrarHistorial($idHabitacion, $idReserva, $estadoAnterior, $estadoNuevo, $limpiezaAnterior = null, $limpiezaNueva = null, $accion = '', $comentario = '', $idUsuario = null)
     {
         try {
+            $idUsuarioActual = $idUsuario ?? ($_SESSION['id_usuario'] ?? null);
             return DB::table('historial_habitacion')->insert([
                 'id_habitacion' => (int) $idHabitacion,
                 'id_reserva' => $idReserva ? (int) $idReserva : null,
@@ -441,7 +442,7 @@ class HabitacionModel extends Eloquent
                 'estado_limpieza_nuevo' => $limpiezaNueva,
                 'accion' => $accion,
                 'comentario' => $comentario,
-                'id_usuario' => $idUsuario ? (int) $idUsuario : null,
+                'id_usuario' => $idUsuarioActual ? (int) $idUsuarioActual : null,
                 'fecha_registro' => DB::raw('NOW()')
             ]);
         } catch (\Throwable $e) {
@@ -450,9 +451,9 @@ class HabitacionModel extends Eloquent
         }
     }
 
-    public function disponiblesPorRango($checkIn, $checkOut, $tipo = null, $piso = null)
+    public function disponiblesPorRango($checkIn, $checkOut, $tipo = null, $piso = null, array $referencia = [])
     {
-        return (new ReporteOcupacionModel())->obtenerDisponiblesPorRango($checkIn, $checkOut, $tipo, $piso);
+        return (new ReporteOcupacionModel())->obtenerDisponiblesPorRango($checkIn, $checkOut, $tipo, $piso, $referencia);
     }
 
     public function validarDisp_habitacion($idHabitacion, $checkIn, $checkOut)

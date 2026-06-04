@@ -77,6 +77,7 @@ if (!function_exists('formatearEstadoReserva')) {
       'confirmada' => 'Confirmada',
       'en_estadia' => 'En estadía',
       'ausente' => 'Ausente',
+      'checkout_pendiente' => 'Checkout pendiente',
       'checkout_realizado' => 'Checkout realizado',
       'cancelada' => 'Cancelada',
     ];
@@ -93,6 +94,7 @@ if (!function_exists('claseEstadoReserva')) {
       'confirmada' => 'estado-confirmada',
       'en_estadia' => 'estado-en-estadia',
       'ausente' => 'estado-ausente',
+      'checkout_pendiente' => 'estado-checkout-pendiente',
       'checkout_realizado' => 'estado-checkout-realizado',
       'cancelada' => 'estado-cancelada',
     ];
@@ -167,6 +169,8 @@ if (!function_exists('claseEstadoReserva')) {
                 <?= htmlspecialchars(formatearFechaReserva($reserva["check_out"])) ?>
               <?php if ((int) ($reserva["minutos_checkout_vencido"] ?? 0) > 0): ?>
                 <span class="badge-vencido" data-checkout="<?= htmlspecialchars($reserva["check_out"]) ?>">Checkout vencido</span>
+              <?php elseif (!empty($reserva["checkout_hoy"])): ?>
+                <span class="badge-checkout-hoy" data-checkout="<?= htmlspecialchars($reserva["check_out"]) ?>">Checkout hoy</span>
               <?php endif; ?>
             </td>
             <td>
@@ -200,7 +204,7 @@ if (!function_exists('claseEstadoReserva')) {
 
                 <?php if ($reserva["estado"] === "confirmada"): ?>
                   <button class="boton-checkin-reserva" data-id="<?= (int) $reserva["id"] ?>" title="Confirmar check-in">Check-in</button>
-                <?php elseif ($reserva["estado"] === "en_estadia"): ?>
+                <?php elseif (in_array($reserva["estado"], ["en_estadia", "checkout_pendiente"], true)): ?>
                   <button class="boton-checkout-reserva" data-id="<?= (int) $reserva["id"] ?>" title="Confirmar checkout">Checkout</button>
                 <?php endif; ?>
 

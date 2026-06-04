@@ -8,105 +8,6 @@ const asegurarModalPago = async () => {
   return document.getElementById("modalPago");
 };
 
-const obtenerEsEdicionReserva = () => {
-  const formPago = document.getElementById("formPago");
-  return formPago?.dataset.guardarCambiosReserva === "true";
-};
-
-const obtenerDatosReservaDesdeFormularioPago = () => ({
-  id_reserva: document.getElementById("formPago")?.dataset.idReserva || "",
-  cliente:
-    document.getElementById("pagoIdCliente")?.value.trim() ||
-    document.getElementById("pagoCliente")?.value.trim() ||
-    "",
-  nombre: document.getElementById("pagoNombre")?.value.trim() || "",
-  email: document.getElementById("pagoEmail")?.value.trim() || "",
-  checkIn: document.getElementById("pagoCheckIn")?.value.trim() || "",
-  horaEntrada: document.getElementById("pagoHoraEntrada")?.value.trim() || "",
-  checkOut: document.getElementById("pagoCheckOut")?.value.trim() || "",
-  horaSalida: document.getElementById("pagoHoraSalida")?.value.trim() || "",
-  habitacion: document.getElementById("pagoHabitacion")?.value.trim() || "",
-  habitaciones: JSON.parse(
-    document.getElementById("pagoHabitaciones")?.value || "[]",
-  ),
-  totalReserva: document.getElementById("pagoTotalReserva")?.value.trim() || "",
-  observaciones:
-    document.getElementById("observacionesPago")?.value.trim() || "",
-});
-
-const sincronizarModalPagoConReserva = (reserva = {}) => {
-  if (!reserva) return;
-
-  poblarCamposOcultosReserva({
-    idReserva:
-      reserva.id ||
-      reserva.id_reserva ||
-      document.getElementById("formPago")?.dataset.idReserva,
-    guardarCambiosReserva:
-      document.getElementById("formPago")?.dataset.guardarCambiosReserva ===
-      "true",
-    cliente: reserva.cliente || "",
-    clienteTexto: reserva.cliente || "",
-    nombre: reserva.cliente || "",
-    email: reserva.correo_electronico || "",
-    checkIn: reserva.check_in || "",
-    horaEntrada: "",
-    checkOut: reserva.check_out || "",
-    horaSalida: "",
-    habitacion: reserva.habitacion || "",
-    habitaciones: reserva.habitaciones || [],
-    totalReserva: reserva.total || 0,
-    totalPagado: reserva.total_pagado || 0,
-    saldoPendiente: reserva.saldo_pendiente || 0,
-    pagos: reserva.pagos || [],
-  });
-};
-
-const guardarCambiosReserva = async () => {
-  const formPago = document.getElementById("formPago");
-  if (!formPago?.dataset.idReserva) {
-    return {
-      exito: false,
-      mensaje: "No hay una reserva activa para actualizar.",
-    };
-  }
-
-  const datosReserva = obtenerDatosReservaDesdeFormularioPago();
-
-  try {
-    const res = await fetch(BASE_URL + "Reserva/actualizar", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(datosReserva),
-    });
-    const resultado = await res.json();
-
-    if (!resultado.exito) {
-      return resultado;
-    }
-
-    if (resultado.reserva) {
-      sincronizarModalPagoConReserva(resultado.reserva);
-    }
-
-    // Indica que, tras guardar cambios de reserva, es necesario recargar la tabla
-    try {
-      const formPagoEl = document.getElementById("formPago");
-      if (formPagoEl) formPagoEl.dataset.needsReload = "true";
-    } catch (e) {
-      // ignore
-    }
-
-    return resultado;
-  } catch (error) {
-    console.error(error);
-    return {
-      exito: false,
-      mensaje: "Error al guardar los cambios de la reserva.",
-    };
-  }
-};
-
 const poblarCamposOcultosReserva = (datos = {}) => {
   const formPago = document.getElementById("formPago");
   if (formPago) {
@@ -118,10 +19,16 @@ const poblarCamposOcultosReserva = (datos = {}) => {
       formPago.dataset.modoNuevo = "true";
     }
 
-    if (datos.guardarCambiosReserva) {
-      formPago.dataset.guardarCambiosReserva = "true";
+    if (datos.recargarAlCerrar) {
+      formPago.dataset.needsReload = "true";
+    }
+
+    if (datos.confirmarCheckoutDespuesPago) {
+      formPago.dataset.confirmarCheckoutDespuesPago = "true";
+      formPago.dataset.saldoCheckout = Number(datos.saldoPendiente || 0).toFixed(2);
     } else {
-      delete formPago.dataset.guardarCambiosReserva;
+      delete formPago.dataset.confirmarCheckoutDespuesPago;
+      delete formPago.dataset.saldoCheckout;
     }
   }
 
@@ -176,11 +83,12 @@ const poblarCamposOcultosReserva = (datos = {}) => {
 
   const saldoDisponible = Math.max(
     0,
-    Number(datos.totalReserva || 0) - Number(datos.totalPagado || 0),
+    datos.saldoPendiente !== undefined && datos.saldoPendiente !== null
+      ? Number(datos.saldoPendiente || 0)
+      : Number(datos.totalReserva || 0) - Number(datos.totalPagado || 0),
   );
 
   const esReservaNueva = formPago?.dataset.modoNuevo === "true";
-  const esEdicionReserva = formPago?.dataset.guardarCambiosReserva === "true";
 
   // Cálculos de política
   const infoSugerido = document.getElementById("infoPagoSugerido");
@@ -190,10 +98,12 @@ const poblarCamposOcultosReserva = (datos = {}) => {
   if (infoSugerido && datos.totalReserva) {
     const total = parseFloat(datos.totalReserva);
     const pagado = parseFloat(datos.totalPagado || 0);
-    const saldo = total - pagado;
+    const saldo = datos.saldoPendiente !== undefined && datos.saldoPendiente !== null
+      ? Number(datos.saldoPendiente || 0)
+      : total - pagado;
 
     let sugerido = 0;
-    if (!esReservaNueva && !esEdicionReserva) {
+    if (!esReservaNueva) {
       sugerido = saldo;
       if (etiquetaPolitica) {
         etiquetaPolitica.textContent = "(Saldo pendiente)";
@@ -208,8 +118,13 @@ const poblarCamposOcultosReserva = (datos = {}) => {
     }
 
     infoSugerido.textContent = `S/ ${sugerido.toFixed(2)}`;
-    if (inputMonto && !inputMonto.value) {
-      inputMonto.value = sugerido > 0 ? sugerido.toFixed(2) : "";
+    if (inputMonto) {
+      const montoAutomatico = Number(datos.montoAutomatico || datos.montoSugerido || 0);
+      if (montoAutomatico > 0) {
+        inputMonto.value = montoAutomatico.toFixed(2);
+      } else if (!inputMonto.value) {
+        inputMonto.value = sugerido > 0 ? sugerido.toFixed(2) : "";
+      }
     }
   }
 
@@ -221,6 +136,11 @@ const poblarCamposOcultosReserva = (datos = {}) => {
           0.01,
           Number((Number(datos.totalReserva || 0) * 0.5).toFixed(2)),
         );
+  }
+
+  const descripcionPago = document.getElementById("descripcionPago");
+  if (descripcionPago && datos.descripcionPago) {
+    descripcionPago.value = datos.descripcionPago;
   }
 
   const historial = document.getElementById("contenidoHistorialPagos");
@@ -273,9 +193,7 @@ const poblarCamposOcultosReserva = (datos = {}) => {
 
   const botonCancelar = document.getElementById("btnCancelarPago");
   if (botonCancelar) {
-    botonCancelar.textContent = esEdicionReserva
-      ? "Salir guardando"
-      : "Cancelar";
+    botonCancelar.textContent = "Cancelar";
   }
 };
 
@@ -288,27 +206,13 @@ const configurarEventosPago = () => {
   const formPago = document.getElementById("formPago");
 
   if (cerrarBtn) {
-    cerrarBtn.addEventListener("click", async () => {
-      if (obtenerEsEdicionReserva()) {
-        const resultado = await guardarCambiosReserva();
-        if (!resultado.exito) {
-          alert(resultado.mensaje || "No se pudieron guardar los cambios.");
-          return;
-        }
-      }
+    cerrarBtn.addEventListener("click", () => {
       window.cerrarModalPago();
     });
   }
 
   if (cancelarBtn) {
-    cancelarBtn.addEventListener("click", async () => {
-      if (obtenerEsEdicionReserva()) {
-        const resultado = await guardarCambiosReserva();
-        if (!resultado.exito) {
-          alert(resultado.mensaje || "No se pudieron guardar los cambios.");
-          return;
-        }
-      }
+    cancelarBtn.addEventListener("click", () => {
       window.cerrarModalPago();
     });
   }
@@ -355,8 +259,6 @@ const configurarEventosPago = () => {
       const montoNumerico = parseFloat(montoPago);
 
       const esReservaNueva = formPago.dataset.modoNuevo === "true";
-      const esEdicionReserva =
-        formPago.dataset.guardarCambiosReserva === "true";
       if (esReservaNueva) {
         const cliente =
           document.getElementById("pagoIdCliente")?.value.trim() ||
@@ -395,7 +297,7 @@ const configurarEventosPago = () => {
         }
       }
 
-      if (!esReservaNueva && !esEdicionReserva) {
+      if (!esReservaNueva) {
         const saldoDisponible = parseFloat(
           (document.getElementById("montoPago")?.max || "0").toString(),
         );
@@ -411,22 +313,23 @@ const configurarEventosPago = () => {
         document.getElementById("descripcionPago")?.value.trim() || "";
 
       try {
-        if (esEdicionReserva && formPago.dataset.idReserva) {
-          const guardado = await guardarCambiosReserva();
-          if (!guardado.exito) {
-            alert(guardado.mensaje || "No se pudieron guardar los cambios.");
-            return;
-          }
+        const confirmarCheckoutDespuesPago =
+          formPago.dataset.confirmarCheckoutDespuesPago === "true";
+        const saldoCheckout = parseFloat(
+          formPago.dataset.saldoCheckout ||
+            document.getElementById("montoPago")?.max ||
+            "0",
+        );
 
-          const saldoActualizado = parseFloat(
-            (document.getElementById("montoPago")?.max || "0").toString(),
+        if (
+          confirmarCheckoutDespuesPago &&
+          saldoCheckout > 0 &&
+          Math.abs(montoNumerico - saldoCheckout) > 0.01
+        ) {
+          alert(
+            `Para realizar el checkout debe pagar todo el saldo pendiente: S/ ${saldoCheckout.toFixed(2)}`,
           );
-          if (saldoActualizado > 0 && montoNumerico > saldoActualizado) {
-            alert(
-              `El monto no puede ser mayor al saldo pendiente actualizado. Saldo disponible: S/ ${saldoActualizado.toFixed(2)}`,
-            );
-            return;
-          }
+          return;
         }
 
         const url =
@@ -481,15 +384,47 @@ const configurarEventosPago = () => {
           return;
         }
 
+        let checkoutConfirmadoDespuesPago = false;
+        if (confirmarCheckoutDespuesPago && formPago.dataset.idReserva) {
+          const checkoutRes = await fetch(BASE_URL + "Reserva/checkout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id_reserva: formPago.dataset.idReserva,
+            }),
+          });
+          const resultadoCheckout = await checkoutRes.json();
+
+          if (!resultadoCheckout.exito) {
+            alert(
+              resultadoCheckout.mensaje ||
+                "El pago se registró, pero no se pudo confirmar el checkout.",
+            );
+            window.location.reload();
+            return;
+          }
+
+          checkoutConfirmadoDespuesPago = true;
+        }
+
         if (typeof Notificar === "function") {
           Notificar(
-            resultado.mensaje || "Operación registrada correctamente",
+            checkoutConfirmadoDespuesPago
+              ? "Pago registrado y checkout realizado correctamente"
+              : resultado.mensaje || "Operación registrada correctamente",
             "exito",
           );
         } else {
-          alert(resultado.mensaje || "Operación registrada correctamente");
+          alert(
+            checkoutConfirmadoDespuesPago
+              ? "Pago registrado y checkout realizado correctamente"
+              : resultado.mensaje || "Operación registrada correctamente",
+          );
         }
 
+        if (checkoutConfirmadoDespuesPago) {
+          delete formPago.dataset.needsReload;
+        }
         window.cerrarModalPago();
 
         if (
@@ -497,6 +432,9 @@ const configurarEventosPago = () => {
           typeof window.abrirModalComprobante === "function"
         ) {
           window.abrirModalComprobante(resultado.comprobante);
+          if (checkoutConfirmadoDespuesPago) {
+            window.__comprobantePendienteReload = true;
+          }
           return;
         }
 
@@ -512,6 +450,9 @@ const configurarEventosPago = () => {
             const comprobante = await comprobanteRes.json();
             if (comprobante) {
               window.abrirModalComprobante(comprobante);
+              if (checkoutConfirmadoDespuesPago) {
+                window.__comprobantePendienteReload = true;
+              }
               return;
             }
           } catch (error) {
@@ -603,9 +544,16 @@ window.cerrarModalPago = () => {
   }
 
   if (formPago) {
+    const debeRecargar = formPago.dataset.needsReload === "true";
     formPago.reset();
-    // Si se guardaron cambios a la reserva, recargar para actualizar la tabla
-    if (formPago.dataset.needsReload === "true") {
+    delete formPago.dataset.needsReload;
+    delete formPago.dataset.confirmarCheckoutDespuesPago;
+    delete formPago.dataset.saldoCheckout;
+    delete formPago.dataset.idReserva;
+    delete formPago.dataset.modoNuevo;
+
+    // Si se guardaron cambios a la reserva o checkout, recargar para actualizar la tabla
+    if (debeRecargar) {
       window.location.reload();
     }
   }

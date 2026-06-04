@@ -41,13 +41,30 @@
                 </div>
 
                 <div class="info-reserva-grid">
-                    <article class="info-reserva-card">
+                    <article class="info-reserva-card cliente-detalle-card">
                         <span class="info-reserva-label">Cliente</span>
                         <strong id="detalleReservaClienteNombre">---</strong>
-                        <small id="detalleReservaClienteEmail">---</small>
+                        <div class="cliente-detalle-grid">
+                            <div>
+                                <small>Documento</small>
+                                <strong id="detalleReservaClienteDocumento">---</strong>
+                            </div>
+                            <div>
+                                <small>Teléfono</small>
+                                <strong id="detalleReservaClienteTelefono">---</strong>
+                            </div>
+                            <div>
+                                <small>Correo</small>
+                                <strong id="detalleReservaClienteEmail">---</strong>
+                            </div>
+                            <div>
+                                <small>Procedencia</small>
+                                <strong id="detalleReservaClienteProcedencia">---</strong>
+                            </div>
+                        </div>
                     </article>
 
-                    <article class="info-reserva-card">
+                    <article class="info-reserva-card habitaciones-detalle-card">
                         <span class="info-reserva-label">Habitación / habitaciones</span>
                         <ul id="detalleReservaHabitacionesLista" class="habitaciones-lista-detalle">
                             <li>---</li>
