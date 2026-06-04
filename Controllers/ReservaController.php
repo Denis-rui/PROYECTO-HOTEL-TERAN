@@ -187,7 +187,8 @@ class ReservaController extends Controller
     {
         header('Content-Type: application/json');
         $datos     = json_decode(file_get_contents('php://input'), true);
-        $resultado = $this->model->extenderEstadia(
+        $modeloActualizarReserva = new ActualizarReservaModel();
+        $resultado = $modeloActualizarReserva->extenderEstadia(
             (int) ($datos['id_reserva']    ?? 0),
             $datos['nuevo_check_out'] ?? '',
             $_SESSION['id_usuario'] ?? null
@@ -224,9 +225,12 @@ class ReservaController extends Controller
     {
         header('Content-Type: application/json');
         $datos     = json_decode(file_get_contents('php://input'), true);
-        $resultado = $this->model->cambiarHabitacion(
+        $modeloActualizarReserva = new ActualizarReservaModel();
+        $resultado = $modeloActualizarReserva->cambiarHabitacion(
             (int) ($datos['id_reserva']        ?? 0),
+            (int) ($datos['id_habitacion_actual'] ?? 0),
             (int) ($datos['id_habitacion_nueva'] ?? 0),
+            $datos['tipo_motivo'] ?? '',
             $datos['motivo'] ?? '',
             $_SESSION['id_usuario'] ?? null
         );

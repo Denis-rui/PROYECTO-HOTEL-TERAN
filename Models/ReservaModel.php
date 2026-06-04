@@ -55,7 +55,11 @@ class ReservaModel
             $query->select('reserva.*')
                 ->selectSub(
                     ReservaHabitacion::selectRaw('MIN(reserva_habitacion.check_in)')
-                        ->whereColumn('reserva_habitacion.id_reserva', 'reserva.id'),
+                        ->whereColumn('reserva_habitacion.id_reserva', 'reserva.id')
+                        ->where(function ($q) {
+                            $q->whereNull('reserva_habitacion.estado')
+                              ->orWhere('reserva_habitacion.estado', 'activa');
+                        }),
                     'primer_check_in'
                 );
 
@@ -123,17 +127,29 @@ class ReservaModel
                 continue;
             }
 
+            if (($itemHabitacion->estado ?? 'activa') !== 'activa') {
+                continue;
+            }
+
             $habitacion = $itemHabitacion->habitacion ?? null;
             if ($habitacion) {
                 $habitacionModel = new HabitacionModel();
                 $info = $habitacionModel->obtenerPorId($habitacion->id) ?? [];
                 $precioHabit = (float) ($info['precio'] ?? 0);
                 $habitaciones[] = [
+                    'reserva_habitacion_id' => $itemHabitacion->id ?? null,
                     'id' => $habitacion->id,
                     'numero_habitacion' => $habitacion->numero_habitacion,
                     'piso' => $habitacion->piso,
                     'tipo_nombre' => $habitacion->tipo_nombre ?? '',
                     'precio' => $precioHabit,
+                    'precio_aplicado' => (float) ($itemHabitacion->precio_aplicado ?? $precioHabit),
+                    'subtotal' => (float) ($itemHabitacion->subtotal ?? 0),
+                    'tipo_asignacion' => $itemHabitacion->tipo_asignacion ?? 'original',
+                    'estado_asignacion' => $itemHabitacion->estado ?? 'activa',
+                    'motivo_cambio' => $itemHabitacion->motivo_cambio ?? null,
+                    'check_in' => $itemHabitacion->check_in ?? null,
+                    'check_out' => $itemHabitacion->check_out ?? null,
                 ];
             }
         }
@@ -149,10 +165,18 @@ class ReservaModel
             ];
         }
 
+        $relacionPrincipal = null;
+        foreach ($habitacionesRelacionadas as $itemHabitacion) {
+            if ($itemHabitacion && (($itemHabitacion->estado ?? 'activa') === 'activa')) {
+                $relacionPrincipal = $itemHabitacion;
+                break;
+            }
+        }
+
         $habitacionPrincipal = $habitaciones[0] ?? null;
         $totalPagado = (float) ($reserva->pagos->sum('monto') ?? 0);
-        $checkInProgramado = $reserva->check_in ?? ($habitacionesRelacionadas[0]->check_in ?? null);
-        $checkOutProgramado = $reserva->check_out ?? ($habitacionesRelacionadas[0]->check_out ?? null);
+        $checkInProgramado = $reserva->check_in ?? ($relacionPrincipal->check_in ?? null);
+        $checkOutProgramado = $reserva->check_out ?? ($relacionPrincipal->check_out ?? null);
         $checkIn = $reserva->checkin_real ?? $checkInProgramado;
         $checkOut = $reserva->checkout_real ?? $checkOutProgramado;
         $estado = $reserva->estado ?? '';
@@ -271,6 +295,9 @@ class ReservaModel
                     if (!$itemHabitacion || empty($itemHabitacion->id_habitacion)) {
                         continue;
                     }
+                    if ((int) ($itemHabitacion->activo ?? 1) !== 1 || (($itemHabitacion->estado ?? 'activa') !== 'activa')) {
+                        continue;
+                    }
 
                     Habitacion::where('id', (int) $itemHabitacion->id_habitacion)->update([
                         'estado' => 'Mantenimiento',
@@ -336,6 +363,9 @@ class ReservaModel
 
             foreach ($reservaActual->reservaHabitacion as $reservaHabitacion) {
                 if (!$reservaHabitacion || empty($reservaHabitacion->id_habitacion)) {
+                    continue;
+                }
+                if ((int) ($reservaHabitacion->activo ?? 1) !== 1 || (($reservaHabitacion->estado ?? 'activa') !== 'activa')) {
                     continue;
                 }
 
@@ -439,13 +469,18 @@ class ReservaModel
             $reservaActual->checkin_real = $fechaCheckin;
             $reservaActual->save();
 
-            if ($idHabitacionPrincipal > 0) {
-                Habitacion::where('id', $idHabitacionPrincipal)->update([
+            foreach ($reservaActual->reservaHabitacion as $reservaHabitacion) {
+                if (!$reservaHabitacion || empty($reservaHabitacion->id_habitacion)) {
+                    continue;
+                }
+
+                $idHabitacion = (int) $reservaHabitacion->id_habitacion;
+                Habitacion::where('id', $idHabitacion)->update([
                     'estado' => 'Ocupada',
                 ]);
 
                 $habitacionModel->registrarHistorial(
-                    $idHabitacionPrincipal,
+                    $idHabitacion,
                     (int) $idReserva,
                     'confirmada',
                     'Ocupada',
@@ -507,6 +542,9 @@ class ReservaModel
             $habitacionModel = new HabitacionModel();
             foreach ($reservaActual->reservaHabitacion as $reservaHabitacion) {
                 if (!$reservaHabitacion || empty($reservaHabitacion->id_habitacion)) {
+                    continue;
+                }
+                if ((int) ($reservaHabitacion->activo ?? 1) !== 1 || (($reservaHabitacion->estado ?? 'activa') !== 'activa')) {
                     continue;
                 }
 
@@ -604,110 +642,4 @@ class ReservaModel
         }
     }
 
-    public function extenderEstadia($idReserva, $nuevoCheckOut, $idUsuario = null)
-    {
-        try {
-            $reservaActual = Reserva::with(['reservaHabitacion.habitacion'])->find((int) $idReserva);
-            if (!$reservaActual) {
-                return ['exito' => false, 'mensaje' => 'Reserva no encontrada.'];
-            }
-
-            if (!in_array($reservaActual->estado, ['en_estadia', 'checkout_pendiente'], true)) {
-                return ['exito' => false, 'mensaje' => 'Solo se puede extender una estadía activa.'];
-            }
-
-            $idHabitacionPrincipal = (int) ($reservaActual->reservaHabitacion->first()->id_habitacion ?? 0);
-            $checkIn = $reservaActual->reservaHabitacion->first()->check_in ?? null;
-
-            $reporteOcupacionModel = new ReporteOcupacionModel();
-            $disponibilidad = $reporteOcupacionModel->validarDisponibilidadHabitacion(
-                $idHabitacionPrincipal,
-                $checkIn,
-                $nuevoCheckOut,
-                (int) $idReserva
-            );
-
-            if (!$disponibilidad['disponible']) {
-                return ['exito' => false, 'mensaje' => 'No se puede extender porque existe una reserva futura cruzada.'];
-            }
-
-            $habitacionModel = new HabitacionModel();
-            $nuevoTotal = $reporteOcupacionModel->calcularTotalReserva($idHabitacionPrincipal, $checkIn, $nuevoCheckOut);
-
-            $reservaHabitacion = $reservaActual->reservaHabitacion->first();
-            if (!$reservaHabitacion) {
-                return ['exito' => false, 'mensaje' => 'No se encontró la habitación asociada a la reserva.'];
-            }
-
-            $reservaHabitacion->check_out = $nuevoCheckOut;
-            $reservaHabitacion->save();
-
-            $reservaActual->total = $nuevoTotal;
-            $reservaActual->estado = 'en_estadia';
-            $ok = $reservaActual->save();
-
-            if ($ok) {
-                $estadoOperativo = $reservaActual->reservaHabitacion->first()->habitacion->estado_operativo ?? 'ocupada';
-                $estadoLimpieza = $reservaActual->reservaHabitacion->first()->habitacion->estado_limpieza ?? 'limpia';
-                $habitacionModel->registrarHistorial($idHabitacionPrincipal, (int) $idReserva, $estadoOperativo, $estadoOperativo, $estadoLimpieza, $estadoLimpieza, 'extension_estadia', 'Checkout extendido hasta ' . $nuevoCheckOut, $idUsuario);
-            }
-
-            return ['exito' => $ok, 'mensaje' => $ok ? 'Estadía extendida correctamente.' : 'No se pudo extender la estadía.', 'total' => $nuevoTotal];
-        } catch (\Exception $e) {
-            return ['exito' => false, 'mensaje' => 'Error al extender estadía: ' . $e->getMessage()];
-        }
-    }
-
-    // se v a a modificar tambien
-    public function cambiarHabitacion($idReserva, $idHabitacionNueva, $motivo, $idUsuario = null)
-    {
-        try {
-            $reservaActual = Reserva::with(['reservaHabitacion.habitacion'])->find((int) $idReserva);
-            if (!$reservaActual || !in_array($reservaActual->estado, ['en_estadia', 'checkout_pendiente'], true)) {
-                return ['exito' => false, 'mensaje' => 'Solo se puede cambiar habitación de una estadía activa.'];
-            }
-
-            if (trim((string) $motivo) === '') {
-                return ['exito' => false, 'mensaje' => 'Debe indicar motivo del cambio de habitación.'];
-            }
-
-            $habitacionModel = new HabitacionModel();
-            $reporteOcupacionModel = new ReporteOcupacionModel();
-            $checkOut = $reservaActual->reservaHabitacion->first()->check_out ?? null;
-            $disponibilidad = $reporteOcupacionModel->validarDisponibilidadHabitacion($idHabitacionNueva, date('Y-m-d H:i:s'), $checkOut);
-            if (!$disponibilidad['disponible']) {
-                return ['exito' => false, 'mensaje' => $disponibilidad['mensaje']];
-            }
-
-            $idHabitacionAnterior = (int) ($reservaActual->reservaHabitacion->first()->id_habitacion ?? 0);
-            $habitacionAnterior = $habitacionModel->obtenerPorId($idHabitacionAnterior);
-            $habitacionNueva = $habitacionModel->obtenerPorId((int) $idHabitacionNueva);
-
-            DB::connection()->beginTransaction();
-
-            $reservaActual->id_habitacion = $idHabitacionNueva;
-            $reservaActual->save();
-            Habitacion::where('id', $idHabitacionAnterior)->update([
-                'estado_operativo' => 'bloqueada',
-                'estado' => 'Bloqueada',
-                'estado_limpieza' => 'sucia',
-            ]);
-            Habitacion::where('id', $idHabitacionNueva)->update([
-                'estado_operativo' => 'ocupada',
-                'estado' => 'Ocupada',
-            ]);
-
-            $habitacionModel->registrarHistorial($idHabitacionAnterior, (int) $idReserva, $habitacionAnterior['estado_operativo'], 'bloqueada', $habitacionAnterior['estado_limpieza'], 'sucia', 'cambio_habitacion_salida', $motivo, $idUsuario);
-            $habitacionModel->registrarHistorial((int) $idHabitacionNueva, (int) $idReserva, $habitacionNueva['estado_operativo'], 'ocupada', $habitacionNueva['estado_limpieza'], $habitacionNueva['estado_limpieza'], 'cambio_habitacion_entrada', $motivo, $idUsuario);
-
-            DB::connection()->commit();
-            return ['exito' => true, 'mensaje' => 'Cambio de habitación registrado correctamente.'];
-        } catch (\Exception $e) {
-            $con = DB::connection();
-            if ($con->getPdo()->inTransaction()) {
-                $con->rollBack();
-            }
-            return ['exito' => false, 'mensaje' => 'Error al cambiar habitación: ' . $e->getMessage()];
-        }
-    }
 }

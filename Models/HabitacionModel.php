@@ -450,9 +450,9 @@ class HabitacionModel extends Eloquent
         }
     }
 
-    public function disponiblesPorRango($checkIn, $checkOut, $tipo = null, $piso = null)
+    public function disponiblesPorRango($checkIn, $checkOut, $tipo = null, $piso = null, array $referencia = [])
     {
-        return (new ReporteOcupacionModel())->obtenerDisponiblesPorRango($checkIn, $checkOut, $tipo, $piso);
+        return (new ReporteOcupacionModel())->obtenerDisponiblesPorRango($checkIn, $checkOut, $tipo, $piso, $referencia);
     }
 
     public function validarDisp_habitacion($idHabitacion, $checkIn, $checkOut)

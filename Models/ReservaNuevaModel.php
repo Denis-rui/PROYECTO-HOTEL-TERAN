@@ -149,6 +149,12 @@ class ReservaNuevaModel
                     'check_in' => $checkIn,
                     'check_out' => $checkOut,
                     'activo' => 1,
+                    'tipo_asignacion' => 'original',
+                    'estado' => 'activa',
+                    'precio_aplicado' => $habitacionNormalizada['precio'],
+                    'subtotal' => $habitacionNormalizada['precio'] * $dias,
+                    'id_usuario_movimiento' => $idUsuario ?? ($reserva['usuario'] ?? ($_SESSION['id_usuario'] ?? null)),
+                    'fecha_movimiento' => date('Y-m-d H:i:s'),
                 ]);
 
                 $habitacionActual = $habitacionNormalizada['habitacion'];

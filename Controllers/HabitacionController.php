@@ -101,7 +101,12 @@ class HabitacionController extends Controller
         $checkOut = $_GET['check_out'] ?? '';
         $tipo = $_GET['tipo'] ?? null;
         $piso = $_GET['piso'] ?? null;
-        $habitaciones = $this->model->disponiblesPorRango($checkIn, $checkOut, $tipo, $piso);
+        $referencia = [
+            'precio' => $_GET['precio_referencia'] ?? null,
+            'tipo' => $_GET['tipo_referencia'] ?? null,
+            'piso' => $_GET['piso_referencia'] ?? null,
+        ];
+        $habitaciones = $this->model->disponiblesPorRango($checkIn, $checkOut, $tipo, $piso, $referencia);
         echo json_encode(['habitaciones' => $habitaciones]);
     }
 

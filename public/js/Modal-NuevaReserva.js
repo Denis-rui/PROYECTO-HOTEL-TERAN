@@ -203,16 +203,26 @@ const aplicarReservaEdicion = (reserva) => {
   estado.habitacionesSeleccionadas = Array.isArray(reserva.habitaciones)
     ? reserva.habitaciones.map(normalizarHabitacion)
     : [];
+  estado.reservaEstado = String(reserva.estado || "").toLowerCase();
 
+  bloquearCamposPorEstadoReserva();
   renderizarHabitacionesSeleccionadas();
 };
 
 const normalizarHabitacion = (habitacion) => ({
   id: String(habitacion.id),
+  reserva_habitacion_id: habitacion.reserva_habitacion_id || null,
   numero_habitacion: habitacion.numero_habitacion,
   piso: habitacion.piso,
   tipo_nombre: habitacion.tipo_nombre,
   precio: Number(habitacion.precio || 0),
+  precio_aplicado: Number(habitacion.precio_aplicado || habitacion.precio || 0),
+  subtotal: Number(habitacion.subtotal || 0),
+  id_tipo_habitacion: habitacion.id_tipo_habitacion || habitacion.tipo_id || null,
+  tipo_asignacion: habitacion.tipo_asignacion || "original",
+  estado_asignacion: habitacion.estado_asignacion || "activa",
+  check_in: habitacion.check_in || "",
+  check_out: habitacion.check_out || "",
 });
 
 const formatearHabitacionTexto = (habitacion) =>
@@ -243,6 +253,32 @@ const obtenerHabitacionSeleccionadaPorId = (id) => {
   return (estado.habitacionesSeleccionadas || []).find(
     (habitacion) => String(habitacion.id) === String(id),
   );
+};
+
+const esEdicionEnEstadia = () => {
+  const estado = obtenerEstadoModalReserva();
+  return (
+    estado.modo === "editar" &&
+    ["en_estadia", "checkout_pendiente"].includes(String(estado.reservaEstado || ""))
+  );
+};
+
+const bloquearCamposPorEstadoReserva = () => {
+  const estado = obtenerEstadoModalReserva();
+  const bloquearEstadia = esEdicionEnEstadia();
+
+  [
+    estado.elementos?.inputBuscarCliente,
+    estado.elementos?.selectorCliente,
+    estado.elementos?.campoNombre,
+    estado.elementos?.campoDni,
+    estado.elementos?.campoEmail,
+    estado.elementos?.procedencia,
+    estado.elementos?.fechaEntrada,
+    estado.elementos?.horaEntrada,
+  ].forEach((elemento) => {
+    if (elemento) elemento.disabled = bloquearEstadia;
+  });
 };
 
 const calcularTotalReserva = () => {
@@ -319,6 +355,8 @@ const renderizarHabitacionesDisponibles = () => {
 
   habitaciones.forEach((habitacion) => {
     const seleccionada = obtenerHabitacionSeleccionadaPorId(habitacion.id);
+    const cambiando = Boolean(estado.habitacionCambioActual);
+    const textoBoton = cambiando ? "Cambiar por esta" : "Agregar";
     const card = document.createElement("article");
     card.className = `habitacion-card${seleccionada ? " seleccionada" : ""}`;
     card.innerHTML = `
@@ -327,7 +365,7 @@ const renderizarHabitacionesDisponibles = () => {
       </div>
       <div class="habitacion-card-acciones">
         <button type="button" class="boton-habitacion agregar" ${seleccionada ? "disabled" : ""} data-id="${habitacion.id}">
-          ${seleccionada ? "Seleccionada" : "Agregar"}
+          ${seleccionada ? "Seleccionada" : textoBoton}
         </button>
       </div>
     `;
@@ -351,14 +389,41 @@ const renderizarHabitacionesSeleccionadas = () => {
   }
 
   habitaciones.forEach((habitacion) => {
+    const botonAccion = esEdicionEnEstadia()
+      ? `<button type="button" class="boton-habitacion cambiar" data-id="${habitacion.id}">Cambiar habitación</button>`
+      : `<button type="button" class="boton-habitacion quitar" data-id="${habitacion.id}">Quitar</button>`;
+    const cambioActual =
+      estado.habitacionCambioActual &&
+      String(estado.habitacionCambioActual.id) === String(habitacion.id)
+        ? `<div class="habitacion-cambio-panel">
+            <label>Motivo del cambio</label>
+            <select id="motivoTipoCambioHabitacion" class="input-modal">
+              <option value="solicitud_cliente">Solicitud del cliente</option>
+              <option value="falla_hotel">Falla de habitación</option>
+            </select>
+            <input id="motivoCambioHabitacion" class="input-modal" type="text" placeholder="Detalle del motivo" />
+            <div class="habitacion-cambio-acciones">
+              <button type="button" class="boton-habitacion confirmar-cambio" ${estado.habitacionCambioNueva ? "" : "disabled"}>Confirmar cambio</button>
+              <button type="button" class="boton-habitacion cancelar-cambio">Cancelar cambio</button>
+            </div>
+          </div>`
+        : "";
+    const reemplazo =
+      estado.habitacionCambioActual &&
+      String(estado.habitacionCambioActual.id) === String(habitacion.id) &&
+      estado.habitacionCambioNueva
+        ? `<div class="habitacion-reemplazo">Cambiada por: <strong>${formatearHabitacionTexto(estado.habitacionCambioNueva)}</strong></div>`
+        : "";
     const card = document.createElement("article");
     card.className = "habitacion-card seleccionada";
     card.innerHTML = `
       <div class="habitacion-card-info">
         <strong>${formatearHabitacionTexto(habitacion)}</strong>
+        ${reemplazo}
+        ${cambioActual}
       </div>
       <div class="habitacion-card-acciones">
-        <button type="button" class="boton-habitacion quitar" data-id="${habitacion.id}">Quitar</button>
+        ${botonAccion}
       </div>
     `;
     lista.appendChild(card);
@@ -408,6 +473,13 @@ const agregarHabitacionSeleccionada = (idHabitacion) => {
 
   if (!habitacion) return;
 
+  if (estado.habitacionCambioActual) {
+    estado.habitacionCambioNueva = normalizarHabitacion(habitacion);
+    renderizarHabitacionesDisponibles();
+    renderizarHabitacionesSeleccionadas();
+    return;
+  }
+
   const yaExiste = (estado.habitacionesSeleccionadas || []).some(
     (item) => String(item.id) === String(habitacion.id),
   );
@@ -417,6 +489,97 @@ const agregarHabitacionSeleccionada = (idHabitacion) => {
   estado.habitacionesSeleccionadas.push(normalizarHabitacion(habitacion));
   renderizarHabitacionesDisponibles();
   renderizarHabitacionesSeleccionadas();
+};
+
+const iniciarCambioHabitacion = (idHabitacion) => {
+  const estado = obtenerEstadoModalReserva();
+  const habitacion = obtenerHabitacionSeleccionadaPorId(idHabitacion);
+  if (!habitacion) return;
+
+  estado.habitacionCambioActual = habitacion;
+  estado.habitacionCambioNueva = null;
+  cargarHabitacionesDisponibles();
+  renderizarHabitacionesSeleccionadas();
+};
+
+const cancelarCambioHabitacion = () => {
+  const estado = obtenerEstadoModalReserva();
+  estado.habitacionCambioActual = null;
+  estado.habitacionCambioNueva = null;
+  cargarHabitacionesDisponibles();
+  renderizarHabitacionesSeleccionadas();
+};
+
+const confirmarCambioHabitacion = async () => {
+  const estado = obtenerEstadoModalReserva();
+  const actual = estado.habitacionCambioActual;
+  const nueva = estado.habitacionCambioNueva;
+  if (!actual || !nueva) return;
+
+  const tipoMotivo = document.getElementById("motivoTipoCambioHabitacion")?.value || "";
+  const motivo = document.getElementById("motivoCambioHabitacion")?.value?.trim() || "";
+  if (!motivo) {
+    Swal.fire("Motivo requerido", "Indica el detalle del cambio de habitación.", "warning");
+    return;
+  }
+
+  const totalActual = Number(estado.reservaTotalOriginal || 0);
+  const diasRestantes = obtenerDiasEstadia(
+    new Date().toISOString().slice(0, 10),
+    estado.elementos?.fechaSalida?.value || "",
+  );
+  const diferencia = tipoMotivo === "falla_hotel"
+    ? 0
+    : Math.max(0, (Number(nueva.precio || 0) - Number(actual.precio_aplicado || actual.precio || 0)) * diasRestantes);
+  const nuevoTotal = totalActual + diferencia;
+
+  const nota = tipoMotivo === "falla_hotel"
+    ? "<p>No se cobrará diferencia porque el cambio es responsabilidad del hotel.</p>"
+    : `<p>El cliente debe pagar S/ ${diferencia.toFixed(2)} adicionales.</p>`;
+
+  const resultado = await Swal.fire({
+    title: "Cambio de habitación",
+    html: `
+      <div style="text-align:left; display:grid; gap:8px;">
+        <p><strong>Habitación actual:</strong><br>${formatearHabitacionTexto(actual)}</p>
+        <p><strong>Nueva habitación:</strong><br>${formatearHabitacionTexto(nueva)}</p>
+        <p><strong>Motivo:</strong><br>${tipoMotivo === "falla_hotel" ? "Falla de habitación" : "Solicitud del cliente"} - ${motivo}</p>
+        <p><strong>Resumen económico:</strong><br>Total actual: S/ ${totalActual.toFixed(2)}<br>Nuevo total estimado: S/ ${nuevoTotal.toFixed(2)}<br>Diferencia: S/ ${diferencia.toFixed(2)}</p>
+        ${nota}
+      </div>
+    `,
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonText: "Confirmar cambio",
+    cancelButtonText: "Cancelar",
+  });
+
+  if (!resultado.isConfirmed) return;
+
+  const respuesta = await fetch(BASE_URL + "Reserva/cambiarHabitacion", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      id_reserva: estado.reservaEditandoId,
+      id_habitacion_actual: actual.id,
+      id_habitacion_nueva: nueva.id,
+      tipo_motivo: tipoMotivo,
+      motivo,
+    }),
+  }).then((res) => res.json());
+
+  if (!respuesta.exito) {
+    Swal.fire("No se pudo cambiar", respuesta.mensaje || "Intenta nuevamente.", "error");
+    return;
+  }
+
+  estado.habitacionCambioActual = null;
+  estado.habitacionCambioNueva = null;
+  if (respuesta.reserva) {
+    aplicarReservaEdicion(respuesta.reserva);
+    estado.reservaTotalOriginal = Number(respuesta.reserva.total || 0);
+  }
+  Swal.fire("Cambio registrado", respuesta.mensaje || "Habitación cambiada correctamente.", "success");
 };
 
 const quitarHabitacionSeleccionada = (idHabitacion) => {
@@ -575,7 +738,12 @@ const cargarHabitacionesDisponibles = () => {
   const mensajeHabitaciones = estado.elementos?.mensajeHabitaciones;
   const listaDisponibles = estado.elementos?.listaHabitacionesDisponibles;
 
-  const checkIn = fechaEntrada && horaEntrada ? `${fechaEntrada} 12:00:00` : "";
+  const fechaCambio = new Date();
+  const fechaCambioISO = `${fechaCambio.getFullYear()}-${String(fechaCambio.getMonth() + 1).padStart(2, "0")}-${String(fechaCambio.getDate()).padStart(2, "0")}`;
+  const horaCambioISO = `${String(fechaCambio.getHours()).padStart(2, "0")}:${String(fechaCambio.getMinutes()).padStart(2, "0")}:00`;
+  const checkIn = estado.habitacionCambioActual
+    ? `${fechaCambioISO} ${horaCambioISO}`
+    : fechaEntrada && horaEntrada ? `${fechaEntrada} 12:00:00` : "";
   const checkOut = fechaSalida && horaSalida ? `${fechaSalida} 12:00:00` : "";
 
   estado.habitacionesDisponibles = [];
@@ -615,6 +783,15 @@ const cargarHabitacionesDisponibles = () => {
     params.append("tipo", filtroTipoReserva.value);
   if (filtroPisoReserva && filtroPisoReserva.value)
     params.append("piso", filtroPisoReserva.value);
+  if (estado.habitacionCambioActual) {
+    params.append("precio_referencia", estado.habitacionCambioActual.precio_aplicado || estado.habitacionCambioActual.precio || 0);
+    if (estado.habitacionCambioActual.id_tipo_habitacion) {
+      params.append("tipo_referencia", estado.habitacionCambioActual.id_tipo_habitacion);
+    }
+    if (estado.habitacionCambioActual.piso) {
+      params.append("piso_referencia", estado.habitacionCambioActual.piso);
+    }
+  }
 
   return fetch(BASE_URL + `Habitacion/disponiblesPorRango&${params.toString()}`)
     .then((res) => res.json())
@@ -821,6 +998,10 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
   estado.clientes = [];
   estado.habitacionesDisponibles = [];
   estado.habitacionesSeleccionadas = [];
+  estado.habitacionCambioActual = null;
+  estado.habitacionCambioNueva = null;
+  estado.reservaEstado = "";
+  estado.reservaTotalOriginal = Number(datos?.total || 0);
   estado.modo = modo;
   estado.reservaEditandoId = datos?.id || null;
 
@@ -856,6 +1037,7 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
       );
       const reserva = await respuesta.json();
       const datosReserva = reserva?.id ? reserva : datos;
+      estado.reservaTotalOriginal = Number(datosReserva.total || 0);
 
       await cargarClientes(datosReserva.cliente || "");
       aplicarReservaEdicion(datosReserva);
@@ -931,9 +1113,26 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
     estado.elementos.listaHabitacionesSeleccionadas?.addEventListener(
       "click",
       (evento) => {
+        const botonCambiar = evento.target.closest(".boton-habitacion.cambiar");
+        if (botonCambiar) {
+          iniciarCambioHabitacion(botonCambiar.dataset.id);
+          return;
+        }
+
+        const botonConfirmarCambio = evento.target.closest(".boton-habitacion.confirmar-cambio");
+        if (botonConfirmarCambio) {
+          confirmarCambioHabitacion();
+          return;
+        }
+
+        const botonCancelarCambio = evento.target.closest(".boton-habitacion.cancelar-cambio");
+        if (botonCancelarCambio) {
+          cancelarCambioHabitacion();
+          return;
+        }
+
         const boton = evento.target.closest(".boton-habitacion.quitar");
-        if (!boton) return;
-        quitarHabitacionSeleccionada(boton.dataset.id);
+        if (boton) quitarHabitacionSeleccionada(boton.dataset.id);
       },
     );
 

@@ -260,6 +260,17 @@
   color: #fff;
 }
 
+.boton-habitacion.cambiar,
+.boton-habitacion.confirmar-cambio {
+  background: var(--info);
+  color: #fff;
+}
+
+.boton-habitacion.cancelar-cambio {
+  background: var(--border);
+  color: var(--text-primary);
+}
+
 .boton-habitacion:disabled {
   opacity: 0.55;
   cursor: not-allowed;
@@ -282,6 +293,28 @@
   color: var(--text-muted);
   font-size: 13px;
   padding: 8px;
+}
+
+.habitacion-cambio-panel {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-white);
+  border-radius: 6px;
+}
+
+.habitacion-cambio-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.habitacion-reemplazo {
+  margin-top: 6px;
+  color: var(--primary-dark);
+  font-size: 0.9rem;
 }
 
 @media (max-width: 900px) {
