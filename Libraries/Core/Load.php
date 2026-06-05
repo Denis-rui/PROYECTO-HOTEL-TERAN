@@ -7,6 +7,7 @@ $controllerClass = "Controllers\\{$controller}Controller";
 if (class_exists($controllerClass)) {
     $controllerObject = new $controllerClass();
     if (method_exists($controllerObject, $method)) {
+        \Libraries\Core\Auth::autorizarRuta($controller, $method);
         $controllerObject->$method($params);
     } else {
         $errorClass = 'Controllers\\ErrorController';

@@ -8,7 +8,22 @@ class NotificacionModel
 {
     public function crear($tipo, $titulo, $mensaje, $idReserva = null, $idHabitacion = null, $idCliente = null, $prioridad = 'media')
     {
-        return Notificacion::create([
+        $datosIdentificadores = [
+            'tipo' => $tipo,
+            'id_reserva' => $idReserva ? (int) $idReserva : null,
+            'id_habitacion' => $idHabitacion ? (int) $idHabitacion : null,
+            'leida' => 0,
+        ];
+
+        $notificacion = Notificacion::query()
+            ->where($datosIdentificadores)
+            ->first();
+
+        if (!$notificacion) {
+            $notificacion = new Notificacion();
+        }
+
+        $notificacion->fill([
             'tipo' => $tipo,
             'titulo' => $titulo,
             'mensaje' => $mensaje,
@@ -16,22 +31,67 @@ class NotificacionModel
             'id_habitacion' => $idHabitacion ? (int) $idHabitacion : null,
             'id_cliente' => $idCliente ? (int) $idCliente : null,
             'leida' => 0,
-            'fecha_creacion' => date('Y-m-d H:i:s'),
             'prioridad' => $prioridad,
-        ]) !== null;
+        ]);
+
+        if (!$notificacion->exists) {
+            $notificacion->fecha_creacion = date('Y-m-d H:i:s');
+        }
+
+        return $notificacion->save();
     }
 
     public function obtenerPendientes($limite = 30)
     {
-        return Notificacion::query()
+        $limite = max(1, (int) $limite);
+        $clavesActivasCheckout = DB::table('reserva_habitacion as rh')
+            ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
+            ->whereIn('r.estado', ['en_estadia', 'checkout_pendiente'])
+            ->where('rh.activo', 1)
+            ->select(['r.id as id_reserva', 'rh.id_habitacion'])
+            ->get()
+            ->mapWithKeys(function ($item) {
+                return [$item->id_reserva . '|' . $item->id_habitacion => true];
+            })
+            ->all();
+
+        $notificaciones = Notificacion::query()
             ->where('leida', 0)
             ->orderByDesc('fecha_creacion')
-            ->limit((int) $limite)
+            ->limit(max(200, $limite * 10))
             ->get()
-            ->map(function ($item) {
-                return $item->toArray();
-            })
-            ->toArray();
+            ->all();
+
+        $resultado = [];
+        $clavesAgregadas = [];
+
+        foreach ($notificaciones as $item) {
+            $tipo = (string) $item->tipo;
+
+            if (strpos($tipo, 'checkout_') === 0) {
+                $claveCheckout = (int) $item->id_reserva . '|' . (int) $item->id_habitacion;
+                if (!isset($clavesActivasCheckout[$claveCheckout])) {
+                    continue;
+                }
+            }
+
+            $claveNotificacion = $tipo
+                . '|' . (int) $item->id_reserva
+                . '|' . (int) $item->id_habitacion;
+
+            if (isset($clavesAgregadas[$claveNotificacion])) {
+                continue;
+            }
+
+            $clavesAgregadas[$claveNotificacion] = true;
+            $resultado[] = $item->toArray();
+
+            if (count($resultado) >= $limite) {
+                break;
+            }
+        }
+
+        return $resultado;
     }
 
     public function obtenerCheckoutCheckout()
@@ -55,21 +115,6 @@ class NotificacionModel
                 return (array) $item;
             })
             ->toArray();
-
-        foreach ($reservas as $reserva) {
-            $faltan = (int) $reserva['minutos_faltantes'];
-            $excede = (int) $reserva['minutos_excedidos'];
-
-            if ($excede > 0) {
-                $this->crear('checkout_vencido', 'Checkout vencido', 'La reserva de ' . $reserva['cliente'] . ' excedió el checkout programado.', (int) $reserva['id_reserva'], (int) $reserva['id_habitacion'], (int) $reserva['id_cliente'], 'critica');
-            } elseif ($faltan <= 15 && $faltan >= 0) {
-                $this->crear('checkout_proximo_15m', 'Checkout en 15 minutos', 'La habitación ' . $reserva['habitacion'] . ' tiene checkout próximo.', (int) $reserva['id_reserva'], (int) $reserva['id_habitacion'], (int) $reserva['id_cliente'], 'alta');
-            } elseif ($faltan <= 60 && $faltan > 15) {
-                $this->crear('checkout_proximo_1h', 'Checkout en 1 hora', 'La habitación ' . $reserva['habitacion'] . ' tiene checkout en menos de 1 hora.', (int) $reserva['id_reserva'], (int) $reserva['id_habitacion'], (int) $reserva['id_cliente'], 'media');
-            } elseif ($faltan <= 120 && $faltan > 60) {
-                $this->crear('checkout_proximo_2h', 'Checkout en 2 horas', 'La habitación ' . $reserva['habitacion'] . ' tiene checkout en menos de 2 horas.', (int) $reserva['id_reserva'], (int) $reserva['id_habitacion'], (int) $reserva['id_cliente'], 'media');
-            }
-        }
 
         $notificaciones = $this->obtenerPendientes(30);
 

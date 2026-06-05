@@ -6,7 +6,7 @@ const obtenerDatosUsuarioDesdeBoton = (boton) => ({
   telefono: boton.dataset.telefono || "",
   dni: boton.dataset.dni || "",
   fecha_nacimiento: boton.dataset.fechaNacimiento || "",
-  rol: boton.dataset.rol || "",
+  rol: boton.dataset.usuarioRol || "",
   password: "",
 });
 
