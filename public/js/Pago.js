@@ -237,22 +237,25 @@ const configurarEventosPago = () => {
         document.getElementById("fechaPago")?.value.trim() || "";
 
       if (!montoPago) {
-        alert("El monto es requerido");
+        window.Alerta("El monto es requerido", "advertencia");
         return;
       }
 
       if (!metodoPago) {
-        alert("Debe seleccionar un metodo de pago");
+        window.Alerta(
+          "Debe seleccionar un método de pago",
+          "advertencia",
+        );
         return;
       }
 
       if (!fechaPago) {
-        alert("Debe ingresar la fecha del pago");
+        window.Alerta("Debe ingresar la fecha del pago", "advertencia");
         return;
       }
 
       if (parseFloat(montoPago) <= 0) {
-        alert("El monto debe ser mayor a 0");
+        window.Alerta("El monto debe ser mayor a 0", "advertencia");
         return;
       }
 
@@ -272,8 +275,9 @@ const configurarEventosPago = () => {
           document.getElementById("pagoCheckOut")?.value.trim() || "";
 
         if (!cliente || !habitacion || !checkIn || !checkOut) {
-          alert(
+          window.Alerta(
             "Faltan datos de la reserva. Vuelve a abrir la reserva y selecciona un cliente valido.",
+            "advertencia",
           );
           return;
         }
@@ -283,15 +287,17 @@ const configurarEventosPago = () => {
         );
         const minimoInicial = totalReserva * 0.5;
         if (montoNumerico < minimoInicial) {
-          alert(
+          window.Alerta(
             `El pago inicial debe ser al menos el 50% del total. Monto mínimo: S/ ${minimoInicial.toFixed(2)}`,
+            "advertencia",
           );
           return;
         }
 
         if (montoNumerico > totalReserva) {
-          alert(
+          window.Alerta(
             `El pago inicial no puede ser mayor al total de la reserva. Total permitido: S/ ${totalReserva.toFixed(2)}`,
+            "advertencia",
           );
           return;
         }
@@ -302,8 +308,9 @@ const configurarEventosPago = () => {
           (document.getElementById("montoPago")?.max || "0").toString(),
         );
         if (saldoDisponible > 0 && montoNumerico > saldoDisponible) {
-          alert(
+          window.Alerta(
             `El monto no puede ser mayor al saldo pendiente. Saldo disponible: S/ ${saldoDisponible.toFixed(2)}`,
+            "advertencia",
           );
           return;
         }
@@ -326,8 +333,9 @@ const configurarEventosPago = () => {
           saldoCheckout > 0 &&
           Math.abs(montoNumerico - saldoCheckout) > 0.01
         ) {
-          alert(
+          window.Alerta(
             `Para realizar el checkout debe pagar todo el saldo pendiente: S/ ${saldoCheckout.toFixed(2)}`,
+            "advertencia",
           );
           return;
         }
@@ -380,7 +388,10 @@ const configurarEventosPago = () => {
         const resultado = await res.json();
 
         if (!resultado.exito) {
-          alert(resultado.mensaje || "No se pudo registrar.");
+          window.Alerta(
+            resultado.mensaje || "No se pudo registrar.",
+            "error",
+          );
           return;
         }
 
@@ -396,9 +407,10 @@ const configurarEventosPago = () => {
           const resultadoCheckout = await checkoutRes.json();
 
           if (!resultadoCheckout.exito) {
-            alert(
+            window.Alerta(
               resultadoCheckout.mensaje ||
                 "El pago se registró, pero no se pudo confirmar el checkout.",
+              "error",
             );
             window.location.reload();
             return;
@@ -407,20 +419,12 @@ const configurarEventosPago = () => {
           checkoutConfirmadoDespuesPago = true;
         }
 
-        if (typeof Notificar === "function") {
-          Notificar(
-            checkoutConfirmadoDespuesPago
-              ? "Pago registrado y checkout realizado correctamente"
-              : resultado.mensaje || "Operación registrada correctamente",
-            "exito",
-          );
-        } else {
-          alert(
-            checkoutConfirmadoDespuesPago
-              ? "Pago registrado y checkout realizado correctamente"
-              : resultado.mensaje || "Operación registrada correctamente",
-          );
-        }
+        Notificar(
+          checkoutConfirmadoDespuesPago
+            ? "Pago registrado y checkout realizado correctamente"
+            : resultado.mensaje || "Operación registrada correctamente",
+          "exito",
+        );
 
         if (checkoutConfirmadoDespuesPago) {
           delete formPago.dataset.needsReload;
@@ -463,7 +467,7 @@ const configurarEventosPago = () => {
         window.location.reload(); // Recargar si no se pudo mostrar el comprobante
       } catch (error) {
         console.error(error);
-        alert("Error de conexión con el servidor.");
+        window.Alerta("Error de conexión con el servidor.", "error");
       }
     });
   }

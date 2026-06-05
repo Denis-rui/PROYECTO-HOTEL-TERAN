@@ -161,7 +161,7 @@ if (!function_exists('claseEstadoReserva')) {
       </thead>
       <tbody id="contenido-reservas">
         <?php foreach ($reservas as $reserva) : ?>
-          <tr data-id="<?= (int) $reserva["id"] ?>" data-estado="<?= htmlspecialchars($reserva["estado"]) ?>" data-porcentajepago="<?= htmlspecialchars($reserva["porcentaje_pago"]) ?>" data-total="<?= htmlspecialchars($reserva["total"]) ?>" data-saldo-pendiente="<?= htmlspecialchars($reserva["saldo_pendiente"] ?? 0) ?>" data-cliente="<?= htmlspecialchars($reserva["cliente"]) ?>" data-habitacion="<?= htmlspecialchars($reserva["habitacion"]) ?>" data-habitaciones='<?= htmlspecialchars(json_encode($reserva["habitaciones"] ?? [], JSON_UNESCAPED_UNICODE), ENT_QUOTES, "UTF-8") ?>' data-checkin="<?= htmlspecialchars($reserva["check_in"]) ?>" data-checkout="<?= htmlspecialchars($reserva["check_out"]) ?>" data-email="<?= htmlspecialchars($reserva["correo_electronico"] ?? '') ?>">
+          <tr data-id="<?= (int) $reserva["id"] ?>" data-estado="<?= htmlspecialchars($reserva["estado"]) ?>" data-porcentajepago="<?= htmlspecialchars($reserva["porcentaje_pago"]) ?>" data-total="<?= htmlspecialchars($reserva["total"]) ?>" data-saldo-pendiente="<?= htmlspecialchars($reserva["saldo_pendiente"] ?? 0) ?>" data-cliente="<?= htmlspecialchars($reserva["cliente"]) ?>" data-cliente-documento="<?= htmlspecialchars($reserva["documento"] ?? '') ?>" data-cliente-tipo-documento="<?= htmlspecialchars((string) ($reserva["id_tipo_documento"] ?? '')) ?>" data-cliente-direccion="<?= htmlspecialchars($reserva["cliente_direccion"] ?? $reserva["procedencia"] ?? '') ?>" data-habitacion="<?= htmlspecialchars($reserva["habitacion"]) ?>" data-habitaciones='<?= htmlspecialchars(json_encode($reserva["habitaciones"] ?? [], JSON_UNESCAPED_UNICODE), ENT_QUOTES, "UTF-8") ?>' data-checkin="<?= htmlspecialchars($reserva["check_in"]) ?>" data-checkout="<?= htmlspecialchars($reserva["check_out"]) ?>" data-email="<?= htmlspecialchars($reserva["correo_electronico"] ?? '') ?>" data-total-pagado="<?= htmlspecialchars($reserva["total_pagado"] ?? 0) ?>" data-dias-estadia="<?= htmlspecialchars($reserva["dias_estadia"] ?? 0) ?>">
             <td><?= htmlspecialchars($reserva["cliente"]) ?></td>
             <td><?= formatearListaHabitacionesReserva($reserva) ?></td>
             <td><?= htmlspecialchars(formatearFechaReserva($reserva["check_in"])) ?></td>
@@ -222,16 +222,19 @@ if (!function_exists('claseEstadoReserva')) {
                       <button type="button" class="item-menu-opcion accion-marcar-regreso" data-id="<?= (int) $reserva["id"] ?>">Marcar regreso</button>
                     <?php endif; ?>
 
+                    <button type="button" class="item-menu-opcion accion-emitir-documento" data-id="<?= (int) $reserva["id"] ?>">Emitir boleta / factura</button>
                     <button type="button" class="item-menu-opcion accion-ver-detalles" data-id="<?= (int) $reserva["id"] ?>">Ver detalles</button>
-                    <button
-                      type="button"
-                      class="item-menu-opcion accion-cancelar-reserva"
-                      data-id="<?= (int) $reserva["id"] ?>"
-                      data-codigo="R-<?= (int) $reserva["id"] ?>"
-                      data-cliente="<?= htmlspecialchars($reserva["cliente"], ENT_QUOTES, 'UTF-8') ?>"
-                      data-checkin="<?= htmlspecialchars($reserva["check_in"], ENT_QUOTES, 'UTF-8') ?>">
-                      Cancelar reserva
-                    </button>
+                    <?php if (!in_array($reserva["estado"], ["cancelada", "checkout_realizado"], true)): ?>
+                      <button
+                        type="button"
+                        class="item-menu-opcion accion-cancelar-reserva"
+                        data-id="<?= (int) $reserva["id"] ?>"
+                        data-codigo="R-<?= (int) $reserva["id"] ?>"
+                        data-cliente="<?= htmlspecialchars($reserva["cliente"], ENT_QUOTES, 'UTF-8') ?>"
+                        data-checkin="<?= htmlspecialchars($reserva["check_in"], ENT_QUOTES, 'UTF-8') ?>">
+                        Cancelar reserva
+                      </button>
+                    <?php endif; ?>
                   </div>
                 </div>
               </div>
@@ -268,6 +271,7 @@ if (!function_exists('claseEstadoReserva')) {
   <?php require_once("Views/Template/Modals/Modal-NuevaReserva.php"); ?>
   <?php require_once("Views/Template/Modals/Modal-Pago.php"); ?>
   <?php require_once("Views/Template/Modals/Modal-Comprobante.php"); ?>
+  <?php require_once("Views/Template/Modals/Modal-DocumentoElectronico.php"); ?>
   <?php require_once("Views/Template/Modals/Modal-VerDetalles.php"); ?>
   <?php require_once("Views/Template/Modals/Modal-Clientes.php"); ?>
 </section>

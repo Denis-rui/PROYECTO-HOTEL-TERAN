@@ -6,6 +6,7 @@ use Models\HabitacionModel;
 use Models\Entities\Comprobante;
 use Models\Entities\Pago;
 use Models\Entities\Reserva;
+use Models\DocumentoElectronicoModel;
 
 class ComprobanteModel
 {
@@ -124,7 +125,7 @@ class ComprobanteModel
     public function obtenerEmitidosPorReserva($idReserva): array
     {
         try {
-            return DB::table('comprobante as c')
+            $tickets = DB::table('comprobante as c')
                 ->join('pago as p', 'p.id', '=', 'c.id_pago')
                 ->where('p.id_reserva', (int) $idReserva)
                 ->orderBy('p.fecha_pago', 'asc')
@@ -145,6 +146,7 @@ class ComprobanteModel
                     return [
                         'id' => (int) $comprobante->id,
                         'id_pago' => (int) $comprobante->id_pago,
+                        'es_documento_electronico' => false,
                         'tipo' => 'Ticket',
                         'numero' => $comprobante->numero_ticket,
                         'fecha' => $comprobante->fecha_pago ?: $comprobante->fecha_emision,
@@ -153,9 +155,23 @@ class ComprobanteModel
                         'descripcion' => $comprobante->descripcion ?? '',
                         'id_forma_pago' => $comprobante->id_forma_pago ?? null,
                         'id_usuario' => $comprobante->id_usuario ?? null,
+                        'enlace' => '',
+                        'enlace_del_pdf' => '',
+                        'enlace_del_xml' => '',
+                        'enlace_del_cdr' => '',
                     ];
                 })
                 ->toArray();
+
+            $documentoElectronicoModel = new DocumentoElectronicoModel();
+            $documentosElectronicos = $documentoElectronicoModel->obtenerEmitidosPorReserva($idReserva);
+
+            $unificados = array_merge($tickets, $documentosElectronicos);
+            usort($unificados, static function (array $a, array $b): int {
+                return strcmp((string) ($a['fecha'] ?? ''), (string) ($b['fecha'] ?? ''));
+            });
+
+            return $unificados;
         } catch (\Throwable $e) {
             return [];
         }

@@ -73,9 +73,7 @@ document.addEventListener("click", (e) => {
   })
     .then((res) => res.json())
     .then((resultado) => {
-      if (typeof Notificar === "function") {
-        Notificar(resultado.mensaje || "Checkout procesado", resultado.exito ? "exito" : "error");
-      }
+      Notificar(resultado.mensaje || "Checkout procesado", resultado.exito ? "exito" : "error");
       if (resultado.exito) window.inicializarDashboard?.();
     });
 });

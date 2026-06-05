@@ -9,6 +9,7 @@ use Models\ClienteModel;
 use Models\PagoModel;
 use Models\NotificacionModel;
 use Models\ReservaNuevaModel;
+use Models\DocumentoElectronicoModel;
 use Models\ReporteOcupacionModel;
 use Models\ActualizarReservaModel;
 
@@ -53,8 +54,16 @@ class ReservaController extends Controller
             $data['error_reservas'] = 'Error al cargar las reservas. Intenta nuevamente en unos minutos.';
         }
 
-        $data['page_js'] = ['Clientes.js', 'Modal-Clientes.js', 'Modal-NuevaReserva.js', 'Pago.js', 'Comprobante.js', 'Modal-VerDetalles.js', 'Reservas.js'];
+        $data['page_js'] = ['Clientes.js', 'Modal-Clientes.js', 'Modal-NuevaReserva.js', 'Pago.js', 'Comprobante.js', 'Modal-VerDetalles.js', 'DocumentoElectronico.js', 'Reservas.js'];
         $this->views->render($this, 'index', $data);
+    }
+
+    public function emitirDocumentoElectronico($params = '')
+    {
+        header('Content-Type: application/json');
+        $datos = json_decode(file_get_contents('php://input'), true) ?: [];
+        $modelo = new DocumentoElectronicoModel();
+        echo json_encode($modelo->emitir($datos, $_SESSION['id_usuario'] ?? null));
     }
 
 
@@ -219,6 +228,14 @@ class ReservaController extends Controller
         $idUsuario = $_SESSION['id_usuario'] ?? null;
         $resultado = $this->model->cancelarReserva($idReserva, $motivo, $idUsuario);
         echo json_encode($resultado);
+    }
+
+    public function calcularCancelacion($params = '')
+    {
+        header('Content-Type: application/json');
+        $datos = json_decode(file_get_contents('php://input'), true) ?: [];
+        $modelo = new \Models\CalculoDevolucionModel();
+        echo json_encode($modelo->calcular((int) ($datos['id_reserva'] ?? 0)));
     }
 
     public function cambiarHabitacion($params = '')
