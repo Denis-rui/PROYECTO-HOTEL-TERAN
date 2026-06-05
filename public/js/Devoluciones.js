@@ -30,7 +30,15 @@ const configurarEventosDevoluciones = () => {
 
       const btnEliminar = e.target.closest(".btnEliminarDevolucion");
       if (btnEliminar) {
-        if (confirm("¿Está seguro de eliminar esta devolución?")) {
+        const confirmado = await window.Confirmar(
+          "¿Está seguro de eliminar esta devolución?",
+          {
+            titulo: "Eliminar devolución",
+            icono: "warning",
+            confirmar: "Eliminar",
+          },
+        );
+        if (confirmado) {
           try {
             const res = await fetch(BASE_URL + "Devolucion/eliminar", {
               method: "POST",
@@ -41,10 +49,17 @@ const configurarEventosDevoluciones = () => {
             if (resultado.exito) {
               window.location.reload();
             } else {
-              alert(resultado.mensaje || "Error al eliminar");
+              await window.Alerta(
+                resultado.mensaje || "Error al eliminar",
+                "error",
+              );
             }
           } catch (err) {
             console.error(err);
+            await window.Alerta(
+              "No se pudo conectar con el servidor.",
+              "error",
+            );
           }
         }
       }

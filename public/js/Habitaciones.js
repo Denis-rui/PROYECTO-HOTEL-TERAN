@@ -69,8 +69,6 @@ async function _terminarLimpiezaAuto(id) {
  * Termina la limpieza manualmente (botón "Terminé antes").
  */
 window.terminarLimpieza = async (id, numero) => {
-  if (typeof Confirmar !== "function") return;
-
   const ok = await Confirmar(`¿Confirmas que la limpieza de la habitación ${numero} ha terminado?`);
   if (!ok) return;
 
@@ -119,11 +117,6 @@ document.addEventListener("input", window.actualizarHabitaciones);
 document.addEventListener("change", window.actualizarHabitaciones);
 
 window.cambiarEstado = async (id, nuevoEstado) => {
-  if (typeof Confirmar !== "function") {
-    console.error("La función Confirmar no está cargada.");
-    return;
-  }
-
   const confirmacion = await Confirmar(
     `¿Desea cambiar el estado de la habitación a "${nuevoEstado}"?`
   );

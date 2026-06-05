@@ -1,0 +1,407 @@
+@media screen {
+  .modal-documento-electronico-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 10020;
+    background: rgba(18, 24, 16, 0.6);
+    padding: 14px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .modal-documento-electronico {
+    width: min(1240px, 100%);
+    max-height: calc(100vh - 36px);
+    margin: 18px auto;
+    background: var(--bg-light);
+    border: 1px solid var(--border-gold);
+    border-radius: 18px;
+    box-shadow: 0 18px 40px rgba(20, 31, 17, 0.25);
+    padding: 20px;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .modal-documento-electronico-cabecera {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+
+  .modal-documento-electronico-cabecera h2 {
+    margin: 6px 0 4px;
+    font-size: clamp(24px, 2.5vw, 32px);
+    color: var(--text-dark);
+  }
+
+  .modal-documento-electronico-cabecera p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+
+  .modal-documento-electronico-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: rgba(45, 74, 30, 0.12);
+    color: var(--primary-dark);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .cerrar-modal-documento-electronico {
+    width: 42px;
+    height: 42px;
+    border: none;
+    border-radius: 50%;
+    background: var(--bg-light);
+    color: var(--primary-dark);
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(45, 74, 30, 0.1);
+  }
+
+  .modal-documento-electronico-resumen {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .resumen-documento-chip,
+  .panel-documento,
+  .resumen-documento-grid article {
+    background: var(--bg-light);
+    border: 1px solid var(--border-gold);
+    border-radius: 14px;
+  }
+
+  .resumen-documento-chip {
+    padding: 14px 16px;
+  }
+
+  .resumen-documento-label {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .resumen-documento-chip strong {
+    color: var(--text-dark);
+    font-size: 15px;
+  }
+
+  .formulario-documento-electronico {
+    display: grid;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .panel-documento {
+    padding: 16px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .panel-documento-cabecera {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .panel-documento-cabecera h3 {
+    margin: 0;
+    color: var(--primary-dark);
+    font-size: 18px;
+  }
+
+  .panel-documento-cabecera p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+
+  .grid-documento-2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .campo-documento {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .campo-documento span {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .campo-ancho-completo {
+    grid-column: 1 / -1;
+  }
+
+  .input-documento {
+    width: 100%;
+    padding: 11px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border-light);
+    background: var(--bg-white);
+    color: var(--text-dark);
+    font-size: 14px;
+  }
+
+  .input-documento:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(45, 74, 30, 0.1);
+  }
+
+  .buscador-cliente-documento {
+    position: relative;
+  }
+
+  .buscador-cliente-documento-control {
+    position: relative;
+  }
+
+  .buscador-cliente-documento-control .input-documento {
+    padding-right: 42px;
+  }
+
+  .boton-limpiar-busqueda-cliente {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    width: 30px;
+    height: 30px;
+    transform: translateY(-50%);
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .resultados-cliente-documento {
+    display: none;
+    position: absolute;
+    z-index: 8;
+    top: calc(100% - 20px);
+    left: 0;
+    right: 0;
+    max-height: 240px;
+    overflow-y: auto;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: var(--bg-white);
+    box-shadow: 0 12px 24px rgba(20, 31, 17, 0.16);
+  }
+
+  .resultados-cliente-documento.visible {
+    display: block;
+  }
+
+  .resultado-cliente-documento {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 16px;
+    width: 100%;
+    padding: 11px 12px;
+    border: 0;
+    border-bottom: 1px solid var(--border-light);
+    background: var(--bg-white);
+    color: var(--text-dark);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .resultado-cliente-documento:last-child {
+    border-bottom: 0;
+  }
+
+  .resultado-cliente-documento:hover,
+  .resultado-cliente-documento:focus {
+    outline: none;
+    background: rgba(45, 74, 30, 0.08);
+  }
+
+  .resultado-cliente-documento strong {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .resultado-cliente-documento span,
+  .resultado-cliente-documento small {
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  .resultado-cliente-documento small {
+    grid-column: 1 / -1;
+  }
+
+  .resultado-cliente-vacio {
+    padding: 12px;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+
+  .mensaje-busqueda-cliente {
+    min-height: 17px;
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  .lista-habitaciones-documento {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    max-height: 280px;
+    overflow: auto;
+    padding-right: 4px;
+    min-width: 0;
+  }
+
+  .habitacion-documento-item {
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    background: var(--bg-white);
+    padding: 12px 14px;
+    display: grid;
+    gap: 8px;
+  }
+
+  .habitacion-documento-item input {
+    margin-right: 8px;
+  }
+
+  .habitacion-documento-item strong {
+    color: var(--text-dark);
+    font-size: 14px;
+  }
+
+  .habitacion-documento-item small {
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  .resumen-documento-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .resumen-documento-grid article {
+    padding: 12px 14px;
+  }
+
+  .resumen-documento-grid strong {
+    display: block;
+    color: var(--text-dark);
+    font-size: 15px;
+  }
+
+  .resumen-documento-grid .resumen-documento-destacado {
+    background: rgba(45, 74, 30, 0.08);
+    border-color: var(--primary);
+  }
+
+  .resumen-documento-grid .resumen-documento-destacado strong {
+    color: var(--primary-dark);
+    font-size: 17px;
+  }
+
+  .mensaje-documento-electronico {
+    margin-top: 12px;
+    min-height: 24px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .mensaje-documento-electronico.error {
+    color: #b42318;
+    font-weight: 600;
+  }
+
+  .mensaje-documento-electronico.exito {
+    color: #185025;
+    font-weight: 600;
+  }
+
+  .acciones-documento-electronico {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--bg-light);
+    border: 1px solid var(--border-gold);
+    border-radius: 14px;
+  }
+
+  .btn-documento {
+    border: none;
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  .btn-documento.principal {
+    background: var(--primary-dark);
+    color: var(--text-white);
+  }
+
+  .btn-documento.principal:hover {
+    background: var(--primary);
+  }
+
+  .btn-documento.secundario {
+    background: var(--border-light);
+    color: var(--primary-dark);
+  }
+
+  .btn-documento.secundario:hover {
+    background: #d5d0c5;
+  }
+}
+
+@media (max-width: 960px) {
+  .modal-documento-electronico-resumen,
+  .resumen-documento-grid,
+  .grid-documento-2,
+  .lista-habitaciones-documento {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-documento-electronico-cabecera,
+  .panel-documento-cabecera,
+  .acciones-documento-electronico {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

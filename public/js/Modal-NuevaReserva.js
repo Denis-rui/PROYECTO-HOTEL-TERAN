@@ -651,7 +651,7 @@ const cargarClientes = (texto = "") => {
     .then((res) => res.json())
     .then((respuesta) => {
       if (respuesta.error) {
-        alert("No se pudo cargar clientes");
+        window.Alerta("No se pudo cargar clientes", "error");
         return;
       }
 
@@ -741,7 +741,7 @@ const validarFechasReserva = () => {
   const horaSalida = estado.elementos?.horaSalida?.value || "";
 
   if (!fechaEntrada || !horaEntrada || !fechaSalida || !horaSalida) {
-    alert("Completa check-in y check-out");
+    window.Alerta("Completa check-in y check-out", "advertencia");
     return false;
   }
 
@@ -749,12 +749,15 @@ const validarFechasReserva = () => {
   const checkOut = new Date(`${fechaSalida}T00:00:00`);
 
   if (Number.isNaN(checkIn.getTime()) || Number.isNaN(checkOut.getTime())) {
-    alert("Fecha/hora inválida");
+    window.Alerta("Fecha u hora inválida", "advertencia");
     return false;
   }
 
   if (checkOut <= checkIn) {
-    alert("La fecha de check-out debe ser posterior a la fecha de check-in");
+    window.Alerta(
+      "La fecha de check-out debe ser posterior a la fecha de check-in",
+      "advertencia",
+    );
     return false;
   }
 
@@ -914,12 +917,18 @@ const validarYContinuarPago = async () => {
   const procedencia = procedenciaCampo?.value.trim() || "";
   const habitaciones = estado.habitacionesSeleccionadas || [];
 
-  if (!cliente) return alert("Selecciona un cliente");
-  if (!nombre) return alert("Nombre y apellido obligatorio");
-  if (!dni) return alert("DNI obligatorio");
-  if (!email) return alert("Correo electronico obligatorio");
+  if (!cliente)
+    return window.Alerta("Selecciona un cliente", "advertencia");
+  if (!nombre)
+    return window.Alerta("Nombre y apellido obligatorio", "advertencia");
+  if (!dni) return window.Alerta("DNI obligatorio", "advertencia");
+  if (!email)
+    return window.Alerta("Correo electrónico obligatorio", "advertencia");
   if (habitaciones.length === 0)
-    return alert("Selecciona al menos una habitacion");
+    return window.Alerta(
+      "Selecciona al menos una habitación",
+      "advertencia",
+    );
 
   if (!validarFechasReserva()) return;
   if (
@@ -958,7 +967,8 @@ const validarYContinuarPago = async () => {
     return;
   }
 
-  abrirModalPagoConDatos(datosReserva);
+  const pagoAbierto = await abrirModalPagoConDatos(datosReserva);
+  if (!pagoAbierto) return;
 
   if (modal) modal.style.display = "none";
   if (contenedor) contenedor.style.display = "none";
@@ -1060,27 +1070,18 @@ const confirmarGuardarEdicionReserva = async (datosReserva) => {
   }
 };
 
-const abrirModalPagoConDatos = (datosReserva) => {
+const abrirModalPagoConDatos = async (datosReserva) => {
   if (typeof window.abrirModalPago !== "function") {
-    Swal.fire({
+    await Swal.fire({
       icon: "error",
       title: "Error",
       text: "No se pudo abrir el módulo de pago",
     });
-    return;
+    return false;
   }
-  Swal.fire({
-    title: "Confirmar pago",
-    text: "¿Desea continuar con el proceso de pago de la reserva?",
-    icon: "question",
-    showCancelButton: true,
-    confirmButtonText: "Sí, continuar",
-    cancelButtonText: "Cancelar",
-  }).then((resultado) => {
-    if (resultado.isConfirmed) {
-      window.abrirModalPago(datosReserva);
-    }
-  });
+
+  await window.abrirModalPago(datosReserva);
+  return true;
 };
 
 window.abrirModalReserva = async (modo = "nuevo", datos = null) => {

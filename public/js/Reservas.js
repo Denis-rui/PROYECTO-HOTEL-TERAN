@@ -62,14 +62,9 @@ const configurarEventosReservas = () => {
       const accionMarcarAusente = e.target.closest(".accion-marcar-ausente");
       if (accionMarcarAusente) {
         cerrarMenusOpciones();
-        let confirmado = true;
-        if (typeof window.Confirmar === "function") {
-          confirmado = await window.Confirmar(
-            "¿Marcar esta reserva como ausente?",
-          );
-        } else {
-          confirmado = confirm("¿Marcar esta reserva como ausente?");
-        }
+        const confirmado = await window.Confirmar(
+          "¿Marcar esta reserva como ausente?",
+        );
         if (!confirmado) return;
 
         ejecutarAccionReserva("marcarAusente", {
@@ -81,16 +76,9 @@ const configurarEventosReservas = () => {
       const accionMarcarRegreso = e.target.closest(".accion-marcar-regreso");
       if (accionMarcarRegreso) {
         cerrarMenusOpciones();
-        let confirmado = true;
-        if (typeof window.Confirmar === "function") {
-          confirmado = await window.Confirmar(
-            "¿Marcar regreso y volver la reserva a en estadía?",
-          );
-        } else {
-          confirmado = confirm(
-            "¿Marcar regreso y volver la reserva a en estadía?",
-          );
-        }
+        const confirmado = await window.Confirmar(
+          "¿Marcar regreso y volver la reserva a en estadía?",
+        );
         if (!confirmado) return;
 
         ejecutarAccionReserva("marcarRegreso", {
@@ -131,7 +119,55 @@ const configurarEventosReservas = () => {
         if (typeof window.abrirModalVerDetalles === "function") {
           window.abrirModalVerDetalles(datosReserva);
         } else {
-          alert("No se pudo abrir el módulo de detalles");
+          window.Alerta("No se pudo abrir el módulo de detalles", "error");
+        }
+
+        return;
+      }
+
+      const accionEmitirDocumento = e.target.closest(
+        ".accion-emitir-documento",
+      );
+      if (accionEmitirDocumento) {
+        const fila = accionEmitirDocumento.closest("tr");
+        if (!fila) return;
+        cerrarMenusOpciones();
+
+        const parseArray = (valor) => {
+          try {
+            return JSON.parse(valor || "[]");
+          } catch (error) {
+            return [];
+          }
+        };
+
+        const datosReserva = {
+          id: fila.dataset.id,
+          estado: fila.dataset.estado,
+          porcentaje_pago: fila.dataset.porcentajepago,
+          total: fila.dataset.total,
+          saldo_pendiente: fila.dataset.saldoPendiente,
+          cliente: fila.dataset.cliente,
+          documento: fila.dataset.clienteDocumento,
+          id_tipo_documento: fila.dataset.clienteTipoDocumento,
+          cliente_direccion: fila.dataset.clienteDireccion,
+          habitacion: fila.dataset.habitacion,
+          habitaciones: parseArray(fila.dataset.habitaciones),
+          check_in: fila.dataset.checkin,
+          check_out: fila.dataset.checkout,
+          email: fila.dataset.email,
+          correo_electronico: fila.dataset.email,
+          total_pagado: fila.dataset.totalPagado,
+          dias_estadia: fila.dataset.diasEstadia,
+        };
+
+        if (typeof window.abrirModalDocumentoElectronico === "function") {
+          window.abrirModalDocumentoElectronico(datosReserva);
+        } else {
+          window.Alerta(
+            "No se pudo abrir el módulo de emisión de documentos.",
+            "error",
+          );
         }
 
         return;
@@ -146,16 +182,51 @@ const configurarEventosReservas = () => {
         const cliente = accionCancelar.dataset.cliente;
         const checkin = accionCancelar.dataset.checkin;
 
-        if (typeof window.Swal === "undefined") {
-          alert(`Frontend: cancelar reserva ${codigo} (${cliente})`);
+        let calculoCancelacion;
+        try {
+          const respuestaCalculo = await fetch(
+            BASE_URL + "Reserva/calcularCancelacion",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id_reserva: id }),
+            },
+          );
+          calculoCancelacion = await respuestaCalculo.json();
+        } catch (error) {
+          console.error(error);
+          await Swal.fire({
+            icon: "error",
+            title: "No se pudo calcular la devolución",
+            text: "No se pudo conectar con el servidor.",
+          });
           return;
         }
 
+        if (!calculoCancelacion?.exito) {
+          await Swal.fire({
+            icon: "warning",
+            title: "Cancelación no permitida",
+            text:
+              calculoCancelacion?.mensaje ||
+              "No se puede cancelar esta reserva.",
+          });
+          return;
+        }
+
+        const dinero = (valor) => `S/ ${Number(valor || 0).toFixed(2)}`;
         Swal.fire({
           title: `Cancelar reserva ${codigo}`,
           html: `
             <p style="margin:0 0 8px; text-align:left;"><strong>Cliente:</strong> ${cliente}</p>
             <p style="margin:0 0 12px; text-align:left;"><strong>Check-in:</strong> ${checkin}</p>
+            <div style="margin:0 0 14px; padding:10px; border:1px solid #ded8c9; text-align:left; font-size:13px;">
+              <p style="margin:0 0 5px;"><strong>Monto pagado:</strong> ${dinero(calculoCancelacion.monto_pagado)}</p>
+              <p style="margin:0 0 5px;"><strong>Noches hospedadas:</strong> ${dinero(calculoCancelacion.monto_usado)}</p>
+              <p style="margin:0 0 5px;"><strong>Noches con boleta/factura:</strong> ${dinero(calculoCancelacion.monto_documentado)}</p>
+              <p style="margin:0 0 5px;"><strong>Penalidad (${Number(calculoCancelacion.porcentaje_penalidad || 0)}%):</strong> ${dinero(calculoCancelacion.monto_penalidad)}</p>
+              <p style="margin:0;"><strong>Monto a devolver:</strong> ${dinero(calculoCancelacion.monto_devuelto)}</p>
+            </div>
             <select id="motivoCancelacionReserva" class="swal2-input" style="margin:0; width:100%;">
               <option value="">Motivo de cancelación</option>
               <option value="cliente">Cancelación del cliente</option>
@@ -249,21 +320,15 @@ const configurarEventosReservas = () => {
         if (typeof window.abrirModalPago === "function") {
           window.abrirModalPago({ idReserva });
         } else {
-          alert("No se pudo abrir el modulo de pago");
+          window.Alerta("No se pudo abrir el módulo de pago", "error");
         }
       }
 
       const btnCheckin = e.target.closest(".boton-checkin-reserva");
       if (btnCheckin) {
-        // Confirmación antes de ejecutar check-in
-        let confirmado = false;
-        if (typeof window.Confirmar === "function") {
-          confirmado = await window.Confirmar(
-            "¿Confirmar check-in para esta reserva?",
-          );
-        } else {
-          confirmado = confirm("¿Confirmar check-in para esta reserva?");
-        }
+        const confirmado = await window.Confirmar(
+          "¿Confirmar check-in para esta reserva?",
+        );
 
         if (!confirmado) return;
 
@@ -281,9 +346,17 @@ const configurarEventosReservas = () => {
 
       const btnExtender = e.target.closest(".boton-extender-reserva");
       if (btnExtender) {
-        const fechaSalida = prompt("Nueva fecha de checkout (YYYY-MM-DD):");
+        const fechaSalida = await window.SolicitarDato(
+          "Extender reserva",
+          "Selecciona la nueva fecha de checkout.",
+          { tipo: "date" },
+        );
         if (!fechaSalida) return;
-        const horaSalida = prompt("Nueva hora de checkout (HH:MM):", "12:00");
+        const horaSalida = await window.SolicitarDato(
+          "Hora de checkout",
+          "Selecciona la nueva hora de salida.",
+          { tipo: "time", valor: "12:00" },
+        );
         if (!horaSalida) return;
         ejecutarAccionReserva("extender", {
           id_reserva: btnExtender.dataset.id,
@@ -294,11 +367,30 @@ const configurarEventosReservas = () => {
 
       const btnConsumo = e.target.closest(".boton-consumo-reserva");
       if (btnConsumo) {
-        const concepto = prompt("Concepto del consumo:");
+        const concepto = await window.SolicitarDato(
+          "Registrar consumo",
+          "Ingresa el concepto del consumo.",
+        );
         if (!concepto) return;
-        const cantidad = prompt("Cantidad:", "1");
+        const cantidad = await window.SolicitarDato(
+          "Cantidad",
+          "Ingresa la cantidad consumida.",
+          {
+            tipo: "number",
+            valor: "1",
+            atributos: { min: "1", step: "1" },
+          },
+        );
         if (!cantidad) return;
-        const precioUnitario = prompt("Precio unitario:", "0");
+        const precioUnitario = await window.SolicitarDato(
+          "Precio unitario",
+          "Ingresa el precio unitario.",
+          {
+            tipo: "number",
+            valor: "0",
+            atributos: { min: "0.01", step: "0.01" },
+          },
+        );
         if (!precioUnitario) return;
         ejecutarAccionReserva("consumo", {
           id_reserva: btnConsumo.dataset.id,
@@ -311,11 +403,16 @@ const configurarEventosReservas = () => {
 
       const btnCambioHabitacion = e.target.closest(".boton-cambio-habitacion");
       if (btnCambioHabitacion) {
-        const idHabitacionNueva = prompt(
+        const idHabitacionNueva = await window.SolicitarDato(
+          "Cambiar habitación",
           "ID de la nueva habitación disponible:",
+          { tipo: "number", atributos: { min: "1", step: "1" } },
         );
         if (!idHabitacionNueva) return;
-        const motivo = prompt("Motivo del cambio:");
+        const motivo = await window.SolicitarDato(
+          "Motivo del cambio",
+          "Describe por qué se cambia la habitación.",
+        );
         if (!motivo) return;
         ejecutarAccionReserva("cambiarHabitacion", {
           id_reserva: btnCambioHabitacion.dataset.id,
@@ -343,41 +440,29 @@ const ejecutarAccionReserva = async (accion, datos) => {
     const resultado = await res.json();
 
     if (resultado.exito) {
-      if (typeof Swal !== "undefined") {
-        await Swal.fire({
-          toast: true,
-          position: "top-end",
-          icon: "success",
-          title: resultado.mensaje || "Acción procesada",
-          showConfirmButton: false,
-          timer: 2500,
-          timerProgressBar: true,
-        });
-      } else {
-        alert(resultado.mensaje || "Acción procesada");
-      }
+      await Swal.fire({
+        toast: true,
+        position: "top-end",
+        icon: "success",
+        title: resultado.mensaje || "Acción procesada",
+        showConfirmButton: false,
+        timer: 2500,
+        timerProgressBar: true,
+      });
       window.location.reload();
     } else {
       if (accion === "checkout" && resultado.requiere_pago) {
-        let abrirPago = false;
-        if (typeof Swal !== "undefined") {
-          const decisionPago = await Swal.fire({
-            icon: "warning",
-            title: "Pago pendiente",
-            text:
-              resultado.mensaje ||
-              "La reserva tiene saldo pendiente. Registre el pago antes del checkout.",
-            showCancelButton: true,
-            confirmButtonText: "Registrar pago",
-            cancelButtonText: "Cancelar",
-          });
-          abrirPago = decisionPago.isConfirmed;
-        } else {
-          abrirPago = confirm(
+        const decisionPago = await Swal.fire({
+          icon: "warning",
+          title: "Pago pendiente",
+          text:
             resultado.mensaje ||
-              "La reserva tiene saldo pendiente. ¿Desea registrar el pago ahora?",
-          );
-        }
+            "La reserva tiene saldo pendiente. Registre el pago antes del checkout.",
+          showCancelButton: true,
+          confirmButtonText: "Registrar pago",
+          cancelButtonText: "Cancelar",
+        });
+        const abrirPago = decisionPago.isConfirmed;
 
         if (abrirPago && typeof window.abrirModalPago === "function") {
           const reserva = resultado.reserva || {};
@@ -389,7 +474,11 @@ const ejecutarAccionReserva = async (accion, datos) => {
             ...reserva,
             totalReserva:
               Number(reserva.total || 0) +
-              Number(resultado.cargo_checkout_tarde || reserva.cargo_checkout_tarde || 0),
+              Number(
+                resultado.cargo_checkout_tarde ||
+                  reserva.cargo_checkout_tarde ||
+                  0,
+              ),
             saldoPendiente,
             montoAutomatico: saldoPendiente,
             descripcionPago: "Pago de saldo pendiente para checkout",
@@ -402,15 +491,11 @@ const ejecutarAccionReserva = async (accion, datos) => {
         return;
       }
 
-      if (typeof Notificar === "function") {
-        Notificar(resultado.mensaje || "Error al procesar", "error");
-      } else {
-        alert(resultado.mensaje || "Error al procesar");
-      }
+      Notificar(resultado.mensaje || "Error al procesar", "error");
     }
   } catch (error) {
     console.error(error);
-    alert("Error de conexión con el servidor.");
+    window.Alerta("Error de conexión con el servidor.", "error");
   }
 };
 

@@ -50,7 +50,12 @@
   const formatDateOnly = (valor) => {
     if (!valor) return "---";
 
-    const fecha = new Date(valor);
+    const texto = String(valor).slice(0, 10);
+    const partes = texto.split("-").map(Number);
+    const fecha =
+      partes.length === 3 && partes.every(Number.isFinite)
+        ? new Date(partes[0], partes[1] - 1, partes[2])
+        : new Date(valor);
     if (Number.isNaN(fecha.getTime())) return String(valor);
 
     return new Intl.DateTimeFormat("es-PE", {
@@ -73,6 +78,9 @@
       checkout_realizado: "Checkout realizado",
       cancelada: "Cancelada",
       emitido: "Emitido",
+      aceptado: "Aceptado por SUNAT",
+      aceptada: "Aceptado por SUNAT",
+      rechazado: "Rechazado por SUNAT",
       pendiente: "Pendiente",
     };
 
@@ -99,7 +107,10 @@
   const generarDocumentosBase = (reserva) => {
     const documentos = safeParseArray(reserva.documentos, []);
     return documentos.filter(
-      (documento) => normalizarEstado(documento.estado) === "emitido",
+      (documento) =>
+        documento &&
+        (documento.es_documento_electronico ||
+          normalizarEstado(documento.estado) === "emitido"),
     );
   };
 
@@ -166,10 +177,19 @@
 
     contenedor.innerHTML = documentos
       .map(
-        (documento, indice) => `
+        (documento, indice) => {
+          const esElectronico = Boolean(documento.es_documento_electronico);
+          const rango =
+            documento.fecha_desde && documento.fecha_hasta
+              ? `${formatDateOnly(documento.fecha_desde)} al ${formatDateOnly(documento.fecha_hasta)}`
+              : "";
+          const detalle = [documento.descripcion, rango].filter(Boolean).join(" | ");
+
+          return `
 				<tr>
 					<td>
 						<span class="documento-badge">${documento.tipo || "Documento"} ${documento.numero ? `#${documento.numero}` : ""}</span>
+            ${detalle ? `<small class="documento-detalle">${escapeHtml(detalle)}</small>` : ""}
 					</td>
 					<td>${formatDateTime(documento.fecha)}</td>
 					<td>${formatMoney(documento.monto)}</td>
@@ -178,12 +198,13 @@
 					</td>
 					<td>
 						<div class="documento-acciones">
-							<button type="button" class="boton-documento enviar" data-accion="enviar" data-indice="${indice}">Enviar</button>
-							<button type="button" class="boton-documento imprimir" data-accion="imprimir" data-indice="${indice}">Imprimir</button>
+							${esElectronico ? "" : `<button type="button" class="boton-documento enviar" data-accion="enviar" data-indice="${indice}">Enviar</button>`}
+							<button type="button" class="boton-documento imprimir" data-accion="imprimir" data-indice="${indice}">${documento.enlace_del_pdf || documento.enlace ? "Ver PDF" : "Imprimir"}</button>
 						</div>
 					</td>
 				</tr>
-			`,
+			`;
+        },
       )
       .join("");
   };
@@ -354,15 +375,6 @@
       documento.correo ||
       "";
 
-    if (typeof window.Swal === "undefined") {
-      const correo = prompt("Correo electrónico del cliente:", correoBase);
-      if (!correo) return;
-      alert(
-        `Se preparó el envío de ${documento.tipo || "documento"} a ${correo}.`,
-      );
-      return;
-    }
-
     const resultado = await Swal.fire({
       title: `Enviar ${documento.tipo || "documento"}`,
       text: "Confirma o modifica el correo antes de enviar.",
@@ -396,23 +408,30 @@
     const documento = documentos[indice];
     if (!documento) return;
 
-    if (typeof window.Swal !== "undefined") {
-      const resultado = await Swal.fire({
-        title: `Imprimir ${documento.tipo || "documento"}`,
-        text: "Se abrirá la impresión de la ficha de detalles.",
-        icon: "question",
-        showCancelButton: true,
-        confirmButtonText: "Imprimir",
-        cancelButtonText: "Cancelar",
-        confirmButtonColor: "#185025",
-        cancelButtonColor: "#8f2f2f",
-      });
-
-      if (!resultado.isConfirmed) return;
-    } else if (!confirm(`¿Imprimir ${documento.tipo || "documento"}?`)) {
+    if (documento.enlace_del_pdf || documento.enlace) {
+      const url = documento.enlace_del_pdf || documento.enlace;
+      window.open(url, "_blank", "noopener,noreferrer");
       return;
     }
 
+    const resultado = await Swal.fire({
+      title: `Imprimir ${documento.tipo || "documento"}`,
+      text: "Se abrirá la impresión de la ficha de detalles.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Imprimir",
+      cancelButtonText: "Cancelar",
+      confirmButtonColor: "#185025",
+      cancelButtonColor: "#8f2f2f",
+    });
+
+    if (!resultado.isConfirmed) return;
+
+    const enlacePdf = documento.enlace_del_pdf || documento.enlace || "";
+    if (enlacePdf) {
+      window.open(enlacePdf, "_blank", "noopener");
+      return;
+    }
     window.print();
   };
 

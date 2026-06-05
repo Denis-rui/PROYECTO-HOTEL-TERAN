@@ -1,17 +1,12 @@
 let modoFormularioCliente = "nuevo";
 
 const mostrarAlertaCliente = (titulo, texto, icono = "info") => {
-  if (typeof Swal !== "undefined" && typeof Swal.fire === "function") {
-    return Swal.fire({
-      title: titulo,
-      text: texto,
-      icon: icono,
-      confirmButtonText: "Aceptar",
-    });
-  }
-
-  alert(`${titulo}: ${texto}`);
-  return Promise.resolve();
+  return Swal.fire({
+    title: titulo,
+    text: texto,
+    icon: icono,
+    confirmButtonText: "Aceptar",
+  });
 };
 
 const normalizarDocumentoCliente = (valor = "") =>

@@ -134,6 +134,11 @@ class ReservaModel
             if ($habitacion) {
                 $info = $habitacionModel->obtenerPorId($habitacion->id) ?? [];
                 $precioHabit = (float) ($info['precio'] ?? 0);
+                $precioAplicado = (float) ($itemHabitacion->precio_aplicado ?? 0);
+                if ($precioAplicado <= 0) {
+                    $precioAplicado = $precioHabit;
+                }
+
                 $datosHabitacion = [
                     'reserva_habitacion_id' => $itemHabitacion->id ?? null,
                     'id' => $habitacion->id,
@@ -141,7 +146,7 @@ class ReservaModel
                     'piso' => $habitacion->piso,
                     'tipo_nombre' => $habitacion->tipo_nombre ?? '',
                     'precio' => $precioHabit,
-                    'precio_aplicado' => (float) ($itemHabitacion->precio_aplicado ?? $precioHabit),
+                    'precio_aplicado' => $precioAplicado,
                     'subtotal' => (float) ($itemHabitacion->subtotal ?? 0),
                     'tipo_asignacion' => $itemHabitacion->tipo_asignacion ?? 'original',
                     'estado_asignacion' => $itemHabitacion->estado ?? 'activa',
@@ -219,9 +224,11 @@ class ReservaModel
         return [
             'id' => $reserva->id,
             'codigo_reserva' => $reserva->codigo_reserva,
+            'fecha_creacion' => $reserva->fecha_creacion ?? null,
             'id_cliente' => $reserva->id_cliente,
             'cliente' => $cliente->nombre_completo ?? '',
             'documento' => $cliente->documento ?? '',
+                'id_tipo_documento' => $cliente->id_tipo_documento ?? null,
             'documento_tipo_nombre' => (function() use ($cliente) {
                 try {
                     if (empty($cliente->id_tipo_documento)) return null;
@@ -231,6 +238,7 @@ class ReservaModel
                 }
             })(),
             'correo_electronico' => $cliente->correo_electronico ?? '',
+                'cliente_direccion' => $cliente->procedencia ?? '',
             'telefono' => $cliente->telefono ?? '',
             'procedencia' => $cliente->procedencia ?? '',
             'id_usuario' => $reserva->id_usuario ?? null,
@@ -347,27 +355,33 @@ class ReservaModel
                 return ['exito' => false, 'mensaje' => 'Reserva no encontrada.'];
             }
 
-            if (in_array($reservaActual->estado, ['cancelada', 'checkout_realizado'], true)) {
+            if (
+                in_array($reservaActual->estado, ['cancelada', 'checkout_realizado'], true)
+                || !empty($reservaActual->checkout_real)
+            ) {
                 return ['exito' => false, 'mensaje' => 'No se puede cancelar una reserva en este estado.'];
             }
 
-            $hotel = Hotel::first();
-            $porcentajePenalidad = (int) ($hotel->porcentaje_penalidad_cancelacion ?? 25);
-
-            $penalidad = (float) $reservaActual->total * ($porcentajePenalidad / 100);
-            $montoPagado = (float) $reservaActual->pagos->sum('monto');
-
-            $reembolso = max(0, $montoPagado - $penalidad);
+            $calculo = (new CalculoDevolucionModel())->calcular((int) $idReserva);
+            if (!($calculo['exito'] ?? false)) {
+                return $calculo;
+            }
 
             DB::connection()->beginTransaction();
 
             $reservaActual->estado = 'cancelada';
-            $reservaActual->observaciones = trim((string) ($reservaActual->observaciones ?? '') . "\nCancelada: " . $motivo . " (Penalidad aplicada: S/ " . number_format($penalidad, 2) . ")");
+            $reservaActual->observaciones = trim(
+                (string) ($reservaActual->observaciones ?? '')
+                . "\nCancelada: " . $motivo
+                . " (No reembolsable: S/ " . number_format((float) $calculo['monto_no_reembolsable'], 2)
+                . "; devolución: S/ " . number_format((float) $calculo['monto_devuelto'], 2) . ")"
+            );
             $reservaActual->save();
 
             $habitacionModel = new HabitacionModel();
-            $checkIn = $reservaActual->reservaHabitacion->first()->check_in ?? null;
-            $checkOut = $reservaActual->reservaHabitacion->first()->check_out ?? null;
+            $estadoHabitacionDestino = !empty($reservaActual->checkin_real)
+                ? 'Mantenimiento'
+                : 'Disponible';
 
             foreach ($reservaActual->reservaHabitacion as $reservaHabitacion) {
                 if (!$reservaHabitacion || empty($reservaHabitacion->id_habitacion)) {
@@ -378,69 +392,48 @@ class ReservaModel
                 }
 
                 Habitacion::where('id', (int) $reservaHabitacion->id_habitacion)->update([
-                    'estado' => 'Disponible',
+                    'estado' => $estadoHabitacionDestino,
                 ]);
 
                 $habitacionModel->registrarHistorial(
                     (int) $reservaHabitacion->id_habitacion,
                     (int) $idReserva,
                     'Ocupada',
-                    'Disponible',
+                    $estadoHabitacionDestino,
                     null,
                     null,
                     'cancelar_reserva',
-                    'Reserva cancelada. Penalidad: S/ ' . $penalidad
+                    'Reserva cancelada. Monto no reembolsable: S/ ' . $calculo['monto_no_reembolsable']
                 );
             }
 
-            try {
-                $diasUsados = 0;
-                $diasNoUsados = 0;
-                $totalNoOcupado = 0.0;
-
-                if ($checkIn && $checkOut) {
-                    $tsIn = strtotime($checkIn);
-                    $tsOut = strtotime($checkOut);
-                    $totalDias = max(1, (int) ceil(($tsOut - $tsIn) / 86400));
-                    $now = time();
-
-                    if ($now <= $tsIn) {
-                        $diasUsados = 0;
-                    } elseif ($now >= $tsOut) {
-                        $diasUsados = $totalDias;
-                    } else {
-                        $diasUsados = (int) floor(($now - $tsIn) / 86400);
-                        if ($diasUsados < 0)
-                            $diasUsados = 0;
-                        if ($diasUsados > $totalDias)
-                            $diasUsados = $totalDias;
-                    }
-
-                    $diasNoUsados = max(0, $totalDias - $diasUsados);
-                    $precioPorDia = $totalDias > 0 ? ((float) $reservaActual->total / $totalDias) : 0.0;
-                    $totalNoOcupado = round($precioPorDia * $diasNoUsados, 2);
-                }
-
-                Devolucion::create([
-                    'fecha_cancelacion' => date('Y-m-d H:i:s'),
-                    'fecha_inicio' => $checkIn,
-                    'fecha_prevista' => $checkOut,
-                    'dias_usados' => (int) $diasUsados,
-                    'dias_no_usados' => (int) $diasNoUsados,
-                    'total_no_ocupado' => (float) $totalNoOcupado,
-                    'porcentaje_penalidad' => (int) $porcentajePenalidad,
-                    'monto_penalidad' => (float) $penalidad,
-                    'monto_devuelto' => (float) $reembolso,
-                    'id_reserva' => (int) $idReserva,
-                    'id_usuario' => $idUsuario ? (int) $idUsuario : ($_SESSION['id_usuario'] ?? null),
-                    'descripcion' => $motivo,
-                ]);
-            } catch (\Throwable $e) {
-                error_log('Error al registrar devolucion: ' . $e->getMessage());
-            }
+            Devolucion::updateOrCreate(['id_reserva' => (int) $idReserva], [
+                'fecha_cancelacion' => $calculo['fecha_cancelacion'],
+                'fecha_inicio' => $calculo['fecha_inicio'],
+                'fecha_prevista' => $calculo['fecha_prevista'],
+                'dias_usados' => (int) $calculo['dias_usados'],
+                'dias_no_usados' => (int) $calculo['dias_no_usados'],
+                'total_no_ocupado' => (float) $calculo['total_no_ocupado'],
+                'porcentaje_penalidad' => (float) $calculo['porcentaje_penalidad'],
+                'monto_penalidad' => (float) $calculo['monto_penalidad'],
+                'monto_devuelto' => (float) $calculo['monto_devuelto'],
+                'id_reserva' => (int) $idReserva,
+                'id_usuario' => $idUsuario ? (int) $idUsuario : ($_SESSION['id_usuario'] ?? null),
+                'descripcion' => trim(
+                    $motivo
+                    . ' | Hospedaje: S/ ' . number_format((float) $calculo['monto_usado'], 2)
+                    . ' | Documentado: S/ ' . number_format((float) $calculo['monto_documentado'], 2)
+                    . ' | No reembolsable: S/ ' . number_format((float) $calculo['monto_no_reembolsable'], 2)
+                ),
+            ]);
 
             DB::connection()->commit();
-            return ['exito' => true, 'mensaje' => 'Reserva cancelada. Penalidad administrativa: S/ ' . number_format($penalidad, 2)];
+            return [
+                'exito' => true,
+                'mensaje' => 'Reserva cancelada. Devolución: S/ ' . number_format((float) $calculo['monto_devuelto'], 2)
+                    . '. Monto no reembolsable: S/ ' . number_format((float) $calculo['monto_no_reembolsable'], 2) . '.',
+                'devolucion' => $calculo,
+            ];
         } catch (\Exception $e) {
             $con = DB::connection();
             if ($con->getPdo()->inTransaction())

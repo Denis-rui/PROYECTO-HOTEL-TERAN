@@ -284,6 +284,25 @@
     color: var(--warning);
   }
 
+  .documento-estado.aceptado,
+  .documento-estado.aceptada {
+    color: var(--primary-dark);
+  }
+
+  .documento-estado.rechazado {
+    color: var(--danger);
+  }
+
+  .documento-detalle {
+    display: block;
+    max-width: 34rem;
+    margin-top: 5px;
+    color: var(--text-muted);
+    font-size: 11px;
+    line-height: 1.35;
+    white-space: normal;
+  }
+
   .documento-acciones {
     display: flex;
     flex-wrap: wrap;
