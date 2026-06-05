@@ -33,10 +33,12 @@ class LoginController extends Controller
         // Comparación de rol insensible a mayúsculas y espacios
         $rolUsuario = isset($user['rol']) ? trim((string)$user['rol']) : '';
         if ($user && strcasecmp(trim($tipousuario), $rolUsuario) === 0 && $contraseniaValida) {
+            session_regenerate_id(true);
             $_SESSION['usuario']       = $user['nombre_usuario'];
             $_SESSION['nombreUsuario'] = $user['nombre_usuario'];
             $_SESSION['rol']           = $user['rol'];
             $_SESSION['id_usuario']    = $user['id'];
+            $_SESSION['permisos']      = $user['permisos'] ?? [];
             header('Location: ' . BASE_URL . 'Dashboard/index');
             exit();
         }

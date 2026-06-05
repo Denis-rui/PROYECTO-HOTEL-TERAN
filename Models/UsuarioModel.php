@@ -78,7 +78,7 @@ class UsuarioModel
     public function obtenerUsuarios($usuario)
     {
         try {
-            $user = Usuario::with('rol')
+            $user = Usuario::with(['rol.permisos'])
                 ->where('nombre_usuario', $usuario)
                 ->where('estado', 1)
                 ->first();
@@ -91,6 +91,13 @@ class UsuarioModel
                 'id' => $user->id,
                 'nombre_usuario' => $user->nombre_usuario,
                 'rol' => $user->rol->rol ?? '',
+                'permisos' => $user->rol
+                    ? $user->rol->permisos
+                        ->where('activo', 1)
+                        ->pluck('codigo')
+                        ->values()
+                        ->all()
+                    : [],
                 'contrasenia' => $user->contrasenia,
             ];
         } catch (\Throwable $e) {

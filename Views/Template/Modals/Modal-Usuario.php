@@ -70,6 +70,7 @@
           <option value="">Seleccione un rol</option>
           <option value="administrador">Administrador</option>
           <option value="recepcionista">Recepcionista</option>
+          <option value="recepcionista">Recepcionista</option>
         </select>
       </div>
 

@@ -56,7 +56,7 @@
                   data-telefono="<?= htmlspecialchars($telefono, ENT_QUOTES, 'UTF-8') ?>"
                   data-dni="<?= htmlspecialchars($dni, ENT_QUOTES, 'UTF-8') ?>"
                   data-fecha-nacimiento="<?= htmlspecialchars($fecha_nacimiento, ENT_QUOTES, 'UTF-8') ?>"
-                  data-rol="<?= htmlspecialchars($rol, ENT_QUOTES, 'UTF-8') ?>">✏️</button>
+                  data-usuario-rol="<?= htmlspecialchars($rol, ENT_QUOTES, 'UTF-8') ?>">✏️</button>
                 <button type="button" class="btnEliminarUsuario" data-id="<?= $id ?>">🗑️</button>
               </td>
             </tr>
