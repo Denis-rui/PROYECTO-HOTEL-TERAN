@@ -427,12 +427,63 @@
 
     if (!resultado.isConfirmed) return;
 
-    const enlacePdf = documento.enlace_del_pdf || documento.enlace || "";
-    if (enlacePdf) {
-      window.open(enlacePdf, "_blank", "noopener");
+    if (
+      documento.id_pago &&
+      typeof window.abrirModalComprobante === "function"
+    ) {
+      try {
+        const respuesta = await fetch(
+          BASE_URL +
+            `Comprobante/obtenerPorPago/${encodeURIComponent(documento.id_pago)}`,
+        );
+        const comprobante = await respuesta.json();
+        if (!respuesta.ok || !comprobante) {
+          throw new Error("No se pudo recuperar el ticket.");
+        }
+
+        window.abrirModalComprobante(comprobante, {
+          recargarAlCerrar: false,
+        });
+        return;
+      } catch (error) {
+        console.error(error);
+        await Swal.fire({
+          icon: "error",
+          title: "No se pudo abrir el ticket",
+          text: "No fue posible cargar los datos para reimprimirlo.",
+          confirmButtonColor: "#185025",
+        });
+        return;
+      }
+    }
+
+    if (typeof window.abrirModalComprobante === "function") {
+      window.abrirModalComprobante({
+        numero_ticket: documento.numero || "---",
+        fecha_emision: documento.fecha || "",
+        total: documento.monto || 0,
+        descripcion: documento.descripcion || "",
+        id_forma_pago: documento.id_forma_pago,
+        cliente: estadoModal.ultimaReserva?.cliente || "---",
+        reserva: {
+          codigo_reserva:
+            estadoModal.ultimaReserva?.codigo_reserva ||
+            estadoModal.ultimaReserva?.id ||
+            "---",
+          total: estadoModal.ultimaReserva?.total || 0,
+          habitaciones: estadoModal.ultimaReserva?.habitaciones || [],
+        },
+      }, {
+        recargarAlCerrar: false,
+      });
       return;
     }
-    window.print();
+
+    await Swal.fire({
+      icon: "error",
+      title: "Impresión no disponible",
+      text: "No se pudo abrir la vista imprimible del ticket.",
+    });
   };
 
   const abrirModalVerDetalles = async (datos = {}) => {

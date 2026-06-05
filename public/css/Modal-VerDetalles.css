@@ -475,16 +475,16 @@
 }
 
 @media print {
-  body * {
+  body:not(.imprimiendo-comprobante) * {
     visibility: hidden !important;
   }
 
-  .modal-ver-detalles-overlay,
-  .modal-ver-detalles-overlay * {
+  body:not(.imprimiendo-comprobante) .modal-ver-detalles-overlay,
+  body:not(.imprimiendo-comprobante) .modal-ver-detalles-overlay * {
     visibility: visible !important;
   }
 
-  .modal-ver-detalles-overlay {
+  body:not(.imprimiendo-comprobante) .modal-ver-detalles-overlay {
     display: block !important;
     position: static !important;
     inset: auto !important;
@@ -494,7 +494,7 @@
     overflow: visible !important;
   }
 
-  .modal-ver-detalles {
+  body:not(.imprimiendo-comprobante) .modal-ver-detalles {
     width: 100% !important;
     margin: 0 !important;
     border: none !important;
@@ -503,14 +503,14 @@
     background: #fff !important;
   }
 
-  .cerrar-modal-ver-detalles,
-  .modal-ver-detalles-acciones,
-  .documento-acciones {
+  body:not(.imprimiendo-comprobante) .cerrar-modal-ver-detalles,
+  body:not(.imprimiendo-comprobante) .modal-ver-detalles-acciones,
+  body:not(.imprimiendo-comprobante) .documento-acciones {
     display: none !important;
   }
 
-  .habitaciones-detalle-card,
-  .habitaciones-lista-detalle {
+  body:not(.imprimiendo-comprobante) .habitaciones-detalle-card,
+  body:not(.imprimiendo-comprobante) .habitaciones-lista-detalle {
     max-height: none !important;
     overflow: visible !important;
   }
