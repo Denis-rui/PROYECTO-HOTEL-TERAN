@@ -69,11 +69,10 @@ class ReservaModel
                 ->orderByRaw(
                     "
                     CASE
-                        WHEN LOWER(reserva.estado) = 'ausente' THEN 0
-                        WHEN LOWER(reserva.estado) = 'en_estadia' THEN 1
-                        WHEN DATE(primer_check_in) = CURDATE() THEN 2
-                        WHEN DATE(primer_check_in) > CURDATE() THEN 3
-                        ELSE 4
+                        WHEN LOWER(reserva.estado) IN ('en_estadia', 'checkout_pendiente', 'ausente') THEN 0
+                        WHEN LOWER(reserva.estado) = 'confirmada' THEN 1
+                        WHEN LOWER(reserva.estado) = 'checkout_realizado' THEN 3
+                        ELSE 2
                     END ASC
                     "
                 )

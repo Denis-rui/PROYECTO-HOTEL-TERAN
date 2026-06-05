@@ -16,6 +16,8 @@ const configurarEventosReservas = () => {
         panel.style.display = "none";
         panel.style.top = "";
         panel.style.left = "";
+        panel.style.visibility = "";
+        panel.style.maxHeight = "";
       }
     });
   };
@@ -43,17 +45,37 @@ const configurarEventosReservas = () => {
         cerrarMenusOpciones();
         if (!estabaAbierto) {
           const rect = btnDetalles.getBoundingClientRect();
+          const margenPantalla = 12;
+          const separacion = 6;
           const left = Math.max(
-            12,
+            margenPantalla,
             Math.min(
-              window.innerWidth - anchoMenu - 12,
+              window.innerWidth - anchoMenu - margenPantalla,
               rect.right - anchoMenu,
             ),
           );
-          panel.style.top = `${rect.bottom + 6}px`;
+
           panel.style.left = `${left}px`;
           contenedorMenu.classList.add("menu-abierto");
           panel.style.display = "grid";
+          panel.style.visibility = "hidden";
+          panel.style.maxHeight = `${window.innerHeight - margenPantalla * 2}px`;
+
+          const altoMenu = panel.getBoundingClientRect().height;
+          const espacioAbajo =
+            window.innerHeight - rect.bottom - margenPantalla;
+          const espacioArriba = rect.top - margenPantalla;
+          const abrirHaciaArriba =
+            altoMenu > espacioAbajo && espacioArriba > espacioAbajo;
+          const top = abrirHaciaArriba
+            ? Math.max(margenPantalla, rect.top - altoMenu - separacion)
+            : Math.min(
+                rect.bottom + separacion,
+                window.innerHeight - altoMenu - margenPantalla,
+              );
+
+          panel.style.top = `${Math.max(margenPantalla, top)}px`;
+          panel.style.visibility = "visible";
         }
 
         return;
@@ -428,6 +450,9 @@ const configurarEventosReservas = () => {
       cerrarMenusOpciones();
     }
   });
+
+  window.addEventListener("resize", cerrarMenusOpciones);
+  window.addEventListener("scroll", cerrarMenusOpciones, true);
 };
 
 const ejecutarAccionReserva = async (accion, datos) => {

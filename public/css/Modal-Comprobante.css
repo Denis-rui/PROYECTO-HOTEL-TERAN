@@ -5,7 +5,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10001;
+  z-index: 10030;
 }
 
 .modal-comprobante {
@@ -161,7 +161,7 @@
 
   #contenedor-modal-comprobante,
   #contenedor-modal-comprobante * {
-    visibility: visible;
+    visibility: visible !important;
   }
 
   #contenedor-modal-comprobante {
@@ -169,11 +169,18 @@
     inset: 0;
     background: white;
     display: block !important;
+    width: 100%;
+    height: auto;
+    overflow: visible;
   }
 
   #modalComprobante {
+    display: block !important;
+    position: static;
     width: 74mm;
     max-height: none;
+    overflow: visible;
+    margin: 0 auto;
     box-shadow: none;
     border: none;
     border-radius: 0;

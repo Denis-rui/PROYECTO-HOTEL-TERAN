@@ -312,6 +312,8 @@
   top: 0;
   left: 0;
   width: 220px;
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
   background: var(--bg-light);
   border: 1px solid var(--border-gold);
   border-radius: 10px;

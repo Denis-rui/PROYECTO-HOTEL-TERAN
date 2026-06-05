@@ -1,13 +1,17 @@
 <?php
 ?>
 
-<section id="contenedor-modal-reserva" style="display: none;">
+<section id="contenedor-modal-reserva" class="modal-reserva-overlay" style="display: none;">
   <div id="modalReserva" class="modal">
     <div class="modal-contenido">
-      <!-- CERRAR -->
-      <span id="cerrarModal" class="cerrarModal">&times;</span>
-
-      <h2 class="titulo-modal">Nueva Reserva</h2>
+      <header class="modal-reserva-cabecera">
+        <div class="modal-reserva-encabezado-texto">
+          <span class="modal-reserva-badge">Gestión de reserva</span>
+          <h2 class="titulo-modal">Nueva Reserva</h2>
+          <p>Completa los datos del cliente, la estadía y las habitaciones.</p>
+        </div>
+        <button type="button" id="cerrarModal" class="cerrarModal" aria-label="Cerrar reserva">&times;</button>
+      </header>
 
       <!-- FORM -->
       <form id="formReserva">

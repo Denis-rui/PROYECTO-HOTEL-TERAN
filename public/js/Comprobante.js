@@ -77,7 +77,7 @@ const poblarComprobante = (comprobante = {}) => {
   }
 };
 
-window.abrirModalComprobante = (comprobante = {}) => {
+window.abrirModalComprobante = (comprobante = {}, opciones = {}) => {
   const contenedor = document.getElementById("contenedor-modal-comprobante");
   const modal = document.getElementById("modalComprobante");
   if (!contenedor || !modal) return;
@@ -85,7 +85,10 @@ window.abrirModalComprobante = (comprobante = {}) => {
   poblarComprobante(comprobante);
   contenedor.style.display = "flex";
   modal.style.display = "block";
-  window.__comprobantePendienteReload = true;
+  window.__comprobantePendienteReload =
+    opciones.recargarAlCerrar !== undefined
+      ? Boolean(opciones.recargarAlCerrar)
+      : true;
 };
 
 const configurarEventosComprobante = () => {
@@ -126,8 +129,22 @@ window.cerrarModalComprobante = () => {
 };
 
 window.imprimirComprobante = () => {
-  window.print();
+  const contenedor = document.getElementById("contenedor-modal-comprobante");
+  const modal = document.getElementById("modalComprobante");
+  if (!contenedor || !modal) return;
+
+  contenedor.style.display = "flex";
+  modal.style.display = "block";
+  document.body.classList.add("imprimiendo-comprobante");
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => window.print());
+  });
 };
+
+window.addEventListener("afterprint", () => {
+  document.body.classList.remove("imprimiendo-comprobante");
+});
 
 window.addEventListener("click", (e) => {
   const contenedor = document.getElementById("contenedor-modal-comprobante");
