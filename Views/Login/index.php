@@ -21,6 +21,7 @@
                 </div>
                 <div class="formulario">
                     <form action="<?= BASE_URL ?>?url=Login/entrar" class="formulario-login" method="post">
+                        <?= \Libraries\Core\Auth::tokenCsrfInput() ?>
                         <h2>Iniciar Sesión</h2>
                         <div class="tipousuario label-input">
                             <label for="tipousuario">Tipo de Usuario</label>
