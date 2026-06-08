@@ -1,41 +1,64 @@
-function mostrarAlerta(mensaje, exito) {
-  const alerta = document.getElementById('alerta');
-  alerta.textContent = mensaje;
-  alerta.style.cssText = `
-    display: block;
-    position: fixed;
-    top: 80px;
-    right: 24px;
-    z-index: 9999;
-    padding: 12px 20px;
-    border-radius: 8px;
-    font-weight: 500;
-    font-size: 14px;s
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    background-color: ${exito ? '#d4edda' : '#f8d7da'};
-    color: ${exito ? '#155724' : '#721c24'};
-    border: 1px solid ${exito ? '#c3e6cb' : '#f5c6cb'};
-    transition: opacity 0.3s ease;
-  `;
-  setTimeout(() => {
-    alerta.style.opacity = '0';
-    setTimeout(() => {
-      alerta.style.display = 'none';
-      alerta.style.opacity = '1';
-    }, 300);
-  }, 3500);
-}
-
 // Guardar perfil personal
 document.getElementById('btnGuardarPerfil').addEventListener('click', async () => {
+  const confirmado = await window.Confirmar?.('¿Estás seguro de guardar estos cambios?');
+  if (!confirmado) return;
+
   const form = document.getElementById('formPerfilPersonal');
   const body = new FormData(form);
 
-  const res  = await fetch(BASE_URL + 'Perfil/actualizarPerfil', { method: 'POST', body });
+  const res  = await fetch(BASE_URL + 'Perfil/actualizarPerfil', { method: 'POST', body , credentials: 'same-origin'});
   const json = await res.json();
 
-  mostrarAlerta(json.message, json.success);
+  if (json.success) {
+    window.Notificar?.('Perfil actualizado correctamente.', 'exito');
+  } else {
+    window.Notificar?.(json.message || 'Error al actualizar el perfil.', 'error');
+  }
 });
+
+// Funciones para mostrar/limpiar errores en cambiar contraseña
+const limpiarErroresClave = () => {
+  const erroresElementos = document.querySelectorAll("#formCambiarClave .error-validation");
+  erroresElementos.forEach((elemento) => {
+    elemento.textContent = "";
+    elemento.style.display = "none";
+  });
+
+  const camposConError = document.querySelectorAll("#formCambiarClave .form-input.error");
+  camposConError.forEach((campo) => {
+    campo.classList.remove("error");
+  });
+
+  const mensajeDiv = document.getElementById("error-exito-cambiar-clave");
+  if (mensajeDiv) {
+    mensajeDiv.textContent = "";
+    mensajeDiv.classList.remove("error", "exito");
+  }
+};
+
+const mostrarErrorClave = (idCampo, mensaje) => {
+  const campo = document.getElementById(idCampo);
+  const elementoError = document.getElementById(`error-${idCampo}`);
+
+  if (campo) {
+    campo.classList.add("error");
+  }
+
+  if (elementoError) {
+    elementoError.textContent = mensaje;
+    elementoError.style.display = "block";
+  }
+};
+
+const mostrarMensajeClave = (mensaje, tipo = "error") => {
+  const elemento = document.getElementById("error-exito-cambiar-clave");
+  if (!elemento) return;
+
+  elemento.textContent = mensaje;
+  elemento.classList.remove("error", "exito");
+
+  if (tipo) elemento.classList.add(tipo);
+};
 
 // Cambiar contraseña
 document.getElementById('btnCambiarClave').addEventListener('click', async () => {
@@ -43,29 +66,62 @@ document.getElementById('btnCambiarClave').addEventListener('click', async () =>
     const claveNueva   = document.getElementById('clave_nueva').value.trim();
     const confirmar    = document.getElementById('confirmar_clave').value.trim();
 
-    // Validaciones
-    if (!claveActual || !claveNueva || !confirmar) {
-        mostrarAlerta('Todos los campos son obligatorios', false);
-        return;
+    limpiarErroresClave();
+    let tieneErrores = false;
+
+    // Validar contraseña actual
+    if (!claveActual) {
+        mostrarErrorClave('clave_actual', 'La contraseña actual es obligatoria');
+        tieneErrores = true;
     }
 
-    if (claveNueva.length < 6) {
-        mostrarAlerta('La nueva contraseña debe tener al menos 6 caracteres', false);
-        return;
+    // Validar contraseña nueva
+    if (!claveNueva) {
+        mostrarErrorClave('clave_nueva', 'La nueva contraseña es obligatoria');
+        tieneErrores = true;
+    } else if (claveNueva.length < 6) {
+        mostrarErrorClave('clave_nueva', 'La nueva contraseña debe tener al menos 6 caracteres');
+        tieneErrores = true;
     }
 
-    if (claveNueva !== confirmar) {
-        mostrarAlerta('Las contraseñas no coinciden', false);
-        return;
+    // Validar confirmación
+    if (!confirmar) {
+        mostrarErrorClave('confirmar_clave', 'Debe confirmar la contraseña');
+        tieneErrores = true;
+    } else if (claveNueva !== confirmar) {
+        mostrarErrorClave('confirmar_clave', 'Las contraseñas no coinciden');
+        tieneErrores = true;
     }
 
+    if (tieneErrores) return;
+
+    // Verificar que la contraseña actual es correcta
     const form = document.getElementById('formCambiarClave');
     const body = new FormData(form);
 
     const res  = await fetch(BASE_URL + 'Perfil/cambiarClave', { method: 'POST', body });
     const json = await res.json();
 
-    mostrarAlerta(json.message, json.success);
+    // Si hay error de contraseña actual, mostrar error y retornar
+    if (!json.success && json.message && (json.message.toLowerCase().includes('actual') || json.message.toLowerCase().includes('incorrecta') || json.message.toLowerCase().includes('no coincide'))) {
+        mostrarErrorClave('clave_actual', 'La contraseña actual no es la correcta');
+        return;
+    }
 
-    if (json.success) form.reset();
+    // Si hay otro error, mostrarlo
+    if (!json.success) {
+        mostrarMensajeClave(json.message || 'Error al cambiar la contraseña.', 'error');
+        return;
+    }
+
+    // Si la contraseña es correcta, mostrar confirmación
+    const confirmado = await window.Confirmar?.('¿Estás seguro de cambiar tu contraseña?');
+    if (!confirmado) {
+        // Si cancela, revertir en el servidor (si aplica)
+        return;
+    }
+
+    // Si confirma, la contraseña ya fue cambiada, mostrar notificación
+    window.Notificar?.('Contraseña actualizada correctamente.', 'exito');
+    form.reset();
 });

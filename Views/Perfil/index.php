@@ -78,6 +78,7 @@
             name="clave_actual"
             class="form-input"
           />
+          <span class="error-validation" id="error-clave_actual"></span>
         </div>
 
         <div class="form-campo">
@@ -88,6 +89,7 @@
             name="clave_nueva"
             class="form-input"
           />
+          <span class="error-validation" id="error-clave_nueva"></span>
         </div>
 
         <div class="form-campo">
@@ -100,6 +102,7 @@
             name="confirmar_clave"
             class="form-input"
           />
+          <span class="error-validation" id="error-confirmar_clave"></span>
         </div>
       </div>
 
