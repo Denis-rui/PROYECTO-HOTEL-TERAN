@@ -19,9 +19,12 @@ class LoginController extends Controller
             exit();
         }
 
-        $tipousuario = trim($_POST['tipousuario'] ?? '');
-        $usuario     = trim($_POST['usuario']     ?? '');
-        $contrasenia = $_POST['contrasena']        ?? '';
+        // Sanitización de entradas para prevenir XSS
+        $post = \Libraries\Core\Auth::sanitizarEntradas($_POST);
+
+        $tipousuario = $post['tipousuario'] ?? '';
+        $usuario     = $post['usuario']     ?? '';
+        $contrasenia = $_POST['contrasena'] ?? ''; // Contraseña NO se sanitiza para preservar caracteres especiales
 
         $user = $this->model->obtenerUsuarios($usuario);
         $contraseniaGuardada = $user['contrasenia'] ?? '';
