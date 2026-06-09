@@ -1,4 +1,5 @@
 <?php
+
 namespace Libraries\Core;
 
 class Auth
