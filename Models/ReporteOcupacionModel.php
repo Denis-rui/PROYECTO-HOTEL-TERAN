@@ -1,4 +1,5 @@
 <?php
+
 namespace Models;
 
 use Illuminate\Database\Capsule\Manager as DB;
@@ -26,7 +27,7 @@ class ReporteOcupacionModel
     {
         $query->where(function ($q) {
             $q->whereNull('rh.activo')
-              ->orWhere('rh.activo', 1);
+                ->orWhere('rh.activo', 1);
         })->whereRaw("LOWER(TRIM(COALESCE(rh.estado, 'activa'))) = 'activa'");
     }
 
@@ -35,13 +36,13 @@ class ReporteOcupacionModel
         $query->whereRaw('COALESCE(r.checkin_real, rh.check_in) < ?', [$checkOut])
             ->where(function ($q) use ($checkIn) {
                 $q->whereNull('rh.check_out')
-                  ->orWhere('rh.check_out', '>', $checkIn)
-                  ->orWhere(function ($ocupacion) use ($checkIn) {
-                      $ocupacion->whereIn('r.estado', self::ESTADOS_OCUPACION_ACTUAL)
-                          ->whereNull('r.checkout_real')
-                          ->whereRaw('NOW() > rh.check_out')
-                          ->whereRaw('NOW() > ?', [$checkIn]);
-                  });
+                    ->orWhere('rh.check_out', '>', $checkIn)
+                    ->orWhere(function ($ocupacion) use ($checkIn) {
+                        $ocupacion->whereIn('r.estado', self::ESTADOS_OCUPACION_ACTUAL)
+                            ->whereNull('r.checkout_real')
+                            ->whereRaw('NOW() > rh.check_out')
+                            ->whereRaw('NOW() > ?', [$checkIn]);
+                    });
             });
     }
 
@@ -205,7 +206,7 @@ class ReporteOcupacionModel
                 ->whereIn('r.estado', self::ESTADOS_OCUPACION_ACTUAL)
                 ->where(function ($q) {
                     $q->whereNull('rh.check_out')
-                      ->orWhere('rh.check_out', '>', DB::raw('NOW()'));
+                        ->orWhere('rh.check_out', '>', DB::raw('NOW()'));
                 });
 
             $this->aplicarAsignacionActiva($res);
