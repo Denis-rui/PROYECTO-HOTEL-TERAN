@@ -13,7 +13,7 @@
 
         <div class="fila-formulario">
           <div class="grupo-formulario">
-            <label for="numeroHabitacion">NÚMERO</label>
+            <label for="numeroHabitacion">NÚMERO <span class="campo-requerido">*</span></label>
             <input
               type="text"
               id="numeroHabitacion"
@@ -22,7 +22,7 @@
               required />
           </div>
           <div class="grupo-formulario">
-            <label for="tipoHabitacion">TIPO</label>
+            <label for="tipoHabitacion">TIPO <span class="campo-requerido">*</span></label>
             <select id="tipoHabitacion" name="id_tipo_habitacion" required>
               <option value="" disabled selected>Seleccione un tipo</option>
               <?php if (!empty($filtros['tipos'])): ?>
@@ -38,7 +38,7 @@
 
         <div class="fila-formulario">
           <div class="grupo-formulario">
-            <label for="pisoHabitacion">PISO</label>
+            <label for="pisoHabitacion">PISO <span class="campo-requerido">*</span></label>
             <input
               type="number"
               id="pisoHabitacion"
@@ -48,7 +48,7 @@
               required />
           </div>
           <div class="grupo-formulario">
-            <label for="capacidadHabitacion">CAPACIDAD</label>
+            <label for="capacidadHabitacion">CAPACIDAD <span class="campo-requerido">*</span></label>
             <input
               type="number"
               id="capacidadHabitacion"
@@ -61,7 +61,7 @@
 
         <div class="fila-formulario" id="filaEstadoHabitacion">
           <div class="grupo-formulario">
-            <label for="estadoHabitacion">ESTADO</label>
+            <label for="estadoHabitacion">ESTADO <span class="campo-requerido">*</span></label>
             <select id="estadoHabitacion" name="estado" required>
               <option value="Disponible" selected>Disponible</option>
               <option value="Ocupada">Ocupada</option>
@@ -72,11 +72,12 @@
         </div>
 
         <div class="grupo-formulario">
-          <label for="descripcionHabitacion">DESCRIPCIÓN</label>
+          <label for="descripcionHabitacion">DESCRIPCIÓN <span class="campo-requerido">*</span></label>
           <textarea
             id="descripcionHabitacion"
             name="descripcion_habitacion"
-            placeholder="Bungalow con vista al río, hamaca, etc."></textarea>
+            placeholder="Bungalow con vista al río, hamaca, etc."
+            required></textarea>
         </div>
 
         <div class="acciones-formulario">
