@@ -79,6 +79,7 @@
                             <div class="habitacion-acciones">
                                 <select class="selector-estado" onchange="cambiarEstado(<?= (int) $hab['id'] ?>, this.value)">
                                     <option value="" disabled selected>Cambiar estado</option>
+                                    <option value="Disponible">Disponible</option>
                                     <option value="Mantenimiento">Mantenimiento</option>
                                 </select>
                             </div>
