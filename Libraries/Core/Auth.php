@@ -69,9 +69,7 @@ class Auth
         ],
     ];
 
-    // ─────────────────────────────────────────────────────────────
-    // AUTENTICACIÓN Y RBAC
-    // ─────────────────────────────────────────────────────────────
+    // Todo lo relacionado a RBAC
 
     public static function estaAutenticado(): bool
     {
@@ -109,7 +107,6 @@ class Auth
             self::responderAccesoDenegado($permiso);
         }
 
-        // Validar CSRF solo en peticiones POST de formularios HTML (no AJAX/JSON)
         self::validarCsrf();
     }
 
@@ -141,14 +138,7 @@ class Auth
         exit();
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // PROTECCIÓN CSRF
-    // ─────────────────────────────────────────────────────────────
-
-    /**
-     * Genera (o reutiliza) el token CSRF almacenado en sesión.
-     * Llamar en las vistas de formularios: <?= Auth::tokenCsrfInput() ?>
-     */
+    // todo lo relacionado a la protección CSRF
     public static function generarTokenCsrf(): string
     {
         if (empty($_SESSION['csrf_token'])) {
@@ -157,39 +147,31 @@ class Auth
         return $_SESSION['csrf_token'];
     }
 
-    /**
-     * Devuelve el input hidden listo para insertar en formularios HTML.
-     */
     public static function tokenCsrfInput(): string
     {
         $token = self::generarTokenCsrf();
         return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">';
     }
 
-    /**
-     * Valida el token CSRF en peticiones POST de formularios (no AJAX/JSON).
-     * Se llama automáticamente desde autorizarRuta().
-     */
     public static function validarCsrf(): void
     {
-        $metodo = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+        $metodo = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET'); //strtoupper para asegurar mayúsculas.
         if ($metodo !== 'POST') {
             return;
         }
 
-        // Las peticiones AJAX/JSON envían datos vía php://input, no $_POST
-        $esAjax = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest';
+        $esAjax = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest'; //strtolower para asegurar minúsculas.
         $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
         $esJson = stripos($contentType, 'application/json') !== false;
 
         if ($esAjax || $esJson) {
-            return; // Las peticiones JSON/AJAX no llevan CSRF en $_POST
+            return; // Las peticiones JSON/AJAX no llevan CSRF
         }
 
         $tokenRecibido = trim((string) ($_POST['csrf_token'] ?? ''));
         $tokenSesion   = (string) ($_SESSION['csrf_token'] ?? '');
 
-        if ($tokenSesion === '' || !hash_equals($tokenSesion, $tokenRecibido)) {
+        if ($tokenSesion === '' || !hash_equals($tokenSesion, $tokenRecibido)) { //hash_equals compara dos cadenas de texto.
             http_response_code(419);
             header('Content-Type: text/html; charset=utf-8');
             echo '<h1>419 - Token CSRF inválido</h1>';
@@ -201,25 +183,14 @@ class Auth
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // SANITIZACIÓN XSS
-    // ─────────────────────────────────────────────────────────────
 
-    /**
-     * Sanitiza un string para salida segura en HTML (previene XSS).
-     * Usar siempre al imprimir datos de usuario en vistas.
-     * Ejemplo: <?= Auth::xss($variable) ?>
-     */
+    // Todo lo relacionado a la sanitización XSS
+
     public static function xss(mixed $valor): string
     {
         return htmlspecialchars((string) $valor, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
 
-    /**
-     * Sanitiza un array completo de entradas (limpia strings recursivamente).
-     * Útil para limpiar $_GET, $_POST antes de procesar.
-     * Ejemplo: $datos = Auth::sanitizarEntradas($_POST);
-     */
     public static function sanitizarEntradas(array $datos): array
     {
         $resultado = [];
