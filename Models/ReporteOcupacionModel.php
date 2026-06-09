@@ -6,13 +6,57 @@ use Helpers\ReservaHelper;
 
 class ReporteOcupacionModel
 {
+    private const ESTADOS_RESERVA_BLOQUEANTES = [
+        'pendiente',
+        'confirmada',
+        'checkin_realizado',
+        'en_estadia',
+        'checkout_pendiente',
+        'ausente',
+    ];
+
+    private const ESTADOS_OCUPACION_ACTUAL = [
+        'checkin_realizado',
+        'en_estadia',
+        'checkout_pendiente',
+        'ausente',
+    ];
+
+    private function aplicarAsignacionActiva($query): void
+    {
+        $query->where(function ($q) {
+            $q->whereNull('rh.activo')
+              ->orWhere('rh.activo', 1);
+        })->whereRaw("LOWER(TRIM(COALESCE(rh.estado, 'activa'))) = 'activa'");
+    }
+
+    private function aplicarCruceFechas($query, $checkIn, $checkOut): void
+    {
+        $query->whereRaw('COALESCE(r.checkin_real, rh.check_in) < ?', [$checkOut])
+            ->where(function ($q) use ($checkIn) {
+                $q->whereNull('rh.check_out')
+                  ->orWhere('rh.check_out', '>', $checkIn)
+                  ->orWhere(function ($ocupacion) use ($checkIn) {
+                      $ocupacion->whereIn('r.estado', self::ESTADOS_OCUPACION_ACTUAL)
+                          ->whereNull('r.checkout_real')
+                          ->whereRaw('NOW() > rh.check_out')
+                          ->whereRaw('NOW() > ?', [$checkIn]);
+                  });
+            });
+    }
+
     public function obtenerReser_EstadiaHab($idHabitacion)
     {
         try {
-            $reserva = DB::table('reserva as r')
+            $query = DB::table('reserva as r')
                 ->join('reserva_habitacion as rh', 'rh.id_reserva', '=', 'r.id')
                 ->where('rh.id_habitacion', (int) $idHabitacion)
-                ->where('r.estado', 'en_estadia')
+                ->whereIn('r.estado', self::ESTADOS_OCUPACION_ACTUAL)
+                ->whereNull('r.checkout_real');
+
+            $this->aplicarAsignacionActiva($query);
+
+            $reserva = $query
                 ->select('r.*')
                 ->first();
 
@@ -49,26 +93,33 @@ class ReporteOcupacionModel
             $query = DB::table('reserva_habitacion as rh')
                 ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
                 ->where('rh.id_habitacion', (int) $idHabitacion)
-                ->where('rh.activo', 1)
-                ->where(function ($q) {
-                    $q->whereNull('rh.estado')
-                      ->orWhere('rh.estado', 'activa');
-                })
-                ->whereIn('r.estado', ['pendiente', 'confirmada', 'checkin_realizado', 'en_estadia', 'checkout_pendiente'])
-                ->where('rh.check_in', '<', $checkOut)
-                ->where(function ($q) use ($checkIn) {
-                    $q->whereNull('rh.check_out')
-                      ->orWhere('rh.check_out', '>', $checkIn);
-                });
+                ->whereIn('r.estado', self::ESTADOS_RESERVA_BLOQUEANTES);
+
+            $this->aplicarAsignacionActiva($query);
+            $this->aplicarCruceFechas($query, $checkIn, $checkOut);
 
             if ($idReservaExcluir) {
                 $query->where('r.id', '!=', (int) $idReservaExcluir);
             }
 
-            $count = (int) $query->count();
+            $conflicto = $query
+                ->select([
+                    'r.id as id_reserva',
+                    'r.estado as estado_reserva',
+                    'rh.check_in',
+                    'rh.check_out',
+                    'r.checkin_real',
+                ])
+                ->first();
 
-            if ($count > 0) {
-                return ['disponible' => false, 'mensaje' => 'La habitación no está disponible en el rango indicado.'];
+            if ($conflicto) {
+                $ocupada = in_array($conflicto->estado_reserva, self::ESTADOS_OCUPACION_ACTUAL, true);
+                return [
+                    'disponible' => false,
+                    'mensaje' => $ocupada
+                        ? 'La habitación está ocupada actualmente y no puede reservarse para esas fechas.'
+                        : 'La habitación ya está reservada para esas fechas.',
+                ];
             }
 
             return ['disponible' => true, 'mensaje' => 'Disponible'];
@@ -80,16 +131,14 @@ class ReporteOcupacionModel
     public function obtenerDisponiblesPorRango($checkIn, $checkOut, $tipo = null, $piso = null, array $referencia = [])
     {
         try {
-            $habitacionesOcupadas = DB::table('reserva_habitacion as rh')
+            $queryOcupadas = DB::table('reserva_habitacion as rh')
                 ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
-                ->where('rh.activo', 1)
-                ->where(function ($q) {
-                    $q->whereNull('rh.estado')
-                      ->orWhere('rh.estado', 'activa');
-                })
-                ->whereIn('r.estado', ['pendiente', 'confirmada', 'checkin_realizado', 'en_estadia', 'checkout_pendiente'])
-                ->where('rh.check_in', '<', $checkOut)
-                ->where('rh.check_out', '>', $checkIn)
+                ->whereIn('r.estado', self::ESTADOS_RESERVA_BLOQUEANTES);
+
+            $this->aplicarAsignacionActiva($queryOcupadas);
+            $this->aplicarCruceFechas($queryOcupadas, $checkIn, $checkOut);
+
+            $habitacionesOcupadas = $queryOcupadas
                 ->distinct()
                 ->pluck('rh.id_habitacion')
                 ->toArray();
@@ -153,12 +202,15 @@ class ReporteOcupacionModel
             $res = DB::table('reserva_habitacion as rh')
                 ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
                 ->where('rh.id_habitacion', $idHabitacion)
-                ->where('rh.activo', 1)
-                ->whereIn('r.estado', ['checkin_realizado', 'en_estadia', 'checkout_pendiente'])
+                ->whereIn('r.estado', self::ESTADOS_OCUPACION_ACTUAL)
                 ->where(function ($q) {
                     $q->whereNull('rh.check_out')
                       ->orWhere('rh.check_out', '>', DB::raw('NOW()'));
-                })
+                });
+
+            $this->aplicarAsignacionActiva($res);
+
+            $res = $res
                 ->select(['r.id as id_reserva', 'r.estado as estado_reserva', 'rh.check_in', 'rh.check_out'])
                 ->orderBy('rh.check_out', 'asc')
                 ->first();

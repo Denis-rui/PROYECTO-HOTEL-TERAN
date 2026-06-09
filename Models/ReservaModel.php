@@ -454,10 +454,26 @@ class ReservaModel
             }
 
             $reporteOcupacionModel = new ReporteOcupacionModel();
-            $idHabitacionPrincipal = (int) ($reservaActual->reservaHabitacion->first()->id_habitacion ?? 0);
-            $ocupada = $reporteOcupacionModel->obtenerReser_EstadiaHab($idHabitacionPrincipal);
-            if ($ocupada && (int) $ocupada['id'] !== (int) $idReserva) {
-                return ['exito' => false, 'mensaje' => 'La habitación está ocupada por otra reserva.'];
+            foreach ($reservaActual->reservaHabitacion as $reservaHabitacion) {
+                if (
+                    !$reservaHabitacion
+                    || empty($reservaHabitacion->id_habitacion)
+                    || (int) ($reservaHabitacion->activo ?? 1) !== 1
+                    || (($reservaHabitacion->estado ?? 'activa') !== 'activa')
+                ) {
+                    continue;
+                }
+
+                $ocupada = $reporteOcupacionModel->obtenerReser_EstadiaHab(
+                    (int) $reservaHabitacion->id_habitacion
+                );
+                if ($ocupada && (int) $ocupada['id'] !== (int) $idReserva) {
+                    $numeroHabitacion = $reservaHabitacion->habitacion->numero_habitacion ?? '';
+                    return [
+                        'exito' => false,
+                        'mensaje' => 'La habitación ' . $numeroHabitacion . ' está ocupada por otra reserva.',
+                    ];
+                }
             }
 
             $habitacionModel = new HabitacionModel();
