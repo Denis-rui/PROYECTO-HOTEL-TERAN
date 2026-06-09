@@ -141,7 +141,12 @@ class ClienteController extends Controller
             return;
         }
 
-        if (!empty($datos['gmail']) && !filter_var($datos['gmail'], FILTER_VALIDATE_EMAIL)) {
+        if (empty($datos['gmail'])) {
+            $this->responderJson(['exito' => false, 'mensaje' => 'El correo electronico es obligatorio'], 422);
+            return;
+        }
+
+        if (!filter_var($datos['gmail'], FILTER_VALIDATE_EMAIL)) {
             $this->responderJson(['exito' => false, 'mensaje' => 'Correo invalido'], 422);
             return;
         }
@@ -205,7 +210,12 @@ class ClienteController extends Controller
             return;
         }
 
-        if (!empty($datos['gmail']) && !filter_var($datos['gmail'], FILTER_VALIDATE_EMAIL)) {
+        if (empty($datos['gmail'])) {
+            $this->responderJson(['exito' => false, 'mensaje' => 'El correo electronico es obligatorio'], 422);
+            return;
+        }
+
+        if (!filter_var($datos['gmail'], FILTER_VALIDATE_EMAIL)) {
             $this->responderJson(['exito' => false, 'mensaje' => 'Correo invalido'], 422);
             return;
         }

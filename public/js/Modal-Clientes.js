@@ -242,8 +242,11 @@ const validarFormularioCliente = (datos) => {
     tieneErrores = true;
   }
 
-  // Validar correo electrónico solo si se ingresa
-  if (datos.gmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datos.gmail)) {
+  // Validar correo electrónico
+  if (!datos.gmail) {
+    mostrarErrorValidacion("gmail-cliente", "El correo electrónico es obligatorio");
+    tieneErrores = true;
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datos.gmail)) {
     mostrarErrorValidacion("gmail-cliente", "Correo electrónico no válido");
     tieneErrores = true;
   }
@@ -532,7 +535,9 @@ const configurarValidacionesTiempoReal = () => {
   });
 
   validarCampoEnTiempoReal("gmail-cliente", (valor) => {
-    if (!valor) return "";
+    if (!valor) {
+      return "El correo electrónico es obligatorio";
+    }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor)) {
       return "Correo electrónico no válido";
     }

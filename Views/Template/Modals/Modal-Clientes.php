@@ -23,8 +23,8 @@
       </div>
 
       <div class="label-input-modal">
-        <label for="gmail-cliente">Correo Electrónico</label>
-        <input type="email" id="gmail-cliente" class="input-modal" />
+        <label for="gmail-cliente">Correo Electrónico <span class="campo-requerido">*</span></label>
+        <input type="email" id="gmail-cliente" class="input-modal" required />
         <span class="error-validation" id="error-gmail-cliente"></span>
       </div>
 
