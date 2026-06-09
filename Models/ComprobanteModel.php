@@ -11,10 +11,14 @@ use Models\DocumentoElectronicoModel;
 class ComprobanteModel
 {
 
-    public function generarNumeroTicket(): string
+    public function generarNumeroTicket(?int $idPago = null): string
     {
         $anio = date('Y');
         $prefijo = 'TCK-' . $anio . '-';
+
+        if ($idPago !== null && $idPago > 0) {
+            return $prefijo . str_pad((string) $idPago, 6, '0', STR_PAD_LEFT);
+        }
 
         $ultimo = Comprobante::where('numero_ticket', 'like', $prefijo . '%')
             ->orderBy('id', 'desc')
@@ -104,7 +108,7 @@ class ComprobanteModel
 
         return Comprobante::create([
             'id_pago' => (int) $pago->id,
-            'numero_ticket' => $this->generarNumeroTicket(),
+            'numero_ticket' => $this->generarNumeroTicket((int) $pago->id),
             'fecha_emision' => date('Y-m-d H:i:s'),
             'descripcion' => $descripcion,
             'total' => $monto,
