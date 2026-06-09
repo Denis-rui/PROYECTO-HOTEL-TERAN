@@ -10,61 +10,9 @@ class DocumentoElectronicoModel
     private const TABLE = 'documento_electronico_reserva';
     private const IGV = 18.0;
 
-    public function __construct()
-    {
-        $this->asegurarTabla();
-    }
+    public function __construct() {}
 
-    private function asegurarTabla(): void
-    {
-        try {
-            $sql = <<<'SQL'
-CREATE TABLE IF NOT EXISTS documento_electronico_reserva (
-    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    id_reserva INT UNSIGNED NOT NULL,
-    id_usuario INT UNSIGNED NULL,
-    tipo_documento VARCHAR(20) NOT NULL,
-    tipo_de_comprobante TINYINT UNSIGNED NOT NULL,
-    serie VARCHAR(4) NOT NULL,
-    numero INT UNSIGNED NOT NULL,
-    codigo_unico VARCHAR(120) NULL,
-    fecha_emision VARCHAR(10) NOT NULL,
-    fecha_desde VARCHAR(10) NOT NULL,
-    fecha_hasta VARCHAR(10) NOT NULL,
-    cliente_tipo_documento VARCHAR(2) NOT NULL,
-    cliente_numero_documento VARCHAR(20) NULL,
-    cliente_denominacion VARCHAR(200) NOT NULL,
-    cliente_email VARCHAR(250) NULL,
-    cliente_direccion VARCHAR(250) NULL,
-    habitaciones_json LONGTEXT NULL,
-    detalle_json LONGTEXT NULL,
-    total_gravada DECIMAL(12,2) NOT NULL DEFAULT 0,
-    total_igv DECIMAL(12,2) NOT NULL DEFAULT 0,
-    total DECIMAL(12,2) NOT NULL DEFAULT 0,
-    estado_sunat VARCHAR(20) NULL,
-    enlace TEXT NULL,
-    enlace_del_pdf TEXT NULL,
-    enlace_del_xml TEXT NULL,
-    enlace_del_cdr TEXT NULL,
-    cadena_para_codigo_qr TEXT NULL,
-    codigo_hash VARCHAR(255) NULL,
-    sunat_description TEXT NULL,
-    sunat_note TEXT NULL,
-    sunat_responsecode TEXT NULL,
-    sunat_soap_error TEXT NULL,
-    respuesta_json LONGTEXT NULL,
-    payload_json LONGTEXT NULL,
-    created_at VARCHAR(19) NULL,
-    PRIMARY KEY (id),
-    UNIQUE KEY documento_electronico_codigo_unico_unique (codigo_unico),
-    KEY documento_electronico_reserva_idx (id_reserva, tipo_documento)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-SQL;
-            DB::statement($sql);
-        } catch (\Throwable $e) {
-            error_log('DocumentoElectronicoModel::asegurarTabla -> ' . $e->getMessage());
-        }
-    }
+
 
     private function ahora(): string
     {
