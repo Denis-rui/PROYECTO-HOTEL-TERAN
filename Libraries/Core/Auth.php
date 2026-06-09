@@ -70,8 +70,6 @@ class Auth
     ];
 
 
-    // Todo lo relacionado a RBAC
-
     public static function estaAutenticado(): bool
     {
         return !empty($_SESSION['usuario']) && !empty($_SESSION['id_usuario']);
@@ -138,8 +136,6 @@ class Auth
         header('Location: ' . BASE_URL . 'Dashboard/index&error=sin_permiso');
         exit();
     }
-
-    // todo lo relacionado a la protección CSRF
 
     public static function generarTokenCsrf(): string
     {
