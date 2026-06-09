@@ -15,9 +15,9 @@
     </span>
 
     <hr>
-    <span class="info">📨 <?= htmlspecialchars($perfil['correo'] ?? '') ?></span>
-    <span class="info">📞 <?= htmlspecialchars($perfil['telefono'] ?? '') ?></span>
-    <span class="info">👤 <?= htmlspecialchars($perfil['nombre_completo'] ?? '') ?></span>
+    <span class="info">📨 <?= \Libraries\Core\Auth::xss($perfil['correo'] ?? '') ?></span>
+    <span class="info">📞 <?= \Libraries\Core\Auth::xss($perfil['telefono'] ?? '') ?></span>
+    <span class="info">👤 <?= \Libraries\Core\Auth::xss($perfil['nombre_completo'] ?? '') ?></span>
 </div>
 
   <!--Formularios --->
