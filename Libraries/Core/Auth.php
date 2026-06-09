@@ -70,6 +70,8 @@ class Auth
     ];
 
 
+    // Todo lo relacionado a RBAC
+
     public static function estaAutenticado(): bool
     {
         return !empty($_SESSION['usuario']) && !empty($_SESSION['id_usuario']);
@@ -137,6 +139,8 @@ class Auth
         exit();
     }
 
+    // todo lo relacionado a la protección CSRF
+
     public static function generarTokenCsrf(): string
     {
         if (empty($_SESSION['csrf_token'])) {
@@ -182,6 +186,8 @@ class Auth
     }
 
 
+
+    // Todo lo relacionado a la sanitización XSS
 
     public static function xss(mixed $valor): string
     {
