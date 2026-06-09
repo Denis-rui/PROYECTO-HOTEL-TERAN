@@ -49,18 +49,28 @@ class PerfilController extends Controller
             'telefono'        => trim($_POST['telefono']        ?? ''),
         ];
 
+        try {
+            $ok = $this->usuarioModel->updateByNombreUsuario($_SESSION['usuario'], $datos);
 
-        $ok = $this->usuarioModel->updateByNombreUsuario($_SESSION['usuario'], $datos);
+            if ($ok && !empty($datos['nombre_usuario'])) {
+                $_SESSION['usuario'] = $datos['nombre_usuario'];
+            }
 
-        if ($ok && !empty($datos['nombre_usuario'])) {
-            $_SESSION['usuario'] = $datos['nombre_usuario'];
+            $response = [
+                'success' => (bool) $ok,
+                'message' => $ok ? 'Perfil actualizado correctamente' : 'Error al actualizar el perfil',
+            ];
+        } catch (\Throwable $e) {
+            error_log('PerfilController actualizarPerfil error: ' . $e->getMessage());
+            http_response_code(400);
+            $response = [
+                'success' => false,
+                'message' => $e->getMessage(),
+            ];
         }
 
         header('Content-Type: application/json');
-        echo json_encode([
-            'success' => (bool) $ok,
-            'message' => $ok ? 'Perfil actualizado correctamente' : 'Error al actualizar el perfil',
-        ]);
+        echo json_encode($response);
         exit();
     }
 

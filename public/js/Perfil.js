@@ -6,8 +6,32 @@ document.getElementById('btnGuardarPerfil').addEventListener('click', async () =
   const form = document.getElementById('formPerfilPersonal');
   const body = new FormData(form);
 
-  const res  = await fetch(BASE_URL + 'Perfil/actualizarPerfil', { method: 'POST', body , credentials: 'same-origin'});
-  const json = await res.json();
+  let json;
+  try {
+    const res = await fetch(BASE_URL + 'Perfil/actualizarPerfil', {
+      method: 'POST',
+      body,
+      credentials: 'same-origin',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+    });
+    const text = await res.text();
+
+    try {
+      json = JSON.parse(text);
+    } catch (parseError) {
+      throw new Error(text.replace(/<[^>]*>/g, '').trim() || 'Respuesta inválida del servidor');
+    }
+
+    if (!res.ok) {
+      throw new Error(json.message || 'Error al actualizar el perfil');
+    }
+  } catch (error) {
+    window.Notificar?.(error.message || 'No se pudo actualizar el perfil. Intenta de nuevo.', 'error');
+    console.error('Error actualizar perfil:', error);
+    return;
+  }
 
   if (json.success) {
     window.Notificar?.('Perfil actualizado correctamente.', 'exito');
@@ -99,7 +123,13 @@ document.getElementById('btnCambiarClave').addEventListener('click', async () =>
     const form = document.getElementById('formCambiarClave');
     const body = new FormData(form);
 
-    const res  = await fetch(BASE_URL + 'Perfil/cambiarClave', { method: 'POST', body });
+    const res  = await fetch(BASE_URL + 'Perfil/cambiarClave', {
+      method: 'POST',
+      body,
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+    });
     const json = await res.json();
 
     // Si hay error de contraseña actual, mostrar error y retornar
