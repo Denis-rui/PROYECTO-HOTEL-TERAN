@@ -1,6 +1,13 @@
 <?php
 ob_start();
-session_start();
+session_start([
+    'cookie_lifetime' => 0,          // Dura hasta cerrar el navegador
+    'cookie_path' => '/',            // Válido para todo el sitio
+    'cookie_domain' => 'localhost',   // Cambia a tu dominio real en producción
+    'cookie_secure' => false,        // Ponlo en 'true' cuando tengas HTTPS (SSL)
+    'cookie_httponly' => true,       // ¡AQUÍ ESTÁ LA MAGIA! Bloquea el acceso a JavaScript
+    'cookie_samesite' => 'Lax'       // Protección extra contra ataques CSRF
+]);
 date_default_timezone_set('America/Lima');
 
 // Parsear la URL: ?url=Controller/metodo/param
