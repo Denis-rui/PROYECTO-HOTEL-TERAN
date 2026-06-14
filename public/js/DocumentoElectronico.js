@@ -68,7 +68,8 @@
     const a = new Date(`${inicio}T00:00:00`);
     const b = new Date(`${fin}T00:00:00`);
     const diff = b.getTime() - a.getTime();
-    if (Number.isNaN(diff) || diff <= 0) return 0;
+    if (Number.isNaN(diff) || diff < 0) return 0;
+    if (diff === 0) return 1;
     return Math.round(diff / 86400000);
   };
 
@@ -701,7 +702,8 @@
     const a = new Date(`${inicio}T00:00:00`);
     const b = new Date(`${fin}T00:00:00`);
     const diff = b.getTime() - a.getTime();
-    if (Number.isNaN(diff) || diff <= 0) return 0;
+    if (Number.isNaN(diff) || diff < 0) return 0;
+    if (diff === 0) return 1;
     return Math.round(diff / 86400000);
   };
 

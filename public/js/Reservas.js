@@ -155,6 +155,19 @@ const configurarEventosReservas = () => {
         if (!fila) return;
         cerrarMenusOpciones();
 
+        const estadosConCheckIn = [
+          "en_estadia",
+          "checkout_pendiente",
+          "checkout_realizado",
+        ];
+        if (!estadosConCheckIn.includes(String(fila.dataset.estado || "").toLowerCase())) {
+          window.Alerta(
+            "Solo se puede emitir una boleta o factura después de realizar el check-in del cliente.",
+            "error",
+          );
+          return;
+        }
+
         const parseArray = (valor) => {
           try {
             return JSON.parse(valor || "[]");

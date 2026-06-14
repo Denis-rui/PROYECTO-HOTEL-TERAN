@@ -41,6 +41,10 @@ class DocumentoElectronicoModel
 
     private function noches(string $desde, string $hasta): int
     {
+        if ($desde !== '' && $desde === $hasta) {
+            return 1;
+        }
+
         return max(0, ReservaHelper::obtenerDiasEstadia($desde, $hasta));
     }
 
@@ -188,14 +192,17 @@ class DocumentoElectronicoModel
 
     private function validarFechas(array $reserva, string $fechaDesde, string $fechaHasta): array
     {
-        $checkIn = $this->fechaIso((string) ($reserva['check_in_programado'] ?? ($reserva['check_in'] ?? '')));
-        $checkOut = $this->fechaIso((string) ($reserva['check_out_programado'] ?? ($reserva['check_out'] ?? '')));
+        $checkIn = $this->fechaIso((string) ($reserva['checkin_real'] ?? ''));
+        $checkOut = $this->fechaIso((string) (
+            $reserva['checkout_real']
+            ?? ($reserva['check_out_programado'] ?? ($reserva['check_out'] ?? ''))
+        ));
 
         if ($fechaDesde === '' || $fechaHasta === '' || $checkIn === '' || $checkOut === '') {
             return ['exito' => false, 'mensaje' => 'Debe seleccionar un rango de fechas válido.'];
         }
 
-        if ($fechaDesde < $checkIn || $fechaHasta > $checkOut || $fechaHasta <= $fechaDesde) {
+        if ($fechaDesde < $checkIn || $fechaHasta > $checkOut || $fechaHasta < $fechaDesde) {
             return ['exito' => false, 'mensaje' => 'El rango del documento debe estar dentro de la reserva y generar al menos una noche.'];
         }
 
@@ -237,6 +244,13 @@ class DocumentoElectronicoModel
 
     private function rangosSeCruzan(string $inicioA, string $finA, string $inicioB, string $finB): bool
     {
+        if ($inicioA === $finA) {
+            $finA = (new \DateTimeImmutable($finA))->modify('+1 day')->format('Y-m-d');
+        }
+        if ($inicioB === $finB) {
+            $finB = (new \DateTimeImmutable($finB))->modify('+1 day')->format('Y-m-d');
+        }
+
         return $inicioA < $finB && $finA > $inicioB;
     }
 
@@ -427,8 +441,19 @@ class DocumentoElectronicoModel
             return ['exito' => false, 'mensaje' => 'La reserva no fue encontrada.'];
         }
 
-        $fechaDesde = $this->fechaIso((string) ($datos['fecha_desde'] ?? ($reserva['check_in_programado'] ?? ($reserva['check_in'] ?? ''))));
-        $fechaHasta = $this->fechaIso((string) ($datos['fecha_hasta'] ?? ($reserva['check_out_programado'] ?? ($reserva['check_out'] ?? ''))));
+        $checkInReal = $this->fechaIso((string) ($reserva['checkin_real'] ?? ''));
+        if ($checkInReal === '') {
+            return [
+                'exito' => false,
+                'mensaje' => 'Solo se puede emitir una boleta o factura después de realizar el check-in del cliente.',
+            ];
+        }
+
+        $fechaDesde = $this->fechaIso((string) ($datos['fecha_desde'] ?? $checkInReal));
+        $fechaHasta = $this->fechaIso((string) (
+            $datos['fecha_hasta']
+            ?? ($reserva['checkout_real'] ?? ($reserva['check_out_programado'] ?? ($reserva['check_out'] ?? '')))
+        ));
         $validacionFechas = $this->validarFechas($reserva, $fechaDesde, $fechaHasta);
         if (!($validacionFechas['exito'] ?? false)) {
             return $validacionFechas;
