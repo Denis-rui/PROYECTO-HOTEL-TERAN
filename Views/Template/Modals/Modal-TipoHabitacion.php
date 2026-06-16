@@ -2,7 +2,8 @@
   <div class="contenedor-modal" role="dialog" aria-modal="true">
     <h3 id="titulo-modal-tipo" class="titulo-modal">Nuevo Tipo de Habitación</h3>
 
-    <form id="form-tipo-habitacion" class="formulario-modal" novalidate>
+    <form id="form-tipo-habitacion" class="formulario-modal" method="POST"
+      >
       <input type="hidden" id="id-tipo" name="id" />
 
       <div class="label-input-modal">

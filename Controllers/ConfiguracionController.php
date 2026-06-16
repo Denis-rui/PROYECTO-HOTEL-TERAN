@@ -1,4 +1,5 @@
 <?php
+
 namespace Controllers;
 
 use Libraries\Core\Controller;
@@ -15,7 +16,7 @@ class ConfiguracionController extends Controller
         }
         $data['page_title'] = "Configuración del Hotel";
         $data['hotel'] = $this->model->find(1);
-        
+
         // Cargar tipos de habitación
         $data['tipos_habitacion'] = TipoHabitacion::orderBy('id')->get()->toArray();
         $data['page_js'] = ['Configuraciones.js', 'Modal-TipoHabitacion.js'];
@@ -23,7 +24,7 @@ class ConfiguracionController extends Controller
     }
 
     public function actualizar($params = '')
-   {
+    {
         if (!isset($_SESSION['usuario'])) {
             header('Content-Type: application/json');
             echo json_encode(['exito' => false, 'mensaje' => 'No autenticado']);
@@ -44,23 +45,67 @@ class ConfiguracionController extends Controller
             echo json_encode(['exito' => false, 'mensaje' => $e->getMessage()]);
         }
         exit();
-   }
+    }
 
     public function guardarTipo($params = '')
     {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
-
-        $id     = $_POST['id']         ?? null;
-        $tipo   = $_POST['tipo']        ?? '';
-        $precio = $_POST['precio_base'] ?? 0;
-
-        if ($id) {
-            TipoHabitacion::where('id', $id)->update(['tipo' => $tipo, 'precio_base' => $precio]);
-        } else {
-            TipoHabitacion::create(['tipo' => $tipo, 'precio_base' => $precio]);
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode([
+                'exito' => false,
+                'mensaje' => 'Método no permitido'
+            ]);
+            return;
         }
 
-        header('Location: ' . BASE_URL . 'Configuracion/index&exito=1');
+        header('Content-Type: application/json');
+
+        try {
+
+           
+            $datos = json_decode(file_get_contents('php://input'), true);
+
+            $id     = $datos['id'] ?? null;
+            $tipo   = $datos['tipo'] ?? '';
+            $precio = $datos['precio_base'] ?? 0;
+
+            if (!$tipo || !$precio) {
+                echo json_encode([
+                    'exito' => false,
+                    'mensaje' => 'Datos incompletos'
+                ]);
+                return;
+            }
+
+            if ($id) {
+                TipoHabitacion::where('id', $id)
+                    ->update([
+                        'tipo' => $tipo,
+                        'precio_base' => $precio
+                    ]);
+
+                echo json_encode([
+                    'exito' => true,
+                    'mensaje' => 'Actualizado correctamente'
+                ]);
+            } else {
+                TipoHabitacion::create([
+                    'tipo' => $tipo,
+                    'precio_base' => $precio
+                ]);
+
+                echo json_encode([
+                    'exito' => true,
+                    'mensaje' => 'Creado correctamente'
+                ]);
+            }
+        } catch (\Throwable $e) {
+            http_response_code(500);
+            echo json_encode([
+                'exito' => false,
+                'mensaje' => $e->getMessage()
+            ]);
+        }
     }
 
     public function obtener($params = '')

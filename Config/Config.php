@@ -10,6 +10,8 @@ define('DB_USER', $env['DB_USER']);
 define('DB_PASS', $env['DB_PASS']);
 define('DB_CHARSET', $env['DB_CHARSET']);
 
+define('APP_TIMEZONE', $env['APP_TIMEZONE']);
+
 define('NUBEFACT_SERIE_BOLETA', $env['NUBEFACT_SERIE_BOLETA']);
 define('NUBEFACT_SERIE_FACTURA', $env['NUBEFACT_SERIE_FACTURA']);
 define('NUBEFACT_API_URL', $env['NUBEFACT_API_URL']);
