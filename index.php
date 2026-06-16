@@ -131,6 +131,16 @@ $router->get('Configuracion/obtener', ['Configuracion', 'obtener']);
 $router->post('Configuracion/actualizar', ['Configuracion', 'actualizar']);
 $router->post('Configuracion/guardarTipo', ['Configuracion', 'guardarTipo']);
 
+
+// =====================
+// PERFIL
+// =====================
+
+$router->get('Perfil/index', ['Perfil', 'index']);
+
+$router->post('Perfil/actualizarPerfil', ['Perfil', 'actualizarPerfil']);
+$router->post('Perfil/cambiarClave', ['Perfil', 'cambiarClave']);
+
 $route = $router->resolve();
 
 $controller = $route['controller'];
