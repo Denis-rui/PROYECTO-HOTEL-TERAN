@@ -23,4 +23,28 @@ class Controller
             $this->model = new $modelClass();
         }
     }
+
+    protected function responderJson(array $payload, int $statusCode = 200): void
+    {
+        http_response_code($statusCode);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit();
+    }
+
+    protected function obtenerPayloadJson(): ?array
+    {
+        $datos = json_decode(file_get_contents('php://input'), true);
+        return is_array($datos) ? $datos : null;
+    }
+
+    protected function validarCsrf(): void
+    {
+        try {
+            \Libraries\Core\Csrf::validar();
+        } catch (\Exception $e) {
+            http_response_code($e->getCode());
+            $this->responderJson(['exito' => false, 'mensaje' => $e->getMessage()]);
+        }
+    }
 }
