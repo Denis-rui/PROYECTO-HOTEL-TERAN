@@ -1,5 +1,7 @@
 <?php
+
 ob_start();
+
 session_start([
     'cookie_lifetime' => 0,
     'cookie_path' => '/',
@@ -8,25 +10,131 @@ session_start([
     'cookie_httponly' => true,
     'cookie_samesite' => 'Lax'
 ]);
-date_default_timezone_set('America/Lima');
-
-// Parsear la URL: ?url=Controller/metodo/param
-$url = $_GET['url'] ?? 'Login';
-
-$arrUrl = explode('/', $url);
-
-$controller = ucwords($arrUrl[0]) ?: 'Login';
-$method = $arrUrl[1] ?? 'index';
-$params = '';
-
-if (!empty($arrUrl[2])) {
-    for ($i = 2; $i < count($arrUrl); $i++) {
-        $params .= $arrUrl[$i] . ',';
-    }
-    $params = trim($params, ',');
-}
 
 require_once 'Config/Config.php';
+
+date_default_timezone_set(APP_TIMEZONE);
+
 require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/Config/eloquent.php';
+require_once 'Libraries/Core/Router.php';
+
+use Libraries\Core\Router;
+
+$router = new Router();
+
+
+$router->get('Login/index', ['Login', 'index']);
+$router->post('Login/entrar', ['Login', 'entrar']);
+
+$router->get('Dashboard/index', ['Dashboard', 'index']);
+
+
+// =====================
+// CLIENTES
+// =====================
+$router->get('Cliente/index', ['Cliente', 'index']);
+$router->get('Cliente/listar', ['Cliente', 'listar']);
+$router->get('Cliente/buscar', ['Cliente', 'buscar']);
+$router->get('Cliente/consultarApiPeru', ['Cliente', 'consultarApiPeru']);
+
+$router->post('Cliente/registrar', ['Cliente', 'registrar']);
+$router->post('Cliente/actualizar', ['Cliente', 'actualizar']);
+$router->post('Cliente/eliminar', ['Cliente', 'eliminar']);
+$router->post('Cliente/habilitar', ['Cliente', 'habilitar']);
+
+// =====================
+// HABITACIONES
+// =====================
+
+
+$router->get('Habitacion/index', ['Habitacion', 'index']);
+$router->get('Habitacion/buscar', ['Habitacion', 'buscar']);
+
+$router->post('Habitacion/registrar', ['Habitacion', 'registrar']);
+$router->post('Habitacion/editar', ['Habitacion', 'editar']);
+$router->post('Habitacion/eliminar', ['Habitacion', 'eliminar']);
+$router->post('Habitacion/actualizarEstado', ['Habitacion', 'actualizarEstado']);
+$router->post('Habitacion/terminarLimpieza', ['Habitacion', 'terminarLimpieza']);
+
+$router->get('Habitacion/disponiblesPorRango', ['Habitacion', 'disponiblesPorRango']);
+$router->get('Habitacion/obtenerFiltros', ['Habitacion', 'obtenerFiltros']);
+
+// =====================
+// RESERVAS
+// =====================
+
+// Vistas y consultas
+$router->get('Reserva/index', ['Reserva', 'index']);
+$router->get('Reserva/obtener', ['Reserva', 'obtener']);
+$router->get('Reserva/dashboard', ['Reserva', 'dashboard']);
+$router->get('Reserva/notificaciones', ['Reserva', 'notificaciones']);
+
+// Operaciones de escritura
+$router->post('Reserva/registrar', ['Reserva', 'registrar']);
+$router->post('Reserva/actualizar', ['Reserva', 'actualizar']);
+$router->post('Reserva/pago', ['Reserva', 'pago']);
+$router->post('Reserva/checkin', ['Reserva', 'checkin']);
+$router->post('Reserva/checkout', ['Reserva', 'checkout']);
+$router->post('Reserva/marcarAusente', ['Reserva', 'marcarAusente']);
+$router->post('Reserva/marcarRegreso', ['Reserva', 'marcarRegreso']);
+$router->post('Reserva/actualizarEstado', ['Reserva', 'actualizarEstado']);
+$router->post('Reserva/calcularTotal', ['Reserva', 'calcularTotal']);
+$router->post('Reserva/extender', ['Reserva', 'extender']);
+$router->post('Reserva/consumo', ['Reserva', 'consumo']);
+$router->post('Reserva/cancelar', ['Reserva', 'cancelar']);
+$router->post('Reserva/calcularCancelacion', ['Reserva', 'calcularCancelacion']);
+$router->post('Reserva/cambiarHabitacion', ['Reserva', 'cambiarHabitacion']);
+$router->post('Reserva/emitirDocumentoElectronico', ['Reserva', 'emitirDocumentoElectronico']);
+
+// =====================
+// COMPROBANTES
+// =====================
+
+$router->get('Comprobante/obtenerPorPago', ['Comprobante', 'obtenerPorPago']);
+
+$router->get('Comprobante/emitidosPorReserva', ['Comprobante', 'emitidosPorReserva']);
+
+
+// =====================
+// DEVOLUCIONES
+// =====================
+
+$router->get('Devolucion/index', ['Devolucion', 'index']);
+
+$router->post('Devolucion/registrar', ['Devolucion', 'registrar']);
+$router->post('Devolucion/actualizar', ['Devolucion', 'actualizar']);
+$router->post('Devolucion/eliminar', ['Devolucion', 'eliminar']);
+
+
+// =====================
+// USUARIOS
+// =====================
+
+$router->get('Usuario/index', ['Usuario', 'index']);
+$router->get('Usuario/listar', ['Usuario', 'listar']);
+$router->get('Usuario/perfil', ['Usuario', 'perfil']);
+
+$router->post('Usuario/crear', ['Usuario', 'crear']);
+$router->post('Usuario/actualizar', ['Usuario', 'actualizar']);
+$router->post('Usuario/actualizarAdmin', ['Usuario', 'actualizarAdmin']);
+$router->post('Usuario/eliminar', ['Usuario', 'eliminar']);
+
+// =====================
+// CONFIGURACION
+// =====================
+
+
+$router->get('Configuracion/index', ['Configuracion', 'index']);
+$router->get('Configuracion/obtener', ['Configuracion', 'obtener']);
+
+$router->post('Configuracion/actualizar', ['Configuracion', 'actualizar']);
+$router->post('Configuracion/guardarTipo', ['Configuracion', 'guardarTipo']);
+
+$route = $router->resolve();
+
+$controller = $route['controller'];
+$method = $route['method'];
+$params = $route['params'];
+
 require_once 'Libraries/Core/Load.php';
