@@ -41,7 +41,7 @@ class HabitacionController extends Controller
             $this->views->render($this, 'grid', $data);
         } else {
             header('Content-Type: application/json');
-            echo json_encode($habitaciones);
+            $this->responderJson($habitaciones);
         }
     }
 
@@ -57,7 +57,7 @@ class HabitacionController extends Controller
                     'mensaje' => $ok ? 'Habitación registrada correctamente.' : 'No se pudo registrar la habitación.',
                 ]);
             } catch (\Throwable $e) {
-                echo json_encode(['exito' => false, 'mensaje' => $e->getMessage()]);
+                $this->responderJson(['exito' => false, 'mensaje' => $e->getMessage()], 500);
             }
         }
     }
@@ -71,7 +71,7 @@ class HabitacionController extends Controller
                 $resultado = $this->model->editarHabitacion($datos);
                 echo json_encode($resultado);
             } catch (\Throwable $e) {
-                echo json_encode(['exito' => false, 'mensaje' => $e->getMessage()]);
+                $this->responderJson(['exito' => false, 'mensaje' => $e->getMessage()], 500);
             }
         }
     }
@@ -82,7 +82,7 @@ class HabitacionController extends Controller
             header('Content-Type: application/json');
             $datos = json_decode(file_get_contents('php://input'), true) ?? $_POST;
             $resultado = $this->model->eliminarHabitacion((int) ($datos['id'] ?? 0));
-            echo json_encode($resultado);
+            $this->responderJson($resultado);
         }
     }
 
@@ -91,7 +91,7 @@ class HabitacionController extends Controller
         header('Content-Type: application/json');
         $datos = json_decode(file_get_contents('php://input'), true);
         $resultado = $this->model->actualizarEstado((int) ($datos['id'] ?? 0), $datos['estado'] ?? '', $datos['motivo'] ?? '');
-        echo json_encode($resultado);
+        $this->responderJson($resultado);
     }
 
     public function disponiblesPorRango($params = '')
@@ -116,11 +116,11 @@ class HabitacionController extends Controller
         $datos = json_decode(file_get_contents('php://input'), true);
         $id = (int) ($datos['id'] ?? 0);
         if (!$id) {
-            echo json_encode(['exito' => false, 'mensaje' => 'ID inválido.']);
+            $this->responderJson(['exito' => false, 'mensaje' => 'ID inválido.']);
             return;
         }
         $resultado = $this->model->terminarLimpieza($id);
-        echo json_encode($resultado);
+        $this->responderJson($resultado);
     }
 
     public function obtenerFiltros()

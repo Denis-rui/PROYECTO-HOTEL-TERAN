@@ -3,22 +3,10 @@
 namespace Controllers;
 
 use Libraries\Core\Controller;
+use Libraries\Core\Validator;
 
 class ClienteController extends Controller
 {
-    private function responderJson(array $payload, int $statusCode = 200): void
-    {
-        http_response_code($statusCode);
-        header('Content-Type: application/json');
-        echo json_encode($payload);
-    }
-
-    private function obtenerPayloadJson(): ?array
-    {
-        $datos = json_decode(file_get_contents('php://input'), true);
-        return is_array($datos) ? $datos : null;
-    }
-
     public function index($params = '')
     {
         if (!isset($_SESSION['usuario'])) {
@@ -121,53 +109,30 @@ class ClienteController extends Controller
     public function registrar($params = '')
     {
         $datos = $this->obtenerPayloadJson();
+
+        $v= new Validator($datos);
+
+        $v -> requerido('nombre', 'Nombre')
+            ->requerido('documento', 'Documento')
+            ->requerido('gmail', 'Correo electrónico')
+            ->requerido('telefono', 'Teléfono')
+            ->requerido('procedencia', 'Procedencia')
+            ->numerico('documento', 'Documento')
+            ->numerico('telefono', 'Teléfono')
+            ->email('gmail', 'Correo electrónico');
+
+        if (empty($datos['id_tipo_documento']) || !is_numeric($datos['id_tipo_documento']) || (int)$datos['id_tipo_documento'] <= 0) {
+            $this->responderJson(['exito' => false, 'mensaje' => 'Seleccione un tipo de documento válido'], 422);
+            return;
+        }
+
+        if ($v->falla()) {
+            $this->responderJson(['exito' => false, 'mensaje' => $v->primerError()], 422);
+            return;
+        }
+
         if ($datos === null) {
             $this->responderJson(['exito' => false, 'mensaje' => 'JSON invalido'], 400);
-            return;
-        }
-
-        if (empty($datos['nombre'])) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'El nombre es obligatorio'], 422);
-            return;
-        }
-
-        if (empty($datos['documento'])) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'El documento es obligatorio'], 422);
-            return;
-        }
-
-        if (!is_numeric($datos['documento'])) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'El documento solo puede contener numeros'], 422);
-            return;
-        }
-
-        if (empty($datos['gmail'])) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'El correo electronico es obligatorio'], 422);
-            return;
-        }
-
-        if (!filter_var($datos['gmail'], FILTER_VALIDATE_EMAIL)) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'Correo invalido'], 422);
-            return;
-        }
-
-        if (empty($datos['telefono'])) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'El telefono es obligatorio'], 422);
-            return;
-        }
-
-        if (!is_numeric($datos['telefono'])) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'El telefono solo puede contener numeros'], 422);
-            return;
-        }
-
-        if (empty($datos['procedencia'])) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'La procedencia es obligatoria'], 422);
-            return;
-        }
-
-        if (empty($datos['id_tipo_documento']) || !is_numeric($datos['id_tipo_documento']) || (int) $datos['id_tipo_documento'] <= 0) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'Seleccione un tipo de documento valido'], 422);
             return;
         }
 
@@ -186,7 +151,7 @@ class ClienteController extends Controller
     {
         $datos = $this->obtenerPayloadJson();
         if ($datos === null) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'JSON invalido'], 400);
+            $this->responderJson(['exito' => false, 'mensaje' => 'JSON inválido'], 400);
             return;
         }
 
@@ -195,48 +160,23 @@ class ClienteController extends Controller
             return;
         }
 
-        if (empty($datos['nombre'])) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'El nombre es obligatorio'], 422);
+        $v = new \Libraries\Core\Validator($datos);
+        $v->requerido('nombre', 'Nombre')
+        ->requerido('documento', 'Documento')
+        ->numerico('documento', 'Documento')
+        ->requerido('gmail', 'Correo electrónico')
+        ->email('gmail', 'Correo electrónico')
+        ->requerido('telefono', 'Teléfono')
+        ->numerico('telefono', 'Teléfono')
+        ->requerido('procedencia', 'Procedencia');
+
+        if (empty($datos['id_tipo_documento']) || !is_numeric($datos['id_tipo_documento']) || (int)$datos['id_tipo_documento'] <= 0) {
+            $this->responderJson(['exito' => false, 'mensaje' => 'Seleccione un tipo de documento válido'], 422);
             return;
         }
 
-        if (empty($datos['documento'])) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'El documento es obligatorio'], 422);
-            return;
-        }
-
-        if (!is_numeric($datos['documento'])) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'El documento solo puede contener numeros'], 422);
-            return;
-        }
-
-        if (empty($datos['gmail'])) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'El correo electronico es obligatorio'], 422);
-            return;
-        }
-
-        if (!filter_var($datos['gmail'], FILTER_VALIDATE_EMAIL)) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'Correo invalido'], 422);
-            return;
-        }
-
-        if (empty($datos['telefono'])) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'El telefono es obligatorio'], 422);
-            return;
-        }
-
-        if (!is_numeric($datos['telefono'])) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'El telefono solo puede contener numeros'], 422);
-            return;
-        }
-
-        if (empty($datos['procedencia'])) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'La procedencia es obligatoria'], 422);
-            return;
-        }
-
-        if (empty($datos['id_tipo_documento']) || !is_numeric($datos['id_tipo_documento']) || (int) $datos['id_tipo_documento'] <= 0) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'Seleccione un tipo de documento valido'], 422);
+        if ($v->falla()) {
+            $this->responderJson(['exito' => false, 'mensaje' => $v->primerError()], 422);
             return;
         }
 
