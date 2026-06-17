@@ -73,4 +73,9 @@ class PagoModel
             return ['exito' => false, 'mensaje' => 'Error al registrar pago: ' . $e->getMessage()];
         }
     }
+
+    public function crear(array $datos): Pago
+    {
+        return Pago::create($datos);
+    }
 }
