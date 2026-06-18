@@ -2,7 +2,6 @@
 
 namespace Models;
 
-use Illuminate\Database\Capsule\Manager as DB;
 use Models\Entities\Reserva;
 use Models\Entities\ReservaHabitacion;
 use Helpers\ReservaFormatterHelper as ReservaFormatter;

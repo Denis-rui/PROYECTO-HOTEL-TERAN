@@ -1319,8 +1319,10 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
 window.configurarBtnNuevaReserva = () => {
   const btn = document.getElementById("btnNuevaReserva");
   if (!btn) return;
+  if (btn.dataset.reservaConfigurada === "true") return;
 
   btn.addEventListener("click", () => {
     window.abrirModalReserva("nuevo");
   });
+  btn.dataset.reservaConfigurada = "true";
 };

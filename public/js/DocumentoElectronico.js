@@ -60,7 +60,8 @@
 
   const obtenerHabitacionesActivas = (reserva) =>
     (Array.isArray(reserva?.habitaciones) ? reserva.habitaciones : []).filter(
-      (habitacion) => String(habitacion?.estado_asignacion || "activa") === "activa",
+      (habitacion) =>
+        String(habitacion?.estado_asignacion || "activa") === "activa",
     );
 
   const nochesEntre = (inicio, fin) => {
@@ -74,14 +75,17 @@
   };
 
   const renderHabitaciones = (reserva) => {
-    const contenedor = document.getElementById("listaHabitacionesDocumentoElectronico");
+    const contenedor = document.getElementById(
+      "listaHabitacionesDocumentoElectronico",
+    );
     if (!contenedor) return;
 
     const habitaciones = obtenerHabitacionesActivas(reserva);
     estado.habitaciones = habitaciones;
 
     if (!habitaciones.length) {
-      contenedor.innerHTML = '<div class="habitacion-documento-item">No hay habitaciones activas en la reserva.</div>';
+      contenedor.innerHTML =
+        '<div class="habitacion-documento-item">No hay habitaciones activas en la reserva.</div>';
       return;
     }
 
@@ -91,7 +95,9 @@
         const numero = habitacion.numero_habitacion || "--";
         const piso = habitacion.piso || "--";
         const tipo = habitacion.tipo_nombre || "--";
-        const precio = formatMoney(habitacion.precio_aplicado || habitacion.precio || 0);
+        const precio = formatMoney(
+          habitacion.precio_aplicado || habitacion.precio || 0,
+        );
         return `
           <label class="habitacion-documento-item" for="doc-hab-${id}">
             <div>
@@ -104,30 +110,39 @@
       })
       .join("");
 
-    contenedor.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
-      checkbox.addEventListener("change", actualizarResumen);
-    });
+    contenedor
+      .querySelectorAll('input[type="checkbox"]')
+      .forEach((checkbox) => {
+        checkbox.addEventListener("change", actualizarResumen);
+      });
   };
 
   const calcularResumen = () => {
     const reserva = estado.reserva;
     if (!reserva) return null;
 
-    const fechaDesde = document.getElementById("docElectronicoFechaDesde")?.value || "";
-    const fechaHasta = document.getElementById("docElectronicoFechaHasta")?.value || "";
+    const fechaDesde =
+      document.getElementById("docElectronicoFechaDesde")?.value || "";
+    const fechaHasta =
+      document.getElementById("docElectronicoFechaHasta")?.value || "";
     const noches = nochesEntre(fechaDesde, fechaHasta);
-    const habitacionesSeleccionadas = estado.habitaciones.filter((habitacion) => {
-      const checkbox = document.getElementById(`doc-hab-${habitacion.id}`);
-      return checkbox?.checked;
-    });
+    const habitacionesSeleccionadas = estado.habitaciones.filter(
+      (habitacion) => {
+        const checkbox = document.getElementById(`doc-hab-${habitacion.id}`);
+        return checkbox?.checked;
+      },
+    );
 
-    const totalReserva = toNumber(reserva.total) + toNumber(reserva.cargo_checkout_tarde);
+    const totalReserva =
+      toNumber(reserva.total) + toNumber(reserva.cargo_checkout_tarde);
     const totalPagado = toNumber(reserva.total_pagado);
     const saldo = Math.max(0, totalReserva - totalPagado);
 
     let totalDocumento = 0;
     habitacionesSeleccionadas.forEach((habitacion) => {
-      const precioBruto = toNumber(habitacion.precio_aplicado || habitacion.precio || 0);
+      const precioBruto = toNumber(
+        habitacion.precio_aplicado || habitacion.precio || 0,
+      );
       totalDocumento += precioBruto * noches;
     });
 
@@ -150,13 +165,21 @@
     const resumen = calcularResumen();
     if (!resumen) return null;
 
-    const tipoDocumento = document.getElementById("docElectronicoTipoDocumento")?.value || "BOLETA";
-    const clienteNumero = document.getElementById("docElectronicoClienteNumero")?.value || "";
-    const tipoDocumentoSUNAT = document.getElementById("docElectronicoClienteTipoDocumento")?.value || "-";
+    const tipoDocumento =
+      document.getElementById("docElectronicoTipoDocumento")?.value || "BOLETA";
+    const clienteNumero =
+      document.getElementById("docElectronicoClienteNumero")?.value || "";
+    const tipoDocumentoSUNAT =
+      document.getElementById("docElectronicoClienteTipoDocumento")?.value ||
+      "-";
     const nochesEl = document.getElementById("docElectronicoNoches");
     const totalEmitir = document.getElementById("docElectronicoTotalEmitir");
-    const totalDocumentoResumen = document.getElementById("docElectronicoTotalDocumentoResumen");
-    const totalReservaEl = document.getElementById("docElectronicoTotalReserva");
+    const totalDocumentoResumen = document.getElementById(
+      "docElectronicoTotalDocumentoResumen",
+    );
+    const totalReservaEl = document.getElementById(
+      "docElectronicoTotalReserva",
+    );
     const totalPagadoEl = document.getElementById("docElectronicoTotalPagado");
     const saldoEl = document.getElementById("docElectronicoSaldoPendiente");
     const estadoEl = document.getElementById("docElectronicoEstado");
@@ -164,23 +187,39 @@
     const pagoResumen = document.getElementById("docElectronicoPago");
 
     if (nochesEl) nochesEl.value = String(resumen.noches);
-    if (totalReservaEl) totalReservaEl.textContent = formatMoney(resumen.totalReserva);
-    if (totalPagadoEl) totalPagadoEl.textContent = formatMoney(resumen.totalPagado);
+    if (totalReservaEl)
+      totalReservaEl.textContent = formatMoney(resumen.totalReserva);
+    if (totalPagadoEl)
+      totalPagadoEl.textContent = formatMoney(resumen.totalPagado);
     if (saldoEl) saldoEl.textContent = formatMoney(resumen.saldo);
-    if (totalEmitir) totalEmitir.textContent = formatMoney(resumen.totalDocumento);
-    if (totalDocumentoResumen) totalDocumentoResumen.textContent = formatMoney(resumen.totalDocumento);
-    if (tipoResumen) tipoResumen.textContent = tipoDocumento === "FACTURA" ? "Factura" : "Boleta";
-    if (pagoResumen) pagoResumen.textContent = `${resumen.totalPagado >= resumen.totalReserva ? "Pagada" : "Pendiente"} - ${Math.round((resumen.totalPagado / Math.max(resumen.totalReserva, 1)) * 100)}%`;
+    if (totalEmitir)
+      totalEmitir.textContent = formatMoney(resumen.totalDocumento);
+    if (totalDocumentoResumen)
+      totalDocumentoResumen.textContent = formatMoney(resumen.totalDocumento);
+    if (tipoResumen)
+      tipoResumen.textContent =
+        tipoDocumento === "FACTURA" ? "Factura" : "Boleta";
+    if (pagoResumen)
+      pagoResumen.textContent = `${resumen.totalPagado >= resumen.totalReserva ? "Pagada" : "Pendiente"} - ${Math.round((resumen.totalPagado / Math.max(resumen.totalReserva, 1)) * 100)}%`;
 
     const errores = [];
-    if (resumen.noches <= 0) errores.push("Seleccione un rango de fechas válido.");
+    if (resumen.noches <= 0)
+      errores.push("Seleccione un rango de fechas válido.");
     if (resumen.totalDocumento - 0.01 > resumen.totalPagado) {
-      errores.push("El importe seleccionado supera el monto pagado hasta el momento.");
+      errores.push(
+        "El importe seleccionado supera el monto pagado hasta el momento.",
+      );
     }
-    if (tipoDocumento === "FACTURA" && String(clienteNumero).replace(/\D/g, "").length !== 11) {
+    if (
+      tipoDocumento === "FACTURA" &&
+      String(clienteNumero).replace(/\D/g, "").length !== 11
+    ) {
       errores.push("Factura requiere RUC de 11 dígitos.");
     }
-    if (tipoDocumentoSUNAT === "-" && String(clienteNumero).replace(/\D/g, "").length === 0) {
+    if (
+      tipoDocumentoSUNAT === "-" &&
+      String(clienteNumero).replace(/\D/g, "").length === 0
+    ) {
       errores.push("Ingrese un número de documento válido.");
     }
 
@@ -202,14 +241,23 @@
 
     const campos = {
       docElectronicoIdReserva: reserva.id || "",
-      docElectronicoCodigoReserva: reserva.codigo_reserva || reserva.id || "---",
+      docElectronicoCodigoReserva:
+        reserva.codigo_reserva || reserva.id || "---",
       docElectronicoClienteNombre: reserva.cliente || "",
-      docElectronicoClienteTipoDocumento: tipoDocumentoPorNumero(reserva.documento || ""),
+      docElectronicoClienteTipoDocumento: tipoDocumentoPorNumero(
+        reserva.documento || "",
+      ),
       docElectronicoClienteNumero: reserva.documento || "",
-      docElectronicoClienteEmail: reserva.correo_electronico || reserva.email || "",
-      docElectronicoClienteDireccion: reserva.cliente_direccion || reserva.procedencia || "",
-      docElectronicoFechaDesde: fechaAInput(reserva.check_in || reserva.check_in_programado || ""),
-      docElectronicoFechaHasta: fechaAInput(reserva.check_out || reserva.check_out_programado || ""),
+      docElectronicoClienteEmail:
+        reserva.correo_electronico || reserva.email || "",
+      docElectronicoClienteDireccion:
+        reserva.cliente_direccion || reserva.procedencia || "",
+      docElectronicoFechaDesde: fechaAInput(
+        reserva.check_in || reserva.check_in_programado || "",
+      ),
+      docElectronicoFechaHasta: fechaAInput(
+        reserva.check_out || reserva.check_out_programado || "",
+      ),
       docElectronicoTipoDocumento: "BOLETA",
     };
 
@@ -218,8 +266,12 @@
       if (campo) campo.value = valor;
     });
 
-    const checkIn = fechaAInput(reserva.check_in || reserva.check_in_programado || "");
-    const checkOut = fechaAInput(reserva.check_out || reserva.check_out_programado || "");
+    const checkIn = fechaAInput(
+      reserva.check_in || reserva.check_in_programado || "",
+    );
+    const checkOut = fechaAInput(
+      reserva.check_out || reserva.check_out_programado || "",
+    );
     const fechaDesde = document.getElementById("docElectronicoFechaDesde");
     const fechaHasta = document.getElementById("docElectronicoFechaHasta");
     if (fechaDesde) {
@@ -233,21 +285,26 @@
       fechaHasta.value = checkOut;
     }
 
-    const totalReserva = toNumber(reserva.total) + toNumber(reserva.cargo_checkout_tarde);
+    const totalReserva =
+      toNumber(reserva.total) + toNumber(reserva.cargo_checkout_tarde);
     const totalPagado = toNumber(reserva.total_pagado);
     const saldo = Math.max(0, totalReserva - totalPagado);
 
     if (document.getElementById("docElectronicoTotalReserva")) {
-      document.getElementById("docElectronicoTotalReserva").textContent = formatMoney(totalReserva);
+      document.getElementById("docElectronicoTotalReserva").textContent =
+        formatMoney(totalReserva);
     }
     if (document.getElementById("docElectronicoTotalPagado")) {
-      document.getElementById("docElectronicoTotalPagado").textContent = formatMoney(totalPagado);
+      document.getElementById("docElectronicoTotalPagado").textContent =
+        formatMoney(totalPagado);
     }
     if (document.getElementById("docElectronicoSaldoPendiente")) {
-      document.getElementById("docElectronicoSaldoPendiente").textContent = formatMoney(saldo);
+      document.getElementById("docElectronicoSaldoPendiente").textContent =
+        formatMoney(saldo);
     }
     if (document.getElementById("docElectronicoPago")) {
-      document.getElementById("docElectronicoPago").textContent = `${totalPagado >= totalReserva ? "Pagada" : "Pendiente"} - ${Math.round((totalPagado / Math.max(totalReserva, 1)) * 100)}%`;
+      document.getElementById("docElectronicoPago").textContent =
+        `${totalPagado >= totalReserva ? "Pagada" : "Pendiente"} - ${Math.round((totalPagado / Math.max(totalReserva, 1)) * 100)}%`;
     }
 
     renderHabitaciones(reserva);
@@ -255,7 +312,9 @@
   };
 
   const cargarReservaCompleta = async (idReserva) => {
-    const respuesta = await fetch(BASE_URL + `Reserva/obtener/${encodeURIComponent(idReserva)}`);
+    const respuesta = await fetch(
+      BASE_URL + `Reserva/obtener/${encodeURIComponent(idReserva)}`,
+    );
     const datos = await respuesta.json().catch(() => ({}));
     return respuesta.ok && datos ? datos : null;
   };
@@ -276,11 +335,17 @@
           reserva = {
             ...reserva,
             ...completa,
-            habitaciones: parseArray(completa.habitaciones, reserva.habitaciones || []),
+            habitaciones: parseArray(
+              completa.habitaciones,
+              reserva.habitaciones || [],
+            ),
           };
         }
       } catch (error) {
-        console.error("No se pudo cargar la reserva para emitir documento:", error);
+        console.error(
+          "No se pudo cargar la reserva para emitir documento:",
+          error,
+        );
       }
     }
 
@@ -306,7 +371,10 @@
 
     const resumen = actualizarResumen();
     if (!resumen) return;
-    if (resumen.noches <= 0 || resumen.totalDocumento - 0.01 > resumen.totalPagado) {
+    if (
+      resumen.noches <= 0 ||
+      resumen.totalDocumento - 0.01 > resumen.totalPagado
+    ) {
       return;
     }
 
@@ -320,12 +388,25 @@
       tipo_documento: resumen.tipoDocumento,
       fecha_desde: resumen.fechaDesde,
       fecha_hasta: resumen.fechaHasta,
-      cliente_denominacion: document.getElementById("docElectronicoClienteNombre")?.value?.trim() || "",
-      cliente_tipo_documento: document.getElementById("docElectronicoClienteTipoDocumento")?.value || "-",
-      cliente_numero_documento: document.getElementById("docElectronicoClienteNumero")?.value?.trim() || "",
-      cliente_email: document.getElementById("docElectronicoClienteEmail")?.value?.trim() || "",
-      cliente_direccion: document.getElementById("docElectronicoClienteDireccion")?.value?.trim() || "",
-      habitaciones: resumen.habitacionesSeleccionadas.map((habitacion) => ({ id: habitacion.id })),
+      cliente_denominacion:
+        document.getElementById("docElectronicoClienteNombre")?.value?.trim() ||
+        "",
+      cliente_tipo_documento:
+        document.getElementById("docElectronicoClienteTipoDocumento")?.value ||
+        "-",
+      cliente_numero_documento:
+        document.getElementById("docElectronicoClienteNumero")?.value?.trim() ||
+        "",
+      cliente_email:
+        document.getElementById("docElectronicoClienteEmail")?.value?.trim() ||
+        "",
+      cliente_direccion:
+        document
+          .getElementById("docElectronicoClienteDireccion")
+          ?.value?.trim() || "",
+      habitaciones: resumen.habitacionesSeleccionadas.map((habitacion) => ({
+        id: habitacion.id,
+      })),
     };
 
     const confirmar = await Swal.fire({
@@ -344,16 +425,26 @@
     setMensaje("Enviando a NubeFact...");
 
     try {
-      const respuesta = await fetch(BASE_URL + "Reserva/emitirDocumentoElectronico", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const respuesta = await fetch(
+        BASE_URL + "Reserva/emitirDocumentoElectronico",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
       const resultado = await respuesta.json().catch(() => ({}));
 
       if (!respuesta.ok || !resultado.exito) {
-        setMensaje(resultado.mensaje || "No se pudo emitir el documento.", "error");
-        Swal.fire({ icon: "error", title: "Error", text: resultado.mensaje || "No se pudo emitir el documento." });
+        setMensaje(
+          resultado.mensaje || "No se pudo emitir el documento.",
+          "error",
+        );
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: resultado.mensaje || "No se pudo emitir el documento.",
+        });
         return;
       }
 
@@ -361,7 +452,8 @@
       await Swal.fire({
         icon: "success",
         title: "Documento emitido",
-        text: resultado.mensaje || "Documento electrónico generado correctamente.",
+        text:
+          resultado.mensaje || "Documento electrónico generado correctamente.",
         confirmButtonColor: "#185025",
       });
 
@@ -376,22 +468,40 @@
     } catch (error) {
       console.error(error);
       setMensaje("No se pudo conectar con el servidor.", "error");
-      Swal.fire({ icon: "error", title: "Error de conexión", text: "No se pudo conectar con el servidor." });
+      Swal.fire({
+        icon: "error",
+        title: "Error de conexión",
+        text: "No se pudo conectar con el servidor.",
+      });
     }
   };
 
   const configurarEventos = () => {
     const { overlay, form } = obtenerModal();
-    const botonCerrar = document.getElementById("cerrarModalDocumentoElectronico");
-    const botonCancelar = document.getElementById("btnCancelarDocumentoElectronico");
-    const tipoDocumento = document.getElementById("docElectronicoTipoDocumento");
+    const botonCerrar = document.getElementById(
+      "cerrarModalDocumentoElectronico",
+    );
+    const botonCancelar = document.getElementById(
+      "btnCancelarDocumentoElectronico",
+    );
+    const tipoDocumento = document.getElementById(
+      "docElectronicoTipoDocumento",
+    );
     const fechaDesde = document.getElementById("docElectronicoFechaDesde");
     const fechaHasta = document.getElementById("docElectronicoFechaHasta");
-    const clienteNombre = document.getElementById("docElectronicoClienteNombre");
-    const clienteTipo = document.getElementById("docElectronicoClienteTipoDocumento");
-    const clienteNumero = document.getElementById("docElectronicoClienteNumero");
+    const clienteNombre = document.getElementById(
+      "docElectronicoClienteNombre",
+    );
+    const clienteTipo = document.getElementById(
+      "docElectronicoClienteTipoDocumento",
+    );
+    const clienteNumero = document.getElementById(
+      "docElectronicoClienteNumero",
+    );
     const clienteEmail = document.getElementById("docElectronicoClienteEmail");
-    const clienteDireccion = document.getElementById("docElectronicoClienteDireccion");
+    const clienteDireccion = document.getElementById(
+      "docElectronicoClienteDireccion",
+    );
 
     botonCerrar?.addEventListener("click", cerrarModalDocumentoElectronico);
     botonCancelar?.addEventListener("click", cerrarModalDocumentoElectronico);
@@ -409,7 +519,16 @@
       }
     });
 
-    [tipoDocumento, fechaDesde, fechaHasta, clienteNombre, clienteTipo, clienteNumero, clienteEmail, clienteDireccion]
+    [
+      tipoDocumento,
+      fechaDesde,
+      fechaHasta,
+      clienteNombre,
+      clienteTipo,
+      clienteNumero,
+      clienteEmail,
+      clienteDireccion,
+    ]
       .filter(Boolean)
       .forEach((campo) => {
         campo.addEventListener("change", actualizarResumen);
@@ -421,7 +540,9 @@
   window.cerrarModalDocumentoElectronico = cerrarModalDocumentoElectronico;
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", configurarEventos, { once: true });
+    document.addEventListener("DOMContentLoaded", configurarEventos, {
+      once: true,
+    });
   } else {
     configurarEventos();
   }
@@ -477,10 +598,7 @@
       "docElectronicoClienteNumero",
       cliente.documento || "",
     );
-    actualizarCampoCliente(
-      "docElectronicoClienteEmail",
-      cliente.correo || "",
-    );
+    actualizarCampoCliente("docElectronicoClienteEmail", cliente.correo || "");
     actualizarCampoCliente(
       "docElectronicoClienteDireccion",
       cliente.procedencia || "",
@@ -547,8 +665,7 @@
 
     try {
       const respuesta = await fetch(
-        BASE_URL +
-          `Cliente/buscar&q=${encodeURIComponent(textoBusqueda)}`,
+        BASE_URL + `Cliente/buscar&q=${encodeURIComponent(textoBusqueda)}`,
         { signal: controladorBusquedaCliente.signal },
       );
       const datos = await respuesta.json();
@@ -561,7 +678,8 @@
       if (error.name === "AbortError") return;
       console.error("Error buscando clientes para documento:", error);
       ocultarResultadosCliente();
-      if (mensaje) mensaje.textContent = "No se pudo consultar la base de datos.";
+      if (mensaje)
+        mensaje.textContent = "No se pudo consultar la base de datos.";
       Swal.fire({
         icon: "error",
         title: "Error al buscar clientes",
@@ -645,437 +763,5 @@
     );
   } else {
     configurarBuscadorClienteDocumento();
-  }
-})();
-(() => {
-  const estado = {
-    reserva: null,
-    habitaciones: [],
-  };
-
-  const toNumber = (valor) => {
-    const numero = Number(String(valor ?? 0).replace(/[^0-9.-]/g, ""));
-    return Number.isFinite(numero) ? numero : 0;
-  };
-
-  const formatMoney = (valor) => `S/ ${toNumber(valor).toFixed(2)}`;
-
-  const escapeHtml = (valor) =>
-    String(valor ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-
-  const parseArray = (valor, fallback = []) => {
-    if (Array.isArray(valor)) return valor;
-    if (!valor) return fallback;
-
-    try {
-      const parsed = JSON.parse(valor);
-      return Array.isArray(parsed) ? parsed : fallback;
-    } catch (error) {
-      return fallback;
-    }
-  };
-
-  const fechaAInput = (valor) => {
-    if (!valor) return "";
-    const texto = String(valor).slice(0, 10);
-    return /^\d{4}-\d{2}-\d{2}$/.test(texto) ? texto : "";
-  };
-
-  const fechaParaMostrar = (valor) => {
-    if (!valor) return "---";
-    const fecha = new Date(String(valor).replace(" ", "T"));
-    if (Number.isNaN(fecha.getTime())) return String(valor);
-    return new Intl.DateTimeFormat("es-PE", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    }).format(fecha);
-  };
-
-  const nochesEntre = (inicio, fin) => {
-    if (!inicio || !fin) return 0;
-    const a = new Date(`${inicio}T00:00:00`);
-    const b = new Date(`${fin}T00:00:00`);
-    const diff = b.getTime() - a.getTime();
-    if (Number.isNaN(diff) || diff < 0) return 0;
-    if (diff === 0) return 1;
-    return Math.round(diff / 86400000);
-  };
-
-  const obtenerHabitacionesActivas = (reserva) =>
-    (Array.isArray(reserva?.habitaciones) ? reserva.habitaciones : []).filter(
-      (habitacion) => String(habitacion?.estado_asignacion || "activa") === "activa",
-    );
-
-  const tipoDocumentoPorNumero = (numeroDocumento = "") => {
-    const limpio = String(numeroDocumento || "").replace(/\D/g, "");
-    if (limpio.length === 11) return "6";
-    if (limpio.length === 8) return "1";
-    return "-";
-  };
-
-  const obtenerModal = () => ({
-    overlay: document.getElementById("contenedor-modal-documento-electronico"),
-    modal: document.getElementById("modalDocumentoElectronico"),
-    form: document.getElementById("formDocumentoElectronico"),
-  });
-
-  const setMensaje = (mensaje, tipo = "") => {
-    const elemento = document.getElementById("mensajeDocumentoElectronico");
-    if (!elemento) return;
-    elemento.textContent = mensaje || "";
-    elemento.classList.remove("error", "exito");
-    if (tipo) elemento.classList.add(tipo);
-  };
-
-  const actualizarResumen = () => {
-    const reserva = estado.reserva;
-    if (!reserva) return;
-
-    const fechaDesde = document.getElementById("docElectronicoFechaDesde")?.value || "";
-    const fechaHasta = document.getElementById("docElectronicoFechaHasta")?.value || "";
-    const noches = nochesEntre(fechaDesde, fechaHasta);
-    const habitacionesSeleccionadas = estado.habitaciones.filter((habitacion) => {
-      const checkbox = document.getElementById(`doc-hab-${habitacion.id}`);
-      return checkbox?.checked;
-    });
-
-    const totalReserva = toNumber(reserva.total) + toNumber(reserva.cargo_checkout_tarde);
-    const totalPagado = toNumber(reserva.total_pagado);
-    const saldo = Math.max(0, totalReserva - totalPagado);
-
-    let totalDocumento = 0;
-    habitacionesSeleccionadas.forEach((habitacion) => {
-      const precioBruto = toNumber(habitacion.precio_aplicado || habitacion.precio || 0);
-      totalDocumento += precioBruto * noches;
-    });
-
-    const tipoDocumento = document.getElementById("docElectronicoTipoDocumento")?.value || "BOLETA";
-    const clienteTipoDocumento = document.getElementById("docElectronicoClienteTipoDocumento")?.value || "-";
-    const clienteNumero = document.getElementById("docElectronicoClienteNumero")?.value || "";
-    const tipoCalculado = tipoDocumento === "FACTURA" ? "6" : (clienteTipoDocumento === "-" ? tipoDocumentoPorNumero(clienteNumero) : clienteTipoDocumento);
-
-    if (document.getElementById("docElectronicoNoches")) {
-      document.getElementById("docElectronicoNoches").value = String(noches);
-    }
-
-    const totalEmitir = document.getElementById("docElectronicoTotalEmitir");
-    const totalDocumentoResumen = document.getElementById("docElectronicoTotalDocumentoResumen");
-    const totalReservaEl = document.getElementById("docElectronicoTotalReserva");
-    const totalPagadoEl = document.getElementById("docElectronicoTotalPagado");
-    const saldoEl = document.getElementById("docElectronicoSaldoPendiente");
-    const estadoEl = document.getElementById("docElectronicoEstado");
-    const tipoResumen = document.getElementById("docElectronicoTipoResumen");
-    const pagoResumen = document.getElementById("docElectronicoPago");
-
-    if (totalReservaEl) totalReservaEl.textContent = formatMoney(totalReserva);
-    if (totalPagadoEl) totalPagadoEl.textContent = formatMoney(totalPagado);
-    if (saldoEl) saldoEl.textContent = formatMoney(saldo);
-    if (totalEmitir) totalEmitir.textContent = formatMoney(totalDocumento);
-    if (totalDocumentoResumen) totalDocumentoResumen.textContent = formatMoney(totalDocumento);
-    if (tipoResumen) tipoResumen.textContent = tipoDocumento === "FACTURA" ? "Factura" : "Boleta";
-    if (pagoResumen) pagoResumen.textContent = `${totalPagado >= totalReserva ? "Pagada" : "Pendiente"} - ${Math.round((totalPagado / Math.max(totalReserva, 1)) * 100)}%`;
-
-    const mensaje = [];
-    if (noches <= 0) mensaje.push("Seleccione un rango de fechas válido.");
-    if (totalDocumento - 0.01 > totalPagado) {
-      mensaje.push("El importe seleccionado supera el monto pagado hasta el momento.");
-    }
-    if (tipoDocumento === "FACTURA" && String(clienteNumero).replace(/\D/g, "").length !== 11) {
-      mensaje.push("Factura requiere RUC de 11 dígitos.");
-    }
-
-    if (estadoEl) {
-      estadoEl.textContent = mensaje.length ? "Revisar" : "Listo para emitir";
-    }
-
-    setMensaje(mensaje.join(" "), mensaje.length ? "error" : "");
-    return {
-      fechaDesde,
-      fechaHasta,
-      noches,
-      totalReserva,
-      totalPagado,
-      saldo,
-      totalDocumento,
-      habitacionesSeleccionadas,
-      tipoDocumento,
-      tipoCalculado,
-    };
-  };
-
-  const renderHabitaciones = (reserva) => {
-    const contenedor = document.getElementById("listaHabitacionesDocumentoElectronico");
-    if (!contenedor) return;
-
-    const habitaciones = obtenerHabitacionesActivas(reserva);
-    estado.habitaciones = habitaciones;
-
-    if (!habitaciones.length) {
-      contenedor.innerHTML = '<div class="habitacion-documento-item">No hay habitaciones activas en la reserva.</div>';
-      return;
-    }
-
-    contenedor.innerHTML = habitaciones
-      .map((habitacion) => {
-        const id = habitacion.id;
-        const numero = habitacion.numero_habitacion || "--";
-        const piso = habitacion.piso || "--";
-        const tipo = habitacion.tipo_nombre || "--";
-        const precio = formatMoney(habitacion.precio_aplicado || habitacion.precio || 0);
-        return `
-          <label class="habitacion-documento-item" for="doc-hab-${id}">
-            <div>
-              <input type="checkbox" id="doc-hab-${id}" data-id="${id}" checked />
-              <strong>Hab. ${escapeHtml(numero)} - Piso ${escapeHtml(piso)}</strong>
-            </div>
-            <small>${escapeHtml(tipo)} | ${precio} por noche</small>
-          </label>
-        `;
-      })
-      .join("");
-
-    contenedor.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
-      checkbox.addEventListener("change", actualizarResumen);
-    });
-  };
-
-  const poblarFormulario = (reserva) => {
-    estado.reserva = reserva;
-
-    const campos = {
-      docElectronicoIdReserva: reserva.id || "",
-      docElectronicoCodigoReserva: reserva.codigo_reserva || reserva.id || "---",
-      docElectronicoClienteNombre: reserva.cliente || "",
-      docElectronicoClienteTipoDocumento: tipoDocumentoPorNumero(reserva.documento || ""),
-      docElectronicoClienteNumero: reserva.documento || "",
-      docElectronicoClienteEmail: reserva.correo_electronico || reserva.email || "",
-      docElectronicoClienteDireccion: reserva.cliente_direccion || reserva.procedencia || "",
-      docElectronicoFechaDesde: fechaAInput(reserva.check_in || reserva.check_in_programado || ""),
-      docElectronicoFechaHasta: fechaAInput(reserva.check_out || reserva.check_out_programado || ""),
-      docElectronicoTipoDocumento: "BOLETA",
-    };
-
-    Object.entries(campos).forEach(([id, valor]) => {
-      const campo = document.getElementById(id);
-      if (campo) campo.value = valor;
-    });
-
-    if (document.getElementById("docElectronicoTipoResumen")) {
-      document.getElementById("docElectronicoTipoResumen").textContent = "Boleta";
-    }
-
-    if (document.getElementById("docElectronicoTotalReserva")) {
-      document.getElementById("docElectronicoTotalReserva").textContent = formatMoney(toNumber(reserva.total) + toNumber(reserva.cargo_checkout_tarde));
-    }
-
-    if (document.getElementById("docElectronicoTotalPagado")) {
-      document.getElementById("docElectronicoTotalPagado").textContent = formatMoney(reserva.total_pagado || 0);
-    }
-
-    if (document.getElementById("docElectronicoTotalDocumentoResumen")) {
-      document.getElementById("docElectronicoTotalDocumentoResumen").textContent = formatMoney(0);
-    }
-
-    if (document.getElementById("docElectronicoSaldoPendiente")) {
-      document.getElementById("docElectronicoSaldoPendiente").textContent = formatMoney(Math.max(0, (toNumber(reserva.total) + toNumber(reserva.cargo_checkout_tarde)) - toNumber(reserva.total_pagado)));
-    }
-
-    const checkIn = fechaAInput(reserva.check_in || reserva.check_in_programado || "");
-    const checkOut = fechaAInput(reserva.check_out || reserva.check_out_programado || "");
-    const fechaDesde = document.getElementById("docElectronicoFechaDesde");
-    const fechaHasta = document.getElementById("docElectronicoFechaHasta");
-    if (fechaDesde) {
-      fechaDesde.min = checkIn;
-      fechaDesde.max = checkOut;
-      fechaDesde.value = checkIn;
-    }
-    if (fechaHasta) {
-      fechaHasta.min = checkIn;
-      fechaHasta.max = checkOut;
-      fechaHasta.value = checkOut;
-    }
-
-    renderHabitaciones(reserva);
-    actualizarResumen();
-  };
-
-  const cargarReservaCompleta = async (idReserva) => {
-    const respuesta = await fetch(BASE_URL + `Reserva/obtener/${encodeURIComponent(idReserva)}`);
-    const datos = await respuesta.json().catch(() => ({}));
-    return respuesta.ok && datos ? datos : null;
-  };
-
-  const abrirModalDocumentoElectronico = async (datos = {}) => {
-    const { overlay, modal } = obtenerModal();
-    if (!overlay || !modal) return;
-
-    const reservaBase = {
-      ...datos,
-      habitaciones: parseArray(datos.habitaciones, []),
-    };
-
-    let reserva = reservaBase;
-    if (reservaBase.id) {
-      try {
-        const completa = await cargarReservaCompleta(reservaBase.id);
-        if (completa?.id) {
-          reserva = {
-            ...reservaBase,
-            ...completa,
-            habitaciones: parseArray(completa.habitaciones, reservaBase.habitaciones || []),
-          };
-        }
-      } catch (error) {
-        console.error("No se pudo cargar la reserva para emitir documento:", error);
-      }
-    }
-
-    poblarFormulario(reserva);
-    overlay.style.display = "flex";
-    modal.style.display = "block";
-    document.body.style.overflow = "hidden";
-    setMensaje("Verifique los datos y emita el documento.");
-  };
-
-  const cerrarModalDocumentoElectronico = () => {
-    const { overlay, modal } = obtenerModal();
-    if (overlay) overlay.style.display = "none";
-    if (modal) modal.style.display = "none";
-    document.body.style.overflow = "";
-  };
-
-  const emitirDocumentoElectronico = async (evento) => {
-    evento.preventDefault();
-    const reserva = estado.reserva;
-    if (!reserva) return;
-
-    const resumen = actualizarResumen();
-    if (resumen.noches <= 0 || resumen.totalDocumento - 0.01 > resumen.totalPagado) {
-      return;
-    }
-
-    const habitaciones = resumen.habitacionesSeleccionadas.map((habitacion) => ({ id: habitacion.id }));
-    if (!habitaciones.length) {
-      setMensaje("Debe seleccionar al menos una habitación.", "error");
-      return;
-    }
-
-    const payload = {
-      id_reserva: reserva.id,
-      tipo_documento: resumen.tipoDocumento,
-      fecha_desde: resumen.fechaDesde,
-      fecha_hasta: resumen.fechaHasta,
-      cliente_denominacion: document.getElementById("docElectronicoClienteNombre")?.value?.trim() || "",
-      cliente_tipo_documento: document.getElementById("docElectronicoClienteTipoDocumento")?.value || "-",
-      cliente_numero_documento: document.getElementById("docElectronicoClienteNumero")?.value?.trim() || "",
-      cliente_email: document.getElementById("docElectronicoClienteEmail")?.value?.trim() || "",
-      cliente_direccion: document.getElementById("docElectronicoClienteDireccion")?.value?.trim() || "",
-      habitaciones,
-    };
-
-    const confirmacion = await Swal.fire({
-      icon: "question",
-      title: `Emitir ${payload.tipo_documento === "FACTURA" ? "factura" : "boleta"}`,
-      text: "NubeFact generará el documento electrónico con los datos seleccionados.",
-      showCancelButton: true,
-      confirmButtonText: "Emitir",
-      cancelButtonText: "Cancelar",
-      confirmButtonColor: "#185025",
-      cancelButtonColor: "#8f2f2f",
-    });
-
-    if (!confirmacion.isConfirmed) return;
-
-    setMensaje("Enviando a NubeFact...", "");
-
-    try {
-      const respuesta = await fetch(BASE_URL + "Reserva/emitirDocumentoElectronico", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const resultado = await respuesta.json().catch(() => ({}));
-
-      if (!respuesta.ok || !resultado.exito) {
-        setMensaje(resultado.mensaje || "No se pudo emitir el documento.", "error");
-        Swal.fire({ icon: "error", title: "Error", text: resultado.mensaje || "No se pudo emitir el documento." });
-        return;
-      }
-
-      const documento = resultado.documento || {};
-      await Swal.fire({
-        icon: "success",
-        title: "Documento emitido",
-        text: resultado.mensaje || "Documento electrónico generado correctamente.",
-        confirmButtonColor: "#185025",
-      });
-
-      if (documento.enlace_del_pdf) {
-        window.open(documento.enlace_del_pdf, "_blank", "noopener,noreferrer");
-      } else if (documento.enlace) {
-        window.open(documento.enlace, "_blank", "noopener,noreferrer");
-      }
-
-      cerrarModalDocumentoElectronico();
-      window.location.reload();
-    } catch (error) {
-      console.error(error);
-      setMensaje("No se pudo conectar con el servidor.", "error");
-      Swal.fire({ icon: "error", title: "Error de conexión", text: "No se pudo conectar con el servidor." });
-    }
-  };
-
-  const configurarEventos = () => {
-    const { overlay, form } = obtenerModal();
-    const botonCerrar = document.getElementById("cerrarModalDocumentoElectronico");
-    const botonCancelar = document.getElementById("btnCancelarDocumentoElectronico");
-    const tipoDocumento = document.getElementById("docElectronicoTipoDocumento");
-    const fechaDesde = document.getElementById("docElectronicoFechaDesde");
-    const fechaHasta = document.getElementById("docElectronicoFechaHasta");
-    const clienteNombre = document.getElementById("docElectronicoClienteNombre");
-    const clienteTipo = document.getElementById("docElectronicoClienteTipoDocumento");
-    const clienteNumero = document.getElementById("docElectronicoClienteNumero");
-    const clienteEmail = document.getElementById("docElectronicoClienteEmail");
-    const clienteDireccion = document.getElementById("docElectronicoClienteDireccion");
-
-    botonCerrar?.addEventListener("click", cerrarModalDocumentoElectronico);
-    botonCancelar?.addEventListener("click", cerrarModalDocumentoElectronico);
-    form?.addEventListener("submit", emitirDocumentoElectronico);
-
-    overlay?.addEventListener("click", (evento) => {
-      if (evento.target === overlay) {
-        cerrarModalDocumentoElectronico();
-      }
-    });
-
-    document.addEventListener("keydown", (evento) => {
-      if (evento.key === "Escape") {
-        if (overlay?.style.display === "flex") {
-          cerrarModalDocumentoElectronico();
-        }
-      }
-    });
-
-    [tipoDocumento, fechaDesde, fechaHasta, clienteNombre, clienteTipo, clienteNumero, clienteEmail, clienteDireccion]
-      .filter(Boolean)
-      .forEach((campo) => {
-        campo.addEventListener("change", actualizarResumen);
-        campo.addEventListener("input", actualizarResumen);
-      });
-  };
-
-  window.abrirModalDocumentoElectronico = abrirModalDocumentoElectronico;
-  window.cerrarModalDocumentoElectronico = cerrarModalDocumentoElectronico;
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", configurarEventos, { once: true });
-  } else {
-    configurarEventos();
   }
 })();

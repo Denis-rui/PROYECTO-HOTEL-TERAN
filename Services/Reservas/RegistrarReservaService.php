@@ -6,12 +6,12 @@ use Illuminate\Database\Capsule\Manager as DB;
 use Helpers\FechaHotelHelper;
 use Helpers\HabitacionInputHelper;
 use Helpers\ReservaHelper;
-use Models\ComprobanteModel;
 use Models\HabitacionModel;
 use Models\PagoModel;
 use Models\ReporteOcupacionModel;
 use Models\ReservaHabitacionModel;
 use Models\ReservaModel;
+use Services\Comprobantes\ComprobanteService;
 
 class RegistrarReservaService
 {
@@ -20,7 +20,7 @@ class RegistrarReservaService
     private HabitacionModel $habitacionModel;
     private ReporteOcupacionModel $reporteOcupacionModel;
     private PagoModel $pagoModel;
-    private ComprobanteModel $comprobanteModel;
+    private ComprobanteService $comprobanteService;
 
     public function __construct()
     {
@@ -29,7 +29,7 @@ class RegistrarReservaService
         $this->habitacionModel = new HabitacionModel();
         $this->reporteOcupacionModel = new ReporteOcupacionModel();
         $this->pagoModel = new PagoModel();
-        $this->comprobanteModel = new ComprobanteModel();
+        $this->comprobanteService = new ComprobanteService();
     }
 
     public function registrarReserva(array $reserva, ?int $idUsuario = null): array
@@ -193,7 +193,7 @@ class RegistrarReservaService
                 throw new \RuntimeException('No se pudo registrar el pago inicial.');
             }
 
-            $comprobante = $this->comprobanteModel->crearDesdePago(
+            $comprobante = $this->comprobanteService->crearDesdePago(
                 $pago,
                 ['total' => $totalCalculado],
                 $habitacionesNormalizadas,
@@ -204,7 +204,7 @@ class RegistrarReservaService
                 throw new \RuntimeException('No se pudo generar el comprobante del pago inicial.');
             }
 
-            $comprobanteData = $this->comprobanteModel->obtenerPorPago((int) $pago->id);
+            $comprobanteData = $this->comprobanteService->obtenerPorPago((int) $pago->id);
 
             DB::connection()->commit();
 

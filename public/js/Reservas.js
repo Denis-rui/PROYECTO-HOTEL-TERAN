@@ -5,7 +5,6 @@ window.inicializarReservas = () => {
   configurarEventosReservas();
 };
 const configurarEventosReservas = () => {
-  const btnNuevaReserva = document.getElementById("btnNuevaReserva");
   const cuerpoTabla = document.getElementById("contenido-reservas");
   const anchoMenu = 220;
   const cerrarMenusOpciones = () => {
@@ -21,12 +20,6 @@ const configurarEventosReservas = () => {
       }
     });
   };
-
-  if (btnNuevaReserva) {
-    btnNuevaReserva.addEventListener("click", () => {
-      window.abrirModalReserva("nuevo");
-    });
-  }
 
   if (cuerpoTabla) {
     cuerpoTabla.addEventListener("click", async (e) => {
