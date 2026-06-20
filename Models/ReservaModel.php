@@ -109,9 +109,6 @@ class ReservaModel
         return $reserva ? ReservaFormatter::formatear($reserva) : null;
     }
 
-
-
-
     public function obtenerReservaConHabitaciones(int $idReserva): ?Reserva
     {
         return Reserva::with([

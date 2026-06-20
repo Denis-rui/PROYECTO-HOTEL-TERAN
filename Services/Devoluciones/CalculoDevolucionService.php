@@ -233,12 +233,6 @@ class CalculoDevolucionService
         if ($subtotal > 0) {
             return $subtotal / $cantidadDias;
         }
-
-        /*
-         * Esto está bien en el Service.
-         * No está en Helper.
-         * El Service puede consultar otro Model para completar datos necesarios.
-         */
         $habitacion = $this->habitacionModel->obtenerPorId($idHabitacion) ?? [];
 
         return (float) ($habitacion['precio'] ?? 0);
@@ -247,9 +241,7 @@ class CalculoDevolucionService
     private function marcarNochesUsadas(array &$noches, string $fechaCancelacion): void
     {
         foreach ($noches as &$noche) {
-            /*
-             * La noche del mismo día de cancelación también se cobra.
-             */
+
             if ($noche['fecha'] <= $fechaCancelacion) {
                 $noche['usada'] = true;
             }

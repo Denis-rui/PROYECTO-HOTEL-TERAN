@@ -10,7 +10,8 @@
             "Libraries\\Core\\": "Libraries/Core/",
             "Controllers\\": "Controllers/",
             "Models\\": "Models/",
-            "Helpers\\": "Helpers/"
+            "Helpers\\": "Helpers/",
+            "Services\\": "Services/"
         }
     }
 }

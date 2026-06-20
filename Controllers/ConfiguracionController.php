@@ -4,7 +4,7 @@ namespace Controllers;
 
 use Libraries\Core\Controller;
 use Models\Entities\TipoHabitacion;
-
+use Services\ConfiguracionService;
 
 class ConfiguracionController extends Controller
 {
@@ -15,8 +15,8 @@ class ConfiguracionController extends Controller
             exit();
         }
         $data['page_title'] = "Configuración del Hotel";
-        $data['hotel'] = $this->model->find(1);
-
+        $service = new ConfiguracionService();
+        $data['hotel'] = $service->obtenerHotel();
         // Cargar tipos de habitación
         $data['tipos_habitacion'] = TipoHabitacion::orderBy('id')->get()->toArray();
         $data['page_js'] = ['Configuraciones.js', 'Modal-TipoHabitacion.js'];
@@ -39,8 +39,9 @@ class ConfiguracionController extends Controller
         header('Content-Type: application/json');
 
         try {
-            $ok = $this->model->actualizarHotel($datos);
-            echo json_encode(['exito' => (bool) $ok]);
+            $service = new ConfiguracionService();
+            $ok = $service->actualizarHotel($datos);
+            echo json_encode($ok);
         } catch (\Exception $e) {
             echo json_encode(['exito' => false, 'mensaje' => $e->getMessage()]);
         }
@@ -62,7 +63,7 @@ class ConfiguracionController extends Controller
 
         try {
 
-           
+
             $datos = json_decode(file_get_contents('php://input'), true);
 
             $id     = $datos['id'] ?? null;
@@ -106,13 +107,5 @@ class ConfiguracionController extends Controller
                 'mensaje' => $e->getMessage()
             ]);
         }
-    }
-
-    public function obtener($params = '')
-    {
-        ob_clean();
-        header('Content-Type: application/json');
-        echo json_encode($this->model->find());
-        exit();
     }
 }
