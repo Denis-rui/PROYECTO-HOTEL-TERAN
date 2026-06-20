@@ -4,9 +4,7 @@ namespace Controllers;
 
 use Libraries\Core\Controller;
 use Models\DashboardModel;
-use Models\PagoModel;
 use Models\NotificacionModel;
-use Models\DocumentoElectronicoModel;
 use Models\ReporteOcupacionModel;
 use Services\Reservas\CheckInReservaService;
 use Services\Reservas\CheckOutReservaService;
@@ -18,7 +16,8 @@ use Services\Reservas\ActualizarReservaService;
 use Services\Reservas\ExtenderEstadiaService;
 use Services\Reservas\CambiarHabitacionService;
 use Services\Pagos\RegistrarPagoService;
-use Services\DocumentosElectronicos\DocumentoElectronicoService;
+use Services\Comprobantes\DocumentoElectronicoService;
+use Services\Devoluciones\CalculoDevolucionService;
 
 
 
@@ -335,7 +334,7 @@ class ReservaController extends Controller
     {
         header('Content-Type: application/json');
         $datos = json_decode(file_get_contents('php://input'), true) ?: [];
-        $modelo = new \Models\CalculoDevolucionModel();
+        $modelo = new CalculoDevolucionService();
         echo json_encode($modelo->calcular((int) ($datos['id_reserva'] ?? 0)));
     }
 

@@ -99,20 +99,18 @@ class ReservaModel
 
     public function obtenerReservaPorId($idReserva): ?array
     {
-        $reserva = $this->obtenerReservaCompleta((int) $idReserva);
-
-        return $reserva ? ReservaFormatter::formatear($reserva) : null;
-    }
-
-    public function obtenerReservaCompleta(int $idReserva): ?Reserva
-    {
-        return Reserva::with([
+        $reserva = Reserva::with([
             'cliente',
             'usuario',
             'pagos',
             'reservaHabitacion.habitacion'
         ])->find($idReserva);
+
+        return $reserva ? ReservaFormatter::formatear($reserva) : null;
     }
+
+
+
 
     public function obtenerReservaConHabitaciones(int $idReserva): ?Reserva
     {

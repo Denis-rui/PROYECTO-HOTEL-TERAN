@@ -1,4 +1,5 @@
 <?php
+
 namespace Models;
 
 use Models\Entities\Cliente;
@@ -26,9 +27,9 @@ class ClienteModel
             );
 
         if (!empty($nombre)) {
-            $query->where(function($q) use ($nombre) {
+            $query->where(function ($q) use ($nombre) {
                 $q->where('c.nombre_completo', 'LIKE', "%$nombre%")
-                  ->orWhere('c.documento', 'LIKE', "%$nombre%");
+                    ->orWhere('c.documento', 'LIKE', "%$nombre%");
             });
         }
 
@@ -58,12 +59,12 @@ class ClienteModel
             ])
             ->where('c.activo', 1)
             ->orderBy('c.nombre_completo', 'asc')
-            ->limit(50);
+            ->limit(20);
 
         if ($textoBusqueda !== '') {
             $query->where(function ($q) use ($textoBusqueda) {
                 $q->where('nombre_completo', 'like', '%' . $textoBusqueda . '%')
-                  ->orWhere('documento', 'like', '%' . $textoBusqueda . '%');
+                    ->orWhere('documento', 'like', '%' . $textoBusqueda . '%');
             });
         }
 

@@ -75,7 +75,45 @@ class ReservaFormatterHelper
                 $checkoutHoy = true;
             }
         }
-        return ['id' => $reserva->id, 'codigo_reserva' => $reserva->codigo_reserva, 'fecha_creacion' => $reserva->fecha_creacion ?? null, 'id_cliente' => $reserva->id_cliente, 'cliente' => $cliente->nombre_completo ?? '', 'documento' => $cliente->documento ?? '', 'id_tipo_documento' => $cliente->id_tipo_documento ?? null, 'documento_tipo_nombre' => self::obtenerNombreTipoDocumento($cliente), 'correo_electronico' => $cliente->correo_electronico ?? '', 'cliente_direccion' => $cliente->procedencia ?? '', 'telefono' => $cliente->telefono ?? '', 'procedencia' => $cliente->procedencia ?? '', 'id_usuario' => $reserva->id_usuario ?? null, 'usuario' => $usuario->nombre_completo ?? $usuario->nombre_usuario ?? '', 'usuario_nombre' => $usuario->nombre_completo ?? $usuario->nombre_usuario ?? '', 'id_habitacion' => $habitacionPrincipal['id'] ?? null, 'habitacion' => $habitacionPrincipal ? 'Hab. ' . $habitacionPrincipal['numero_habitacion'] . ' - Piso ' . $habitacionPrincipal['piso'] : '', 'habitaciones' => $habitaciones, 'habitaciones_historial' => $habitacionesHistorial, 'piso' => $habitacionPrincipal['piso'] ?? null, 'check_in' => $checkIn, 'check_out' => $checkOut, 'check_in_programado' => $checkInProgramado, 'check_out_programado' => $checkOutProgramado, 'checkin_real' => $reserva->checkin_real ?? null, 'checkout_real' => $reserva->checkout_real ?? null, 'minutos_demora_checkout' => $reserva->minutos_demora_checkout ?? 0, 'cargo_checkout_tarde' => $cargoTarde, 'total' => $total, 'estado' => $estado, 'observaciones' => $reserva->observaciones ?? '', 'total_pagado' => $totalPagado, 'saldo_pendiente' => $saldoPendiente, 'porcentaje_pago' => $total + $cargoTarde > 0 ? round(($totalPagado / ($total + $cargoTarde)) * 100, 0) : 0, 'pagos' => $pagos, 'minutos_checkout_vencido' => $minutosCheckoutVencido, 'checkout_hoy' => $checkoutHoy,];
+        return [
+            'id' => $reserva->id,
+            'codigo_reserva' => $reserva->codigo_reserva,
+            'fecha_creacion' => $reserva->fecha_creacion ?? null,
+            'id_cliente' => $reserva->id_cliente,
+            'cliente' => $cliente->nombre_completo ?? '',
+            'documento' => $cliente->documento ?? '',
+            'id_tipo_documento' => $cliente->id_tipo_documento ?? null,
+            'documento_tipo_nombre' => self::obtenerNombreTipoDocumento($cliente),
+            'correo_electronico' => $cliente->correo_electronico ?? '',
+            'cliente_direccion' => $cliente->procedencia ?? '',
+            'telefono' => $cliente->telefono ?? '',
+            'procedencia' => $cliente->procedencia ?? '',
+            'id_usuario' => $reserva->id_usuario ?? null,
+            'usuario' => $usuario->nombre_completo ?? $usuario->nombre_usuario ?? '',
+            'usuario_nombre' => $usuario->nombre_completo ?? $usuario->nombre_usuario ?? '',
+            'id_habitacion' => $habitacionPrincipal['id'] ?? null,
+            'habitacion' => $habitacionPrincipal ? 'Hab. ' . $habitacionPrincipal['numero_habitacion'] . ' - Piso ' . $habitacionPrincipal['piso'] : '',
+            'habitaciones' => $habitaciones,
+            'habitaciones_historial' => $habitacionesHistorial,
+            'piso' => $habitacionPrincipal['piso'] ?? null,
+            'check_in' => $checkIn,
+            'check_out' => $checkOut,
+            'check_in_programado' => $checkInProgramado,
+            'check_out_programado' => $checkOutProgramado,
+            'checkin_real' => $reserva->checkin_real ?? null,
+            'checkout_real' => $reserva->checkout_real ?? null,
+            'minutos_demora_checkout' => $reserva->minutos_demora_checkout ?? 0,
+            'cargo_checkout_tarde' => $cargoTarde,
+            'total' => $total,
+            'estado' => $estado,
+            'observaciones' => $reserva->observaciones ?? '',
+            'total_pagado' => $totalPagado,
+            'saldo_pendiente' => $saldoPendiente,
+            'porcentaje_pago' => $total + $cargoTarde > 0 ? round(($totalPagado / ($total + $cargoTarde)) * 100, 0) : 0,
+            'pagos' => $pagos,
+            'minutos_checkout_vencido' => $minutosCheckoutVencido,
+            'checkout_hoy' => $checkoutHoy,
+        ];
     } // revisar aca luego 
     private static function obtenerNombreTipoDocumento($cliente): ?string
     {
