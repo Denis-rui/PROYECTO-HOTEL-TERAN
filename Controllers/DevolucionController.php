@@ -1,10 +1,21 @@
 <?php
+
 namespace Controllers;
 
 use Libraries\Core\Controller;
+use Services\Devoluciones\DevolucionService; // Asegúrate de que la ruta coincida con tu namespace
 
 class DevolucionController extends Controller
 {
+    private DevolucionService $devolucionService;
+
+    public function __construct()
+    {
+        parent::__construct();
+        // Instanciamos el servicio para usarlo en todos los métodos
+        $this->devolucionService = new DevolucionService();
+    }
+
     public function index($params = '')
     {
         if (!isset($_SESSION['usuario'])) {
@@ -13,9 +24,15 @@ class DevolucionController extends Controller
         }
 
         $busqueda = $_GET['busqueda'] ?? '';
+
+        // Llamamos al servicio en lugar del modelo
+        $respuesta = $this->devolucionService->listarDevoluciones($busqueda);
+
         $data['page_title'] = "Devoluciones";
-        $data['devoluciones'] = $this->model->listar($busqueda);
+        // Si el servicio tuvo éxito, enviamos la data; si no, un arreglo vacío
+        $data['devoluciones'] = $respuesta['exito'] ? $respuesta['data'] : [];
         $data['page_js'] = [];
+
         $this->views->render($this, 'index', $data);
     }
 
@@ -23,36 +40,30 @@ class DevolucionController extends Controller
     {
         header('Content-Type: application/json');
         $datos = json_decode(file_get_contents('php://input'), true) ?: [];
-        $exito = $this->model->crear($datos);
-        echo json_encode([
-            'exito' => $exito,
-            'mensaje' => $exito
-                ? 'Devolución registrada con el cálculo vigente.'
-                : 'No se pudo registrar la devolución. Solo corresponde a reservas canceladas sin checkout.',
-        ]);
+        $idUsuario = $_SESSION['id_usuario'] ?? null;
+
+        // El servicio ya devuelve el arreglo ['exito' => ..., 'mensaje' => ...]
+        // Así que podemos imprimirlo directamente en el json_encode
+        $respuesta = $this->devolucionService->registrarDevolucion($datos, $idUsuario);
+        echo json_encode($respuesta);
     }
 
     public function actualizar($params = '')
     {
         header('Content-Type: application/json');
         $datos = json_decode(file_get_contents('php://input'), true) ?: [];
-        $exito = $this->model->actualizar($datos);
-        echo json_encode([
-            'exito' => $exito,
-            'mensaje' => $exito
-                ? 'Devolución recalculada correctamente.'
-                : 'No se pudo actualizar la devolución.',
-        ]);
+        $idUsuario = $_SESSION['id_usuario'] ?? null;
+
+        $respuesta = $this->devolucionService->actualizarDevolucion($datos, $idUsuario);
+        echo json_encode($respuesta);
     }
 
     public function eliminar($params = '')
     {
         header('Content-Type: application/json');
         $datos = json_decode(file_get_contents('php://input'), true) ?: [];
-        $exito = $this->model->eliminar((int) ($datos['id'] ?? 0));
-        echo json_encode([
-            'exito' => $exito,
-            'mensaje' => $exito ? 'Devolución eliminada.' : 'No se pudo eliminar la devolución.',
-        ]);
+
+        $respuesta = $this->devolucionService->eliminarDevolucion((int) ($datos['id'] ?? 0));
+        echo json_encode($respuesta);
     }
 }

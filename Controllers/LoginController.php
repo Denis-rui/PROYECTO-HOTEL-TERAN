@@ -1,7 +1,9 @@
 <?php
+
 namespace Controllers;
 
 use Libraries\Core\Controller;
+use Services\LoginService;
 
 class LoginController extends Controller
 {
@@ -25,8 +27,8 @@ class LoginController extends Controller
         $tipousuario = $post['tipousuario'] ?? '';
         $usuario     = $post['usuario']     ?? '';
         $contrasenia = $_POST['contrasena'] ?? ''; // Contraseña NO se sanitiza para preservar caracteres especiales
-
-        $user = $this->model->obtenerUsuarios($usuario);
+        $loginService = new LoginService();
+        $user = $loginService->autenticar($usuario, $contrasenia);
         $contraseniaGuardada = $user['contrasenia'] ?? '';
         $contraseniaValida   =
             password_verify($contrasenia, $contraseniaGuardada)

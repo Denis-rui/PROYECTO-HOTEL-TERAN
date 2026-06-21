@@ -1,6 +1,6 @@
 <?php
 
-namespace Services;
+namespace Services\Devoluciones;
 
 use Models\DevolucionModel;
 use Services\Devoluciones\CalculoDevolucionService;

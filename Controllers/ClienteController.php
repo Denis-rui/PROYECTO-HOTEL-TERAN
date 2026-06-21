@@ -3,10 +3,18 @@
 namespace Controllers;
 
 use Libraries\Core\Controller;
-use Libraries\Core\Validator;
+use Services\ClienteService;
 
 class ClienteController extends Controller
 {
+    private ClienteService $clienteService;
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->clienteService = new ClienteService();
+    }
+
     public function index($params = '')
     {
         if (!isset($_SESSION['usuario'])) {
@@ -16,138 +24,70 @@ class ClienteController extends Controller
 
         $nombre = $_GET['nombre'] ?? '';
         $data['page_title'] = 'Gestion de Clientes';
+        // Para el listado general en la vista podemos llamar al modelo directo o crear un método en el servicio
         $data['clientes'] = $this->model->listar($nombre);
         $data['page_js'] = ['Modal-Clientes.js', 'Clientes.js'];
+
         $this->views->render($this, 'index', $data);
     }
 
     public function listar($params = '')
     {
-        $this->responderJson($this->model->obtenerClientes());
+        $this->responderJson($this->model->listar());
     }
 
     public function buscar($params = '')
     {
-        $texto = trim((string) ($_GET['q'] ?? ''));
-        $clientes = $this->model->obtenerClientesParaReserva($texto);
-        $clienteInhabilitado = null;
-
-        if ($texto !== '' && ctype_digit($texto)) {
-            $clienteInhabilitado = $this->model->buscarClienteInhabilitadoPorDocumento($texto);
-        }
-
-        $this->responderJson([
-            'clientes' => $clientes,
-            'cliente_inhabilitado' => $clienteInhabilitado
-        ]);
+        $texto = $_GET['q'] ?? '';
+        $respuesta = $this->clienteService->buscarParaReserva($texto);
+        $this->responderJson($respuesta['data']);
     }
 
     public function consultarApiPeru($params = '')
     {
-        $tipo = strtolower(trim((string) ($_GET['tipo'] ?? 'dni')));
-        $documento = preg_replace('/\D+/', '', trim((string) ($_GET['documento'] ?? '')));
-        $token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImRlbmlzcnVpbWUuMjBAZ21haWwuY29tIn0.D61eKsOn1hVPtzBFRhHrylY4Wa6b_-OUn1lnzkrp7qU';
+        $tipo = $_GET['tipo'] ?? 'dni';
+        $documento = $_GET['documento'] ?? '';
 
-        if (!in_array($tipo, ['dni', 'ruc'], true)) {
-            $this->responderJson(['success' => false, 'message' => 'Tipo de documento invalido'], 422);
-            return;
-        }
+        $respuesta = $this->clienteService->consultarApiExterna($tipo, $documento);
+        $codigoHttp = $respuesta['code'] ?? 200;
+        unset($respuesta['code']); // Quitamos el código interno del array final
 
-        if ($documento === '' || ($tipo === 'dni' && strlen($documento) !== 8) || ($tipo === 'ruc' && strlen($documento) !== 11)) {
-            $this->responderJson(['success' => false, 'message' => 'Documento invalido'], 422);
-            return;
-        }
-
-        $url = 'https://dniruc.apisperu.com/api/v1/' . $tipo . '/' . $documento . '?token=' . urlencode($token);
-
-        $curl = curl_init($url);
-        curl_setopt_array($curl, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_TIMEOUT => 15,
-            CURLOPT_CONNECTTIMEOUT => 10,
-            CURLOPT_HTTPHEADER => ['Accept: application/json'],
-        ]);
-
-        $respuesta = curl_exec($curl);
-        $errorCurl = curl_error($curl);
-        $codigoHttp = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        curl_close($curl);
-
-        if ($respuesta === false || $errorCurl) {
-            $this->responderJson(['success' => false, 'message' => 'No se pudo completar la consulta'], 500);
-            return;
-        }
-
-        $datos = json_decode($respuesta, true);
-        if ($codigoHttp >= 400) {
-            $mensaje = 'No se encontró información para ese documento.';
-
-            if (json_last_error() === JSON_ERROR_NONE && is_array($datos)) {
-                $mensajeApi = trim((string) ($datos['message'] ?? $datos['mensaje'] ?? ''));
-                if ($mensajeApi !== '' && stripos($mensajeApi, 'ocurrió un error') === false) {
-                    $mensaje = $mensajeApi;
-                }
-            } elseif (is_string($respuesta) && stripos($respuesta, 'Ocurrió un Error') === false) {
-                $mensaje = 'No se pudo completar la consulta.';
-            }
-
-            $this->responderJson(['success' => false, 'message' => $mensaje], 200);
-            return;
-        }
-
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            $this->responderJson(['success' => false, 'message' => 'No se pudo procesar la respuesta'], 500);
-            return;
-        }
-
-        http_response_code($codigoHttp > 0 ? $codigoHttp : 200);
-        header('Content-Type: application/json');
-        echo json_encode($datos);
+        $this->responderJson($respuesta, $codigoHttp);
     }
 
     public function registrar($params = '')
     {
         $datos = $this->obtenerPayloadJson();
 
-        $v= new Validator($datos);
-
-        $v -> requerido('nombre', 'Nombre')
-            ->requerido('documento', 'Documento')
-            ->requerido('gmail', 'Correo electrónico')
-            ->requerido('telefono', 'Teléfono')
-            ->requerido('procedencia', 'Procedencia')
-            ->numerico('documento', 'Documento')
-            ->numerico('telefono', 'Teléfono')
-            ->email('gmail', 'Correo electrónico');
-
-        if (empty($datos['id_tipo_documento']) || !is_numeric($datos['id_tipo_documento']) || (int)$datos['id_tipo_documento'] <= 0) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'Seleccione un tipo de documento válido'], 422);
-            return;
-        }
-
-        if ($v->falla()) {
-            $this->responderJson(['exito' => false, 'mensaje' => $v->primerError()], 422);
-            return;
-        }
-
         if ($datos === null) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'JSON invalido'], 400);
+            $this->responderJson(['exito' => false, 'mensaje' => 'JSON inválido'], 400);
             return;
         }
 
-        try {
-            $ok = $this->model->crearCliente($datos);
-            $this->responderJson([
-                'exito' => (bool) $ok,
-                'mensaje' => $ok ? 'Cliente creado correctamente' : 'No se pudo crear el cliente'
-            ]);
-        } catch (\Exception $e) {
-            $this->responderJson(['exito' => false, 'mensaje' => $e->getMessage()], 500);
-        }
+        $respuesta = $this->clienteService->registrarCliente($datos);
+        $codigoHttp = $respuesta['code'] ?? 200;
+        unset($respuesta['code']);
+
+        $this->responderJson($respuesta, $codigoHttp);
     }
 
     public function actualizar($params = '')
+    {
+        $datos = $this->obtenerPayloadJson();
+
+        if ($datos === null) {
+            $this->responderJson(['exito' => false, 'mensaje' => 'JSON inválido'], 400);
+            return;
+        }
+
+        $respuesta = $this->clienteService->actualizarCliente($datos);
+        $codigoHttp = $respuesta['code'] ?? 200;
+        unset($respuesta['code']);
+
+        $this->responderJson($respuesta, $codigoHttp);
+    }
+
+    public function eliminar($params = '')
     {
         $datos = $this->obtenerPayloadJson();
         if ($datos === null) {
@@ -155,89 +95,25 @@ class ClienteController extends Controller
             return;
         }
 
-        if (empty($datos['id'])) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'ID requerido'], 422);
-            return;
-        }
+        $respuesta = $this->clienteService->cambiarEstado((int)($datos['id'] ?? 0), 0);
+        $codigoHttp = $respuesta['code'] ?? 200;
+        unset($respuesta['code']);
 
-        $v = new \Libraries\Core\Validator($datos);
-        $v->requerido('nombre', 'Nombre')
-        ->requerido('documento', 'Documento')
-        ->numerico('documento', 'Documento')
-        ->requerido('gmail', 'Correo electrónico')
-        ->email('gmail', 'Correo electrónico')
-        ->requerido('telefono', 'Teléfono')
-        ->numerico('telefono', 'Teléfono')
-        ->requerido('procedencia', 'Procedencia');
-
-        if (empty($datos['id_tipo_documento']) || !is_numeric($datos['id_tipo_documento']) || (int)$datos['id_tipo_documento'] <= 0) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'Seleccione un tipo de documento válido'], 422);
-            return;
-        }
-
-        if ($v->falla()) {
-            $this->responderJson(['exito' => false, 'mensaje' => $v->primerError()], 422);
-            return;
-        }
-
-        try {
-            $ok = $this->model->actualizarCliente($datos);
-            $this->responderJson([
-                'exito' => (bool) $ok,
-                'mensaje' => $ok ? 'Cliente actualizado' : 'No se pudo actualizar'
-            ]);
-        } catch (\Exception $e) {
-            $this->responderJson(['exito' => false, 'mensaje' => $e->getMessage()], 500);
-        }
-    }
-
-    public function eliminar($params = '')
-    {
-        $datos = $this->obtenerPayloadJson();
-        if ($datos === null) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'JSON invalido'], 400);
-            return;
-        }
-
-        $idCliente = (int) ($datos['id'] ?? 0);
-        if ($idCliente <= 0) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'ID de cliente invalido'], 422);
-            return;
-        }
-
-        try {
-            $ok = $this->model->eliminarCliente($idCliente);
-            $this->responderJson([
-                'exito' => (bool) $ok,
-                'mensaje' => $ok ? 'Cliente inhabilitado correctamente' : 'No se pudo inhabilitar'
-            ]);
-        } catch (\Exception $e) {
-            $this->responderJson(['exito' => false, 'mensaje' => $e->getMessage()], 500);
-        }
+        $this->responderJson($respuesta, $codigoHttp);
     }
 
     public function habilitar($params = '')
     {
         $datos = $this->obtenerPayloadJson();
         if ($datos === null) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'JSON invalido'], 400);
+            $this->responderJson(['exito' => false, 'mensaje' => 'JSON inválido'], 400);
             return;
         }
 
-        $idCliente = (int) ($datos['id'] ?? 0);
-        if ($idCliente <= 0) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'ID de cliente invalido'], 422);
-            return;
-        }
+        $respuesta = $this->clienteService->cambiarEstado((int)($datos['id'] ?? 0), 1);
+        $codigoHttp = $respuesta['code'] ?? 200;
+        unset($respuesta['code']);
 
-        try {
-            $ok = $this->model->habilitarCliente($idCliente);
-            $this->responderJson([
-                'exito' => (bool) $ok,
-                'mensaje' => $ok ? 'Cliente habilitado correctamente' : 'No se pudo habilitar'
-            ]);
-        } catch (\Exception $e) {
-            $this->responderJson(['exito' => false, 'mensaje' => $e->getMessage()], 500);
-        }
+        $this->responderJson($respuesta, $codigoHttp);
     }
 }

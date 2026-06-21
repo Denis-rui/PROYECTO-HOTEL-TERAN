@@ -7,7 +7,7 @@ use Models\Entities\Usuario;
 
 class UsuarioModel
 {
-    public function obtenerPorNombreUsuario(string $nombreUsuario)
+    public function obtenerPorNombreUsuario($nombreUsuario)
     {
         return Usuario::with(['rol.permisos'])
             ->where('nombre_usuario', $nombreUsuario)
