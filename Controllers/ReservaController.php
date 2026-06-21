@@ -18,6 +18,7 @@ use Services\Reservas\CambiarHabitacionService;
 use Services\Pagos\RegistrarPagoService;
 use Services\Comprobantes\DocumentoElectronicoService;
 use Services\Devoluciones\CalculoDevolucionService;
+use Services\NotificacionService;
 
 
 
@@ -260,8 +261,11 @@ class ReservaController extends Controller
     public function notificaciones($params = '')
     {
         header('Content-Type: application/json');
-        $notificacionModel = new NotificacionModel();
-        echo json_encode($notificacionModel->obtenerNotificacionesCheckout());
+
+        $notificacionService = new NotificacionService();
+        $respuesta = $notificacionService->obtenerNotificacionesCheckout();
+
+        echo json_encode($respuesta['data']);
     }
 
     public function calcularTotal($params = '')

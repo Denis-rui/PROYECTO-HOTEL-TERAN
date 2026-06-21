@@ -5,16 +5,8 @@ namespace Models;
 use Models\Entities\Devolucion;
 use Models\Entities\Reserva;
 
-use function Illuminate\Support\now;
-
 class DevolucionModel
 {
-    private function usuarioActual()
-    {
-        return $_SESSION['id_usuario'] ?? null;
-    }
-
-
     public function listar($busqueda = '')
     {
         $query = Devolucion::query()
@@ -48,68 +40,22 @@ class DevolucionModel
         })->toArray();
     }
 
-    public function crear($data)
+    public function obtenerDevolucion(int $id)
     {
-        $idReserva = (int) ($data['id_reserva'] ?? 0);
-        $reserva = Reserva::find($idReserva);
-        if (!$reserva || $reserva->estado !== 'cancelada') {
-            return false;
-        }
-        if (!empty($reserva->checkout_real) || $reserva->estado === 'checkout_realizado') {
-            return false;
-        }
-
-        $calculo = (new CalculoDevolucionModel())->calcular(
-            $idReserva,
-            $data['fecha_cancelacion'] ?? null
-        );
-        if (!($calculo['exito'] ?? false)) {
-            return false;
-        }
-
-        return Devolucion::updateOrCreate(['id_reserva' => $idReserva], [
-            'id_reserva' => $idReserva,
-            'fecha_cancelacion' => $calculo['fecha_cancelacion'],
-            'fecha_inicio' => $calculo['fecha_inicio'],
-            'fecha_prevista' => $calculo['fecha_prevista'],
-            'dias_usados' => $calculo['dias_usados'],
-            'dias_no_usados' => $calculo['dias_no_usados'],
-            'total_no_ocupado' => $calculo['total_no_ocupado'],
-            'porcentaje_penalidad' => $calculo['porcentaje_penalidad'],
-            'monto_penalidad' => $calculo['monto_penalidad'],
-            'monto_devuelto' => $calculo['monto_devuelto'],
-            'id_usuario' => $data['id_usuario'] ?? $this->usuarioActual(),
-        ]) !== null;
+        return Devolucion::find($id);
     }
 
-    public function actualizar($data)
+    public function guardar(int $idReserva, array $datosGuardar)
     {
-        $devolucion = Devolucion::find((int) ($data['id'] ?? 0));
-        if (!$devolucion) {
-            return false;
-        }
-
-        $calculo = (new CalculoDevolucionModel())->calcular(
-            (int) $devolucion->id_reserva,
-            $data['fecha_cancelacion'] ?? $devolucion->fecha_cancelacion
-        );
-        if (!($calculo['exito'] ?? false)) {
-            return false;
-        }
-
-        return Devolucion::where('id', $data['id'])->update([
-            'fecha_cancelacion' => $calculo['fecha_cancelacion'],
-            'dias_usados' => $calculo['dias_usados'],
-            'dias_no_usados' => $calculo['dias_no_usados'],
-            'total_no_ocupado' => $calculo['total_no_ocupado'],
-            'porcentaje_penalidad' => $calculo['porcentaje_penalidad'],
-            'monto_penalidad' => $calculo['monto_penalidad'],
-            'monto_devuelto' => $calculo['monto_devuelto'],
-            'id_usuario' => $data['id_usuario'] ?? $this->usuarioActual(),
-        ]) !== false;
+        return Devolucion::updateOrCreate(['id_reserva' => $idReserva], $datosGuardar) !== null;
     }
 
-    public function eliminar($id)
+    public function actualizar(int $id, array $datos)
+    {
+        return Devolucion::where('id', $id)->update($datos) !== false;
+    }
+
+    public function eliminar(int $id)
     {
         return Devolucion::destroy($id) > 0;
     }
