@@ -24,7 +24,10 @@
             const headers = new Headers(init.headers || (input instanceof Request ? input.headers : undefined));
             headers.set('X-CSRF-Token', CSRF_TOKEN);
 
-            return fetchOriginal(input, { ...init, headers });
+            return fetchOriginal(input, {
+                ...init,
+                headers
+            });
         };
     </script>
 
@@ -49,6 +52,8 @@
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Notificaciones.css" />
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Devoluciones.css" />
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Modal-TipoHabitacion.css" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.3.8/css/dataTables.dataTables.css" />
+ 
 </head>
 
 <body>

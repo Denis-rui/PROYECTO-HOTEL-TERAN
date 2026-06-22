@@ -42,7 +42,7 @@
   border-radius: 16px;
   overflow: hidden;
   background: var(--bg-white);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .tabla .tbl-usuarios {
@@ -86,4 +86,16 @@
 .tabla .tbl-usuarios tbody tr.cliente-inactivo td {
   background-color: #d9d9d9 !important;
   color: var(--text-secondary) !important;
+}
+
+#tabla-cli {
+
+  width: 100%;
+  overflow-x: auto;
+}
+
+.filtros-cli{
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
 }
