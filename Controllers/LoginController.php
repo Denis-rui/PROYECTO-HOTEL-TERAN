@@ -26,28 +26,30 @@ class LoginController extends Controller
 
         $tipousuario = $post['tipousuario'] ?? '';
         $usuario     = $post['usuario']     ?? '';
-        $contrasenia = $_POST['contrasena'] ?? ''; // Contraseña NO se sanitiza para preservar caracteres especiales
-        $loginService = new LoginService();
-        $user = $loginService->autenticar($usuario, $contrasenia);
-        $contraseniaGuardada = $user['contrasenia'] ?? '';
-        $contraseniaValida   =
-            password_verify($contrasenia, $contraseniaGuardada)
-            || (is_string($contraseniaGuardada) && hash_equals($contraseniaGuardada, md5($contrasenia)))
-            || (is_string($contraseniaGuardada) && hash_equals($contraseniaGuardada, $contrasenia));
+        $contrasenia = $_POST['contrasena'] ?? '';
 
-        // Comparación de rol insensible a mayúsculas y espacios
-        $rolUsuario = isset($user['rol']) ? trim((string)$user['rol']) : '';
-        if ($user && strcasecmp(trim($tipousuario), $rolUsuario) === 0 && $contraseniaValida) {
+        $loginService = new LoginService();
+
+        // Delegamos TODA la lógica de negocio al Service
+        $resultado = $loginService->autenticar($usuario, $contrasenia, $tipousuario);
+
+        // Si la autenticación es exitosa, creamos la sesión
+        if ($resultado['exito']) {
             session_regenerate_id(true);
+            $user = $resultado['usuario'];
+
             $_SESSION['usuario']       = $user['nombre_usuario'];
             $_SESSION['nombreUsuario'] = $user['nombre_usuario'];
             $_SESSION['rol']           = $user['rol'];
             $_SESSION['id_usuario']    = $user['id'];
             $_SESSION['permisos']      = $user['permisos'] ?? [];
+
             header('Location: ' . BASE_URL . 'Dashboard/index');
             exit();
         }
 
+        // Si falla la autenticación, redirigimos con error
+        // Opcional: podrías pasar $resultado['mensaje'] a la vista para dar feedback más específico
         header('Location: ' . BASE_URL . 'Login/index&error=1');
         exit();
     }

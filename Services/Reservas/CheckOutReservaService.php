@@ -24,12 +24,8 @@ class CheckOutReservaService
         $this->notificacionModel = new NotificacionModel();
     }
 
-    public function confirmarCheckout(
-        int $idReserva,
-        ?int $idUsuario = null,
-        bool $autorizarSaldo = false,
-        string $motivoAutorizacion = ''
-    ): array {
+    public function confirmarCheckout(int $idReserva, ?int $idUsuario = null,  bool $autorizarSaldo = false,  string $motivoAutorizacion = ''): array
+    {
         try {
             $reservaActual = $this->reservaModel->obtenerReservaConHabitacionesYPagos($idReserva);
 
@@ -128,14 +124,17 @@ class CheckOutReservaService
                     $idUsuario
                 );
 
-                $this->notificacionModel->crear(
-                    'habitacion_limpieza_pendiente',
-                    'Habitación pendiente de limpieza',
-                    'La habitación ' . ($reservaHabitacion->habitacion->numero_habitacion ?? '') . ' quedó en mantenimiento después del checkout.',
-                    (int) $idReserva,
-                    $idHabitacion,
-                    (int) $reservaActual->id_cliente,
-                    'alta'
+                $this->notificacionModel->guardarNotificacion(
+                    [
+                        'id_reserva' => $idReserva,
+                        'id_habitacion' => $idHabitacion,
+                    ],
+                    [
+                        'tipo' => 'checkout',
+                        'titulo' => 'Checkout confirmado',
+                        'mensaje' => "El checkout de la habitación {$reservaHabitacion->habitacion->numero_habitacion} ha sido confirmado. La habitación está en mantenimiento hasta limpieza.",
+                        'leida' => 0,
+                    ]
                 );
             }
 

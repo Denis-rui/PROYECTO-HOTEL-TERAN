@@ -5,6 +5,7 @@ namespace Services\Reservas;
 use Models\HabitacionModel;
 use Models\ReporteOcupacionModel;
 use Models\ReservaModel;
+use Illuminate\Database\Capsule\Manager as DB;
 
 class ExtenderEstadiaService
 {
@@ -21,6 +22,7 @@ class ExtenderEstadiaService
 
     public function extenderEstadia(int $idReserva, string $nuevoCheckOut, ?int $idUsuario = null): array
     {
+        DB::connection()->beginTransaction();
         try {
             $reservaActual = $this->reservaModel->obtenerReservaConHabitaciones($idReserva);
 
@@ -97,6 +99,7 @@ class ExtenderEstadiaService
                 );
             }
 
+            DB::connection()->commit();
             return [
                 'exito' => $ok,
                 'mensaje' => $ok
@@ -105,6 +108,7 @@ class ExtenderEstadiaService
                 'total' => $nuevoTotal,
             ];
         } catch (\Throwable $e) {
+            DB::connection()->rollBack();
             return [
                 'exito' => false,
                 'mensaje' => 'Error al extender estadía: ' . $e->getMessage()

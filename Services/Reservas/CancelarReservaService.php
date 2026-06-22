@@ -45,10 +45,13 @@ class CancelarReservaService
                 ];
             }
 
-            $calculo = $this->calculoDevolucionModel->calcular($idReserva);
+            $calculo = $this->calculoDevolucionModel->obtenerReservaParaCalculo($idReserva);
 
-            if (!($calculo['exito'] ?? false)) {
-                return $calculo;
+            if (!$calculo) {
+                return [
+                    'exito' => false,
+                    'mensaje' => 'Error al calcular devolución: ' . ($calculo['mensaje'] ?? 'Desconocido')
+                ];
             }
 
             DB::connection()->beginTransaction();

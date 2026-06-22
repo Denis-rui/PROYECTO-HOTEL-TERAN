@@ -4,7 +4,8 @@ namespace Models;
 
 use Models\Entities\Reserva;
 use Models\Entities\ReservaHabitacion;
-use Helpers\ReservaFormatterHelper as ReservaFormatter;
+use Services\Reservas\FormatearReservas as ReservaFormatter;
+
 
 class ReservaModel
 {
@@ -105,7 +106,6 @@ class ReservaModel
             'pagos',
             'reservaHabitacion.habitacion'
         ])->find($idReserva);
-
         return $reserva ? ReservaFormatter::formatear($reserva) : null;
     }
 

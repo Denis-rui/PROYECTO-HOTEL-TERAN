@@ -1,11 +1,11 @@
 <?php
 
-namespace Helpers;
+namespace Services\Reservas;
 
 use Models\HabitacionModel;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Capsule\Manager as DB;
 
-class ReservaFormatterHelper
+class FormatearReservas
 {
     public static function formatear($reserva): array
     {

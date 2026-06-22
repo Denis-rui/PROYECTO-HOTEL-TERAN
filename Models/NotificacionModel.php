@@ -59,4 +59,11 @@ class NotificacionModel
             ->map(fn($item) => (array) $item)
             ->toArray();
     }
+    public function crear(array $datos): bool
+    {
+        $notificacion = new Notificacion();
+        $notificacion->fill($datos);
+        $notificacion->fecha_creacion = date('Y-m-d H:i:s');
+        return $notificacion->save();
+    }
 }
