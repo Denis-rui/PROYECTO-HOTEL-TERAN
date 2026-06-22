@@ -92,6 +92,7 @@ class CheckInReservaService
                 'reserva' => $this->reservaModel->obtenerReservaPorId($idReserva),
             ];
         } catch (\Throwable $e) {
+            error_log('CheckInReservaService::confirmarCheckIn -> ' . $e->getMessage());
             $conexion = DB::connection();
 
             if ($conexion->getPdo()->inTransaction()) {
@@ -99,7 +100,7 @@ class CheckInReservaService
             }
             return [
                 'exito' => false,
-                'mensaje' => 'Error al confirmar check-in: ' . $e->getMessage()
+                'mensaje' => 'No se pudo confirmar el check-in. Intente nuevamente.'
             ];
         }
     }

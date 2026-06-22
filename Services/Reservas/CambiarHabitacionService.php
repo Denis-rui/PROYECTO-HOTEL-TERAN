@@ -231,6 +231,7 @@ class CambiarHabitacionService
                 'reserva' => $this->reservaModel->obtenerReservaPorId($idReserva),
             ];
         } catch (\Throwable $e) {
+            error_log('CambiarHabitacionService::cambiarHabitacion -> ' . $e->getMessage());
             $conexion = DB::connection();
 
             if ($conexion->getPdo()->inTransaction()) {
@@ -239,7 +240,7 @@ class CambiarHabitacionService
 
             return [
                 'exito' => false,
-                'mensaje' => 'Error al cambiar habitación: ' . $e->getMessage()
+                'mensaje' => 'No se pudo cambiar la habitación. Intente nuevamente.'
             ];
         }
     }

@@ -85,7 +85,7 @@ class ConfiguracionService
             return [
                 'exito' => false,
                 'codigo' => 'EXCEPCION',
-                'mensaje' => 'Ocurrió un error al actualizar la configuración: ' . $e->getMessage(),
+                'mensaje' => 'Ocurrió un error al actualizar la configuración. Intente nuevamente.',
             ];
         }
     }

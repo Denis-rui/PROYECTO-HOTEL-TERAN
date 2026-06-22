@@ -88,12 +88,13 @@ class ReservaModel
                 'hay_mas' => $total > count($reservas),
             ];
         } catch (\Throwable $e) {
+            error_log('ReservaModel::obtenerReservas -> ' . $e->getMessage());
             return [
                 'items' => [],
                 'total' => 0,
                 'mostrados' => 0,
                 'hay_mas' => false,
-                'error' => $e->getMessage(),
+                'error' => 'No se pudieron obtener las reservas.',
             ];
         }
     }

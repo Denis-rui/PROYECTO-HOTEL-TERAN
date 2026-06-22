@@ -46,6 +46,7 @@ class AusenciaReservaService
                 'reserva' => $this->reservaModel->obtenerReservaPorId($idReserva),
             ];
         } catch (\Throwable $e) {
+            error_log('AusenciaReservaService::marcarAusente -> ' . $e->getMessage());
             $conexion = DB::connection();
 
             if ($conexion->getPdo()->inTransaction()) {
@@ -54,7 +55,7 @@ class AusenciaReservaService
 
             return [
                 'exito' => false,
-                'mensaje' => 'Error al marcar ausente: ' . $e->getMessage()
+                'mensaje' => 'No se pudo marcar la reserva como ausente.'
             ];
         }
     }
@@ -91,6 +92,7 @@ class AusenciaReservaService
                 'reserva' => $this->reservaModel->obtenerReservaPorId($idReserva),
             ];
         } catch (\Throwable $e) {
+            error_log('AusenciaReservaService::marcarRegreso -> ' . $e->getMessage());
             $conexion = DB::connection();
 
             if ($conexion->getPdo()->inTransaction()) {
@@ -99,7 +101,7 @@ class AusenciaReservaService
 
             return [
                 'exito' => false,
-                'mensaje' => 'Error al marcar regreso: ' . $e->getMessage()
+                'mensaje' => 'No se pudo registrar el regreso de la reserva.'
             ];
         }
     }

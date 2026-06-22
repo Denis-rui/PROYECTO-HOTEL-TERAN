@@ -110,7 +110,8 @@ class ReporteOcupacionModel
 
             return ['disponible' => true, 'mensaje' => 'Disponible'];
         } catch (\Throwable $e) {
-            return ['disponible' => false, 'mensaje' => 'Error al validar disponibilidad: ' . $e->getMessage()];
+            error_log('Error al validar disponibilidad: ' . $e->getMessage());
+            return ['disponible' => false, 'mensaje' => 'No se pudo validar la disponibilidad de la habitación.'];
         }
     }
 

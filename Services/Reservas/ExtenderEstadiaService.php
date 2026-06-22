@@ -108,10 +108,11 @@ class ExtenderEstadiaService
                 'total' => $nuevoTotal,
             ];
         } catch (\Throwable $e) {
+            error_log('ExtenderEstadiaService::extenderEstadia -> ' . $e->getMessage());
             DB::connection()->rollBack();
             return [
                 'exito' => false,
-                'mensaje' => 'Error al extender estadía: ' . $e->getMessage()
+                'mensaje' => 'No se pudo extender la estadía. Intente nuevamente.'
             ];
         }
     }

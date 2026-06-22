@@ -36,7 +36,8 @@ class ConfiguracionController extends Controller
             $ok = $service->actualizarHotel($datos);
             $this->responderJson($ok);
         } catch (\Exception $e) {
-            $this->responderJson(['exito' => false, 'mensaje' => $e->getMessage()], 500);
+            error_log('ConfiguracionController::actualizar -> ' . $e->getMessage());
+            $this->responderJson(['exito' => false, 'mensaje' => 'No se pudo actualizar la configuración.'], 500);
         }
     }
 
@@ -61,9 +62,10 @@ class ConfiguracionController extends Controller
             $service = new ConfiguracionService();
             $this->responderJson($service->guardarTipoHabitacion($datos));
         } catch (\Throwable $e) {
+            error_log('ConfiguracionController::guardarTipo -> ' . $e->getMessage());
             $this->responderJson([
                 'exito' => false,
-                'mensaje' => $e->getMessage()
+                'mensaje' => 'No se pudo guardar el tipo de habitación.'
             ], 500);
         }
     }

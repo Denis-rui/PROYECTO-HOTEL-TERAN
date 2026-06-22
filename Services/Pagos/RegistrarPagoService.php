@@ -92,6 +92,7 @@ class RegistrarPagoService
                 'comprobante' => $comprobanteData,
             ];
         } catch (\Throwable $e) {
+            error_log('RegistrarPagoService::registrarPago -> ' . $e->getMessage());
             $conexion = DB::connection();
 
             if ($conexion->getPdo()->inTransaction()) {
@@ -100,7 +101,7 @@ class RegistrarPagoService
 
             return [
                 'exito' => false,
-                'mensaje' => 'Error al registrar pago: ' . $e->getMessage()
+                'mensaje' => 'No se pudo registrar el pago. Intente nuevamente.'
             ];
         }
     }

@@ -197,6 +197,7 @@ class ActualizarReservaService
                 'reserva' => $this->reservaModel->obtenerReservaPorId($idReserva),
             ];
         } catch (\Throwable $e) {
+            error_log('ActualizarReservaService::actualizarReserva -> ' . $e->getMessage());
             $conexion = DB::connection();
 
             if ($conexion->getPdo()->inTransaction()) {
@@ -205,7 +206,7 @@ class ActualizarReservaService
 
             return [
                 'exito' => false,
-                'mensaje' => 'Error al actualizar reserva: ' . $e->getMessage()
+                'mensaje' => 'No se pudo actualizar la reserva. Intente nuevamente.'
             ];
         }
     }
@@ -375,6 +376,7 @@ class ActualizarReservaService
                 'reserva' => $this->reservaModel->obtenerReservaPorId($idReserva),
             ];
         } catch (\Throwable $e) {
+            error_log('ActualizarReservaService::actualizarEstadiaActiva -> ' . $e->getMessage());
             $conexion = DB::connection();
 
             if ($conexion->getPdo()->inTransaction()) {
@@ -383,7 +385,7 @@ class ActualizarReservaService
 
             return [
                 'exito' => false,
-                'mensaje' => 'Error al actualizar estadía: ' . $e->getMessage()
+                'mensaje' => 'No se pudo actualizar la estadía. Intente nuevamente.'
             ];
         }
     }

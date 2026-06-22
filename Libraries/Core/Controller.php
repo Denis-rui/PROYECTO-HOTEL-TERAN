@@ -43,8 +43,8 @@ class Controller
         try {
             \Libraries\Core\Csrf::validar();
         } catch (\Exception $e) {
-            http_response_code($e->getCode());
-            $this->responderJson(['exito' => false, 'mensaje' => $e->getMessage()]);
+            error_log('Error de validación CSRF: ' . $e->getMessage());
+            $this->responderJson(['exito' => false, 'mensaje' => 'No se pudo validar la solicitud.'], 403);
         }
     }
 }

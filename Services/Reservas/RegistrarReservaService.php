@@ -216,6 +216,7 @@ class RegistrarReservaService
                 'comprobante' => $comprobanteData,
             ];
         } catch (\Throwable $e) {
+            error_log('RegistrarReservaService::registrarReserva -> ' . $e->getMessage());
             $conexion = DB::connection();
 
             if ($conexion->getPdo()->inTransaction()) {
@@ -224,7 +225,7 @@ class RegistrarReservaService
 
             return [
                 'exito' => false,
-                'mensaje' => 'Error al registrar reserva: ' . $e->getMessage()
+                'mensaje' => 'No se pudo registrar la reserva. Intente nuevamente.'
             ];
         }
     }

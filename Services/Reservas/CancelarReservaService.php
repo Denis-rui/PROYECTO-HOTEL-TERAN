@@ -126,6 +126,7 @@ class CancelarReservaService
                 'devolucion' => $calculo,
             ];
         } catch (\Throwable $e) {
+            error_log('CancelarReservaService::cancelarReserva -> ' . $e->getMessage());
             $conexion = DB::connection();
 
             if ($conexion->getPdo()->inTransaction()) {
@@ -134,7 +135,7 @@ class CancelarReservaService
 
             return [
                 'exito' => false,
-                'mensaje' => 'Error al cancelar reserva: ' . $e->getMessage()
+                'mensaje' => 'No se pudo cancelar la reserva. Intente nuevamente.'
             ];
         }
     }

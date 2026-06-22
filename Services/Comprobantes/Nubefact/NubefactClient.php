@@ -36,7 +36,8 @@ class NubefactClient
         curl_close($curl);
 
         if ($respuesta === false) {
-            return ['exito' => false, 'mensaje' => 'No se pudo conectar con NubeFact: ' . $error];
+            error_log('NubefactClient::enviarComprobante -> ' . $error);
+            return ['exito' => false, 'mensaje' => 'No se pudo conectar con el servicio de facturación. Intente nuevamente.'];
         }
 
         $datos = json_decode($respuesta, true);
@@ -47,10 +48,8 @@ class NubefactClient
 
         if ($codigoHttp >= 400 || isset($datos['errors']) || isset($datos['codigo'])) {
             $mensaje = (string) ($datos['errors'] ?? 'NubeFact devolvió un error.');
-            if (stripos($mensaje, 'serie') !== false) {
-                $mensaje .= ' Verifique las constantes de serie en Config/Config.php.';
-            }
-            return ['exito' => false, 'mensaje' => $mensaje];
+            error_log('NubefactClient::enviarComprobante -> ' . $mensaje);
+            return ['exito' => false, 'mensaje' => 'El servicio de facturación no pudo procesar el comprobante.'];
         }
 
         return ['exito' => true, 'respuesta' => $datos];

@@ -149,6 +149,7 @@ class CheckOutReservaService
                 'reserva' => $this->reservaModel->obtenerReservaPorId($idReserva),
             ];
         } catch (\Throwable $e) {
+            error_log('CheckOutReservaService::confirmarCheckout -> ' . $e->getMessage());
             $conexion = DB::connection();
 
             if ($conexion->getPdo()->inTransaction()) {
@@ -157,7 +158,7 @@ class CheckOutReservaService
 
             return [
                 'exito' => false,
-                'mensaje' => 'Error al confirmar checkout: ' . $e->getMessage()
+                'mensaje' => 'No se pudo confirmar el checkout. Intente nuevamente.'
             ];
         }
     }
