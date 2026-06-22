@@ -3,7 +3,6 @@
 namespace Models;
 
 use Models\Entities\Devolucion;
-use Models\Entities\Reserva;
 
 class DevolucionModel
 {
