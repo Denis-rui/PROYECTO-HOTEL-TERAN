@@ -26,10 +26,8 @@ class Auth
             'checkout' => 'reservas.checkout',
             'marcarAusente' => 'reservas.ausencia',
             'marcarRegreso' => 'reservas.ausencia',
-            'actualizarEstado' => 'reservas.editar',
             'calcularTotal' => 'reservas.crear',
-            'extender' => 'reservas.extender',
-            'consumo' => 'reservas.editar',
+            'extenderEstadia' => 'reservas.extender',
             'cancelar' => 'reservas.cancelar',
             'calcularCancelacion' => 'reservas.cancelar',
             'cambiarHabitacion' => 'reservas.cambiar_habitacion',
@@ -138,7 +136,7 @@ class Auth
             exit();
         }
 
-        header('Location: ' . BASE_URL . 'Dashboard/index&error=sin_permiso');
+        header('Location: ' . BASE_URL . 'Dashboard/index?error=sin_permiso');
         exit();
     }
 

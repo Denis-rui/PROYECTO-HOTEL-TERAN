@@ -1,11 +1,11 @@
-<?php 
-$hotel = $data['hotel'] ?? []; 
+<?php
+$hotel = $data['hotel']['data'] ?? [];
 $tipos = $data['tipos_habitacion'] ?? [];
 ?>
 <section class="configuracion">
   <h2>Configuración del Sistema</h2>
 
-  <form  class="form" id="formulario">
+  <form class="form" id="formulario">
     <p>🏨 Datos del Hotel</p>
     <hr />
 
@@ -13,21 +13,25 @@ $tipos = $data['tipos_habitacion'] ?? [];
       <div class="form-campo">
         <label for="nombre" class="form-label">NOMBRE DEL HOTEL</label>
         <input id="nombre" type="text" name="nombre" class="form-input" value="<?= htmlspecialchars($hotel['nombre'] ?? '') ?>" />
+        <span id="error-nombre" class="error" aria-live="polite"></span>
       </div>
 
       <div class="form-campo">
         <label for="ruc" class="form-label">RUC</label>
         <input id="ruc" type="text" name="ruc" class="form-input" value="<?= htmlspecialchars($hotel['ruc'] ?? '') ?>" />
+        <span id="error-ruc" class="error" aria-live="polite"></span>
       </div>
 
       <div class="form-campo">
         <label for="telefono" class="form-label">TELÉFONO</label>
         <input id="telefono" type="tel" name="telefono" class="form-input" value="<?= htmlspecialchars($hotel['telefono'] ?? '') ?>" />
+        <span id="error-telefono" class="error" aria-live="polite"></span>
       </div>
 
       <div class="form-campo">
         <label for="email" class="form-label">EMAIL</label>
         <input id="email" type="email" name="email" class="form-input" value="<?= htmlspecialchars($hotel['email'] ?? '') ?>" />
+        <span id="error-email" class="error" aria-live="polite"></span>
       </div>
 
       <div class="form-campo">
@@ -45,7 +49,7 @@ $tipos = $data['tipos_habitacion'] ?? [];
 
       <div class="form-campo">
         <label for="ciudad" class="form-label">CIUDAD</label>
-        <input type="text" id="ciudad" name="ciudad" class="form-input" value = "<?= htmlspecialchars($hotel['ciudad_region'] ?? '') ?>" />
+        <input type="text" id="ciudad" name="ciudad" class="form-input" value="<?= htmlspecialchars($hotel['ciudad_region'] ?? '') ?>" />
       </div>
 
       <div class="form-campo">
@@ -63,7 +67,7 @@ $tipos = $data['tipos_habitacion'] ?? [];
         <input type="time" id="checkout" name="check-out" class="form-input" value="<?= htmlspecialchars($hotel['check_out'] ?? '') ?>" />
       </div>
 
-      <div class="form-campo form-campo--full" >
+      <div class="form-campo form-campo--full">
         <label for="descripcion" class="form-label">DESCRIPCIÓN / SLOGAN</label>
         <textarea id="descripcion" name="descripcion" class="form-textarea"><?= htmlspecialchars($hotel['descripcion'] ?? '') ?></textarea>
       </div>
@@ -88,7 +92,7 @@ $tipos = $data['tipos_habitacion'] ?? [];
     <button type="submit" class="form-button">Guardar Cambios Generales</button>
   </form>
 
-    <!-- Confirmación manejada por SweetAlert2 (Notificaiones.js) -->
+  <!-- Confirmación manejada por SweetAlert2 (Notificaiones.js) -->
 
   <br><br>
   <p>🛏️ Tipos de Habitación y Precios Base</p>
@@ -110,7 +114,7 @@ $tipos = $data['tipos_habitacion'] ?? [];
             <td><strong><?= htmlspecialchars($tipo['tipo']) ?></strong></td>
             <td>S/ <?= number_format($tipo['precio_base'], 2) ?></td>
             <td>
-               <button class="btn-editar-tipo" data-id="<?= $tipo['id'] ?>" data-tipo="<?= htmlspecialchars($tipo['tipo']) ?>" data-precio="<?= $tipo['precio_base'] ?>">✏️</button>
+              <button class="btn-editar-tipo" data-id="<?= $tipo['id'] ?>" data-tipo="<?= htmlspecialchars($tipo['tipo']) ?>" data-precio="<?= $tipo['precio_base'] ?>">✏️</button>
             </td>
           </tr>
         <?php endforeach; ?>

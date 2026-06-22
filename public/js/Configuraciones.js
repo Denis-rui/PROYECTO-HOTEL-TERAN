@@ -1,31 +1,6 @@
 window.inicializarConfiguraciones = () => {
   const formulario = document.getElementById("formulario");
 
-  fetch(BASE_URL + "Configuracion/obtener")
-    .then((res) => res.json())
-    .then((hotel) => {
-      document.getElementById("nombre").value = hotel.nombre ?? "";
-      document.getElementById("ruc").value = hotel.ruc ?? "";
-      document.getElementById("telefono").value = hotel.telefono ?? "";
-      document.getElementById("email").value = hotel.email ?? "";
-      document.getElementById("ubicacion").value = hotel.direccion ?? "";
-      document.getElementById("ciudad").value = hotel.ciudad_region ?? "";
-      document.getElementById("descripcion").value = hotel.descripcion ?? "";
-      document.getElementById("monedas").value = hotel.moneda ?? "";
-      document.getElementById("check-in").value = hotel.check_in
-        ? hotel.check_in.slice(0, 5)
-        : "";
-      document.getElementById("checkout").value = hotel.check_out
-        ? hotel.check_out.slice(0, 5)
-        : "";
-      document.getElementById("web-redes").value = hotel.web ?? "";
-      document.getElementById("porcentaje_adelanto").value =
-        hotel.porcentaje_adelanto ?? 50;
-      document.getElementById("porcentaje_penalidad").value =
-        hotel.porcentaje_penalidad_cancelacion ?? 25;
-    })
-    .catch(() => console.error("Error al cargar datos del hotel"));
-
   formulario.addEventListener("submit", function (e) {
     e.preventDefault();
     if (!validarFormulario()) return;
@@ -109,7 +84,8 @@ window.inicializarConfiguraciones = () => {
   }
 
   function mostrarError(input, idError, mensaje) {
-    document.getElementById(idError).textContent = mensaje;
+    const contenedorError = document.getElementById(idError);
+    if (contenedorError) contenedorError.textContent = mensaje;
     input.classList.add("input-error");
   }
 

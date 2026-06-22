@@ -3,6 +3,7 @@ namespace Models;
 
 // Importamos el Query Builder de Illuminate
 use Illuminate\Database\Capsule\Manager as DB;
+use Models\Entities\Reserva as ReservaEntity;
 
 class DashboardModel
 {
@@ -36,7 +37,7 @@ class DashboardModel
 
         // ── Reservas activas ──
         $stats['reservas_activas'] = (int) DB::table('reserva')
-            ->whereIn('estado', ['pendiente', 'confirmada', 'checkin_realizado', 'en_estadia', 'checkout_pendiente'])
+            ->whereIn('estado', ReservaEntity::ESTADOS_ACTIVOS)
             ->count();
 
         // ── Check-ins de hoy ──

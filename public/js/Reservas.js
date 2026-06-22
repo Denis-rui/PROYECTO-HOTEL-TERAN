@@ -5,7 +5,6 @@ window.inicializarReservas = () => {
   configurarEventosReservas();
 };
 const configurarEventosReservas = () => {
-  const btnNuevaReserva = document.getElementById("btnNuevaReserva");
   const cuerpoTabla = document.getElementById("contenido-reservas");
   const anchoMenu = 220;
   const cerrarMenusOpciones = () => {
@@ -21,12 +20,6 @@ const configurarEventosReservas = () => {
       }
     });
   };
-
-  if (btnNuevaReserva) {
-    btnNuevaReserva.addEventListener("click", () => {
-      window.abrirModalReserva("nuevo");
-    });
-  }
 
   if (cuerpoTabla) {
     cuerpoTabla.addEventListener("click", async (e) => {
@@ -396,42 +389,6 @@ const configurarEventosReservas = () => {
         ejecutarAccionReserva("extender", {
           id_reserva: btnExtender.dataset.id,
           nuevo_check_out: `${fechaSalida} ${horaSalida}`,
-        });
-        return;
-      }
-
-      const btnConsumo = e.target.closest(".boton-consumo-reserva");
-      if (btnConsumo) {
-        const concepto = await window.SolicitarDato(
-          "Registrar consumo",
-          "Ingresa el concepto del consumo.",
-        );
-        if (!concepto) return;
-        const cantidad = await window.SolicitarDato(
-          "Cantidad",
-          "Ingresa la cantidad consumida.",
-          {
-            tipo: "number",
-            valor: "1",
-            atributos: { min: "1", step: "1" },
-          },
-        );
-        if (!cantidad) return;
-        const precioUnitario = await window.SolicitarDato(
-          "Precio unitario",
-          "Ingresa el precio unitario.",
-          {
-            tipo: "number",
-            valor: "0",
-            atributos: { min: "0.01", step: "0.01" },
-          },
-        );
-        if (!precioUnitario) return;
-        ejecutarAccionReserva("consumo", {
-          id_reserva: btnConsumo.dataset.id,
-          concepto,
-          cantidad,
-          precio_unitario: precioUnitario,
         });
         return;
       }

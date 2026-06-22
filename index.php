@@ -26,6 +26,7 @@ $router = new Router();
 
 $router->get('Login/index', ['Login', 'index']);
 $router->post('Login/entrar', ['Login', 'entrar']);
+$router->get('Login/salir', ['Login', 'salir']);
 
 $router->get('Dashboard/index', ['Dashboard', 'index']);
 
@@ -78,10 +79,8 @@ $router->post('Reserva/checkin', ['Reserva', 'checkin']);
 $router->post('Reserva/checkout', ['Reserva', 'checkout']);
 $router->post('Reserva/marcarAusente', ['Reserva', 'marcarAusente']);
 $router->post('Reserva/marcarRegreso', ['Reserva', 'marcarRegreso']);
-$router->post('Reserva/actualizarEstado', ['Reserva', 'actualizarEstado']);
 $router->post('Reserva/calcularTotal', ['Reserva', 'calcularTotal']);
-$router->post('Reserva/extender', ['Reserva', 'extender']);
-$router->post('Reserva/consumo', ['Reserva', 'consumo']);
+$router->post('Reserva/extender', ['Reserva', 'extenderEstadia']);
 $router->post('Reserva/cancelar', ['Reserva', 'cancelar']);
 $router->post('Reserva/calcularCancelacion', ['Reserva', 'calcularCancelacion']);
 $router->post('Reserva/cambiarHabitacion', ['Reserva', 'cambiarHabitacion']);

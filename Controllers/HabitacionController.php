@@ -1,10 +1,20 @@
 <?php
+
 namespace Controllers;
 
 use Libraries\Core\Controller;
+use Services\HabitacionService;
 
 class HabitacionController extends Controller
 {
+    private HabitacionService $habitacionService;
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->habitacionService = new HabitacionService();
+    }
+
     public function index($params = '')
     {
         if (!isset($_SESSION['usuario'])) {
@@ -17,10 +27,12 @@ class HabitacionController extends Controller
         $estado = $_GET['estado'] ?? 'Disponible';
         $piso = $_GET['piso'] ?? '';
 
+        $respuestaBuscar = $this->habitacionService->buscar($numero, $tipo, $estado, $piso);
 
         $data['page_title'] = "Habitaciones";
-        $data['filtros'] = $this->model->obtenerFiltros();
-        $data['habitaciones'] = $this->model->buscar($numero, $tipo, $estado, $piso);
+        $respuestaFiltros = $this->habitacionService->obtenerFiltros();
+        $data['filtros'] = $respuestaFiltros['exito'] ? $respuestaFiltros['data'] : [];
+        $data['habitaciones'] = $respuestaBuscar['exito'] ? $respuestaBuscar['data'] : [];
         $data['page_js'] = ['Modal-Habitaciones.js', 'Habitaciones.js'];
 
         $this->views->render($this, 'index', $data);
@@ -33,14 +45,14 @@ class HabitacionController extends Controller
         $estado = $_GET['estado'] ?? '';
         $piso = $_GET['piso'] ?? '';
 
-        $habitaciones = $this->model->buscar($numero, $tipo, $estado, $piso);
+        $respuesta = $this->habitacionService->buscar($numero, $tipo, $estado, $piso);
+        $habitaciones = $respuesta['exito'] ? $respuesta['data'] : [];
 
         if (isset($_GET['html'])) {
             $data['habitaciones'] = $habitaciones;
             $data['is_partial'] = true;
             $this->views->render($this, 'grid', $data);
         } else {
-            header('Content-Type: application/json');
             $this->responderJson($habitaciones);
         }
     }
@@ -48,55 +60,40 @@ class HabitacionController extends Controller
     public function registrar($params = '')
     {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            header('Content-Type: application/json');
-            $datos = json_decode(file_get_contents('php://input'), true) ?? $_POST;
-            try {
-                $ok = $this->model->registrar($datos);
-                echo json_encode([
-                    'exito' => (bool) $ok,
-                    'mensaje' => $ok ? 'Habitación registrada correctamente.' : 'No se pudo registrar la habitación.',
-                ]);
-            } catch (\Throwable $e) {
-                $this->responderJson(['exito' => false, 'mensaje' => $e->getMessage()], 500);
-            }
+            $datos = $this->obtenerPayloadJson() ?? $_POST;
+            $this->responderJson($this->habitacionService->registrar($datos));
         }
     }
 
     public function editar($params = '')
     {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            header('Content-Type: application/json');
-            $datos = json_decode(file_get_contents('php://input'), true) ?? $_POST;
-            try {
-                $resultado = $this->model->editarHabitacion($datos);
-                echo json_encode($resultado);
-            } catch (\Throwable $e) {
-                $this->responderJson(['exito' => false, 'mensaje' => $e->getMessage()], 500);
-            }
+            $datos = $this->obtenerPayloadJson() ?? $_POST;
+            $this->responderJson($this->habitacionService->editar($datos));
         }
     }
 
     public function eliminar($params = '')
     {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            header('Content-Type: application/json');
-            $datos = json_decode(file_get_contents('php://input'), true) ?? $_POST;
-            $resultado = $this->model->eliminarHabitacion((int) ($datos['id'] ?? 0));
-            $this->responderJson($resultado);
+            $datos = $this->obtenerPayloadJson() ?? $_POST;
+            $this->responderJson($this->habitacionService->eliminar((int) ($datos['id'] ?? 0)));
         }
     }
 
     public function actualizarEstado($params = '')
     {
-        header('Content-Type: application/json');
-        $datos = json_decode(file_get_contents('php://input'), true);
-        $resultado = $this->model->actualizarEstado((int) ($datos['id'] ?? 0), $datos['estado'] ?? '', $datos['motivo'] ?? '');
-        $this->responderJson($resultado);
+        $datos = $this->obtenerPayloadJson() ?? [];
+        $this->responderJson($this->habitacionService->actualizarEstado((int) ($datos['id'] ?? 0), $datos['estado'] ?? '', $datos['motivo'] ?? ''));
     }
 
+    public function terminarLimpieza($params = '')
+    {
+        $datos = $this->obtenerPayloadJson() ?? [];
+        $this->responderJson($this->habitacionService->terminarLimpieza((int) ($datos['id'] ?? 0)));
+    }
     public function disponiblesPorRango($params = '')
     {
-        header('Content-Type: application/json');
         $checkIn = $_GET['check_in'] ?? '';
         $checkOut = $_GET['check_out'] ?? '';
         $tipo = $_GET['tipo'] ?? null;
@@ -106,26 +103,24 @@ class HabitacionController extends Controller
             'tipo' => $_GET['tipo_referencia'] ?? null,
             'piso' => $_GET['piso_referencia'] ?? null,
         ];
-        $habitaciones = $this->model->disponiblesPorRango($checkIn, $checkOut, $tipo, $piso, $referencia);
-        echo json_encode(['habitaciones' => $habitaciones]);
+        $respuesta = $this->habitacionService->disponiblesPorRango(
+            $checkIn,
+            $checkOut,
+            $tipo,
+            $piso,
+            $referencia
+        );
+
+        $this->responderJson([
+            'habitaciones' => $respuesta['data'],
+            'exito' => $respuesta['exito'],
+            'mensaje' => $respuesta['mensaje'] ?? '',
+        ]);
     }
 
-    public function terminarLimpieza($params = '')
+    public function obtenerFiltros($params = '')
     {
-        header('Content-Type: application/json');
-        $datos = json_decode(file_get_contents('php://input'), true);
-        $id = (int) ($datos['id'] ?? 0);
-        if (!$id) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'ID inválido.']);
-            return;
-        }
-        $resultado = $this->model->terminarLimpieza($id);
-        $this->responderJson($resultado);
-    }
-
-    public function obtenerFiltros()
-    {
-        header('Content-Type: application/json');
-        echo json_encode($this->model->obtenerFiltros());
+        $respuesta = $this->habitacionService->obtenerFiltros();
+        $this->responderJson($respuesta['data']);
     }
 }

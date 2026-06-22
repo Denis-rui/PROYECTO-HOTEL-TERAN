@@ -119,6 +119,9 @@ document.getElementById('btnCambiarClave').addEventListener('click', async () =>
 
     if (tieneErrores) return;
 
+    const confirmado = await window.Confirmar?.('¿Estás seguro de cambiar tu contraseña?');
+    if (!confirmado) return;
+
     // Verificar que la contraseña actual es correcta
     const form = document.getElementById('formCambiarClave');
     const body = new FormData(form);
@@ -144,14 +147,7 @@ document.getElementById('btnCambiarClave').addEventListener('click', async () =>
         return;
     }
 
-    // Si la contraseña es correcta, mostrar confirmación
-    const confirmado = await window.Confirmar?.('¿Estás seguro de cambiar tu contraseña?');
-    if (!confirmado) {
-        // Si cancela, revertir en el servidor (si aplica)
-        return;
-    }
-
-    // Si confirma, la contraseña ya fue cambiada, mostrar notificación
+    // La contraseña se cambia solo después de la confirmación previa.
     window.Notificar?.('Contraseña actualizada correctamente.', 'exito');
     form.reset();
 });

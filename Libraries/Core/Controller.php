@@ -24,7 +24,7 @@ class Controller
         }
     }
 
-    protected function responderJson(array $payload, int $statusCode = 200): void
+    protected function responderJson(mixed $payload, int $statusCode = 200): void
     {
         http_response_code($statusCode);
         header('Content-Type: application/json; charset=utf-8');
@@ -43,8 +43,8 @@ class Controller
         try {
             \Libraries\Core\Csrf::validar();
         } catch (\Exception $e) {
-            http_response_code($e->getCode());
-            $this->responderJson(['exito' => false, 'mensaje' => $e->getMessage()]);
+            error_log('Error de validación CSRF: ' . $e->getMessage());
+            $this->responderJson(['exito' => false, 'mensaje' => 'No se pudo validar la solicitud.'], 403);
         }
     }
 }

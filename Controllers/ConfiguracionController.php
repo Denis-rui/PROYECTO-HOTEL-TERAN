@@ -3,8 +3,7 @@
 namespace Controllers;
 
 use Libraries\Core\Controller;
-use Models\Entities\TipoHabitacion;
-
+use Services\ConfiguracionService;
 
 class ConfiguracionController extends Controller
 {
@@ -15,10 +14,9 @@ class ConfiguracionController extends Controller
             exit();
         }
         $data['page_title'] = "Configuración del Hotel";
-        $data['hotel'] = $this->model->find(1);
-
-        // Cargar tipos de habitación
-        $data['tipos_habitacion'] = TipoHabitacion::orderBy('id')->get()->toArray();
+        $service = new ConfiguracionService();
+        $data['hotel'] = $service->obtenerHotel();
+        $data['tipos_habitacion'] = $service->obtenerTiposHabitacion();
         $data['page_js'] = ['Configuraciones.js', 'Modal-TipoHabitacion.js'];
         $this->views->render($this, 'index', $data);
     }
@@ -26,93 +24,49 @@ class ConfiguracionController extends Controller
     public function actualizar($params = '')
     {
         if (!isset($_SESSION['usuario'])) {
-            header('Content-Type: application/json');
-            echo json_encode(['exito' => false, 'mensaje' => 'No autenticado']);
-            exit();
+            $this->responderJson(['exito' => false, 'mensaje' => 'No autenticado'], 401);
         }
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
 
-        $body  = file_get_contents('php://input');
-        $datos = json_decode($body, true) ?? [];
-
-        header('Content-Type: application/json');
+        $datos = $this->obtenerPayloadJson() ?? [];
 
         try {
-            $ok = $this->model->actualizarHotel($datos);
-            echo json_encode(['exito' => (bool) $ok]);
+            $service = new ConfiguracionService();
+            $ok = $service->actualizarHotel($datos);
+            $this->responderJson($ok);
         } catch (\Exception $e) {
-            echo json_encode(['exito' => false, 'mensaje' => $e->getMessage()]);
-        }
-        exit();
-    }
-
-    public function guardarTipo($params = '')
-    {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo json_encode([
-                'exito' => false,
-                'mensaje' => 'Método no permitido'
-            ]);
-            return;
-        }
-
-        header('Content-Type: application/json');
-
-        try {
-
-           
-            $datos = json_decode(file_get_contents('php://input'), true);
-
-            $id     = $datos['id'] ?? null;
-            $tipo   = $datos['tipo'] ?? '';
-            $precio = $datos['precio_base'] ?? 0;
-
-            if (!$tipo || !$precio) {
-                echo json_encode([
-                    'exito' => false,
-                    'mensaje' => 'Datos incompletos'
-                ]);
-                return;
-            }
-
-            if ($id) {
-                TipoHabitacion::where('id', $id)
-                    ->update([
-                        'tipo' => $tipo,
-                        'precio_base' => $precio
-                    ]);
-
-                echo json_encode([
-                    'exito' => true,
-                    'mensaje' => 'Actualizado correctamente'
-                ]);
-            } else {
-                TipoHabitacion::create([
-                    'tipo' => $tipo,
-                    'precio_base' => $precio
-                ]);
-
-                echo json_encode([
-                    'exito' => true,
-                    'mensaje' => 'Creado correctamente'
-                ]);
-            }
-        } catch (\Throwable $e) {
-            http_response_code(500);
-            echo json_encode([
-                'exito' => false,
-                'mensaje' => $e->getMessage()
-            ]);
+            error_log('ConfiguracionController::actualizar -> ' . $e->getMessage());
+            $this->responderJson(['exito' => false, 'mensaje' => 'No se pudo actualizar la configuración.'], 500);
         }
     }
 
     public function obtener($params = '')
     {
-        ob_clean();
-        header('Content-Type: application/json');
-        echo json_encode($this->model->find());
-        exit();
+        $service = new ConfiguracionService();
+        $this->responderJson($service->obtenerHotel());
+    }
+
+    public function guardarTipo($params = '')
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->responderJson([
+                'exito' => false,
+                'mensaje' => 'Método no permitido'
+            ], 405);
+        }
+
+        try {
+            $datos = $this->obtenerPayloadJson() ?? [];
+
+            $service = new ConfiguracionService();
+            $this->responderJson($service->guardarTipoHabitacion($datos));
+        } catch (\Throwable $e) {
+            error_log('ConfiguracionController::guardarTipo -> ' . $e->getMessage());
+            $this->responderJson([
+                'exito' => false,
+                'mensaje' => 'No se pudo guardar el tipo de habitación.'
+            ], 500);
+        }
     }
 }

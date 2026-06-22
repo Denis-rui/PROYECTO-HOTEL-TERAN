@@ -1,24 +1,27 @@
 <?php
+
 namespace Controllers;
 
 use Libraries\Core\Controller;
-use Models\ComprobanteModel;
+use Services\Comprobantes\ComprobanteService;
 
 class ComprobanteController extends Controller
 {
     public function obtenerPorPago($params = '')
     {
-        header('Content-Type: application/json');
         $idPago = (int) ($params ?? 0);
-        $model = new ComprobanteModel();
-        echo json_encode($model->obtenerPorPago($idPago));
+
+        $service = new ComprobanteService();
+
+        $this->responderJson($service->obtenerPorPago($idPago));
     }
 
     public function emitidosPorReserva($params = '')
     {
-        header('Content-Type: application/json');
         $idReserva = (int) ($params ?? 0);
-        $model = new ComprobanteModel();
-        echo json_encode($model->obtenerEmitidosPorReserva($idReserva));
+
+        $service = new ComprobanteService();
+
+        $this->responderJson($service->obtenerEmitidosPorReserva($idReserva));
     }
 }
