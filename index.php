@@ -81,7 +81,6 @@ $router->post('Reserva/marcarAusente', ['Reserva', 'marcarAusente']);
 $router->post('Reserva/marcarRegreso', ['Reserva', 'marcarRegreso']);
 $router->post('Reserva/calcularTotal', ['Reserva', 'calcularTotal']);
 $router->post('Reserva/extender', ['Reserva', 'extenderEstadia']);
-$router->post('Reserva/consumo', ['Reserva', 'consumo']);
 $router->post('Reserva/cancelar', ['Reserva', 'cancelar']);
 $router->post('Reserva/calcularCancelacion', ['Reserva', 'calcularCancelacion']);
 $router->post('Reserva/cambiarHabitacion', ['Reserva', 'cambiarHabitacion']);

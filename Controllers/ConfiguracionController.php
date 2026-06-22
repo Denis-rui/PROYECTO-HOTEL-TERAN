@@ -3,7 +3,6 @@
 namespace Controllers;
 
 use Libraries\Core\Controller;
-use Models\Entities\TipoHabitacion;
 use Services\ConfiguracionService;
 
 class ConfiguracionController extends Controller
@@ -17,8 +16,7 @@ class ConfiguracionController extends Controller
         $data['page_title'] = "Configuración del Hotel";
         $service = new ConfiguracionService();
         $data['hotel'] = $service->obtenerHotel();
-        // Cargar tipos de habitación
-        $data['tipos_habitacion'] = TipoHabitacion::orderBy('id')->get()->toArray();
+        $data['tipos_habitacion'] = $service->obtenerTiposHabitacion();
         $data['page_js'] = ['Configuraciones.js', 'Modal-TipoHabitacion.js'];
         $this->views->render($this, 'index', $data);
     }
@@ -72,40 +70,8 @@ class ConfiguracionController extends Controller
 
             $datos = json_decode(file_get_contents('php://input'), true);
 
-            $id     = $datos['id'] ?? null;
-            $tipo   = $datos['tipo'] ?? '';
-            $precio = $datos['precio_base'] ?? 0;
-
-            if (!$tipo || !$precio) {
-                echo json_encode([
-                    'exito' => false,
-                    'mensaje' => 'Datos incompletos'
-                ]);
-                return;
-            }
-
-            if ($id) {
-                TipoHabitacion::where('id', $id)
-                    ->update([
-                        'tipo' => $tipo,
-                        'precio_base' => $precio
-                    ]);
-
-                echo json_encode([
-                    'exito' => true,
-                    'mensaje' => 'Actualizado correctamente'
-                ]);
-            } else {
-                TipoHabitacion::create([
-                    'tipo' => $tipo,
-                    'precio_base' => $precio
-                ]);
-
-                echo json_encode([
-                    'exito' => true,
-                    'mensaje' => 'Creado correctamente'
-                ]);
-            }
+            $service = new ConfiguracionService();
+            echo json_encode($service->guardarTipoHabitacion(is_array($datos) ? $datos : []));
         } catch (\Throwable $e) {
             http_response_code(500);
             echo json_encode([

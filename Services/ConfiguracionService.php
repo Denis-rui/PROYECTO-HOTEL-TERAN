@@ -3,14 +3,17 @@
 namespace Services;
 
 use Models\ConfiguracionModel;
+use Models\TipoHabitacionModel;
 
 class ConfiguracionService
 {
     private ConfiguracionModel $configuracionModel;
+    private TipoHabitacionModel $tipoHabitacionModel;
 
     public function __construct()
     {
         $this->configuracionModel = new ConfiguracionModel();
+        $this->tipoHabitacionModel = new TipoHabitacionModel();
     }
 
     public function obtenerHotel(int $id = 1): array
@@ -85,5 +88,31 @@ class ConfiguracionService
                 'mensaje' => 'Ocurrió un error al actualizar la configuración: ' . $e->getMessage(),
             ];
         }
+    }
+
+    public function obtenerTiposHabitacion(): array
+    {
+        return $this->tipoHabitacionModel->listar();
+    }
+
+    public function guardarTipoHabitacion(array $datos): array
+    {
+        $id = isset($datos['id']) && $datos['id'] !== '' ? (int) $datos['id'] : null;
+        $tipo = trim((string) ($datos['tipo'] ?? ''));
+        $precio = $datos['precio_base'] ?? null;
+
+        if ($tipo === '' || !is_numeric($precio) || (float) $precio <= 0) {
+            return ['exito' => false, 'mensaje' => 'Datos incompletos'];
+        }
+
+        $this->tipoHabitacionModel->guardar($id, [
+            'tipo' => $tipo,
+            'precio_base' => (float) $precio,
+        ]);
+
+        return [
+            'exito' => true,
+            'mensaje' => $id !== null ? 'Actualizado correctamente' : 'Creado correctamente',
+        ];
     }
 }

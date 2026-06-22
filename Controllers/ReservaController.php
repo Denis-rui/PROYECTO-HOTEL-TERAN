@@ -3,8 +3,7 @@
 namespace Controllers;
 
 use Libraries\Core\Controller;
-use Models\DashboardModel;
-use Models\ReporteOcupacionModel;
+use Services\DashboardService;
 use Services\Reservas\CheckInReservaService;
 use Services\Reservas\CheckOutReservaService;
 use Services\Reservas\AusenciaReservaService;
@@ -13,6 +12,7 @@ use Services\Reservas\RegistrarReservaService;
 use Services\Reservas\ActualizarReservaService;
 use Services\Reservas\ExtenderEstadiaService;
 use Services\Reservas\CambiarHabitacionService;
+use Services\Reservas\ConsultarReservaService;
 use Services\Pagos\RegistrarPagoService;
 use Services\Comprobantes\DocumentoElectronicoService;
 use Services\Devoluciones\CalculoDevolucionService;
@@ -41,7 +41,8 @@ class ReservaController extends Controller
         $data['mostradas_reservas'] = 0;
 
         try {
-            $resultado = $this->model->obtenerReservas($data['filtros'], $data['limite']);
+            $service = new ConsultarReservaService();
+            $resultado = $service->listar($data['filtros'], $data['limite']);
 
             if (!is_array($resultado)) {
                 throw new \RuntimeException('Resultado no es un array');
@@ -228,14 +229,16 @@ class ReservaController extends Controller
     {
         header('Content-Type: application/json');
         $id = (int) ($params ?? 0);
-        echo json_encode($this->model->obtenerReservaPorId($id));
+        $service = new ConsultarReservaService();
+        echo json_encode($service->obtenerPorId($id));
     }
 
     public function dashboard($params = '')
     {
         header('Content-Type: application/json');
-        $dashboardModel = new DashboardModel();
-        echo json_encode($dashboardModel->obtenerEstadisticasDashboard());
+        $dashboardService = new DashboardService();
+        $respuesta = $dashboardService->obtenerEstadisticas();
+        echo json_encode($respuesta['data']);
     }
 
     public function notificaciones($params = '')
@@ -252,8 +255,8 @@ class ReservaController extends Controller
     {
         header('Content-Type: application/json');
         $datos     = json_decode(file_get_contents('php://input'), true);
-        $reporteOcupacionModel = new ReporteOcupacionModel();
-        $resultado = $reporteOcupacionModel->calcularTotalReserva(
+        $service = new ConsultarReservaService();
+        $resultado = $service->calcularTotal(
             (int) ($datos['id_habitacion'] ?? 0),
             $datos['check_in']  ?? '',
             $datos['check_out'] ?? ''
@@ -281,19 +284,6 @@ class ReservaController extends Controller
         echo json_encode($resultado, JSON_UNESCAPED_UNICODE);
     }
 
-    public function consumo($params = '')
-    {
-        header('Content-Type: application/json');
-        $datos     = json_decode(file_get_contents('php://input'), true);
-        $resultado = $this->model->registrarConsumo(
-            (int) ($datos['id_reserva']      ?? 0),
-            $datos['concepto']       ?? '',
-            (int) ($datos['cantidad']        ?? 1),
-            (float) ($datos['precio_unitario'] ?? 0),
-            $_SESSION['id_usuario'] ?? null
-        );
-        echo json_encode($resultado);
-    }
     public function cancelar($params = '')
     {
         header('Content-Type: application/json; charset=utf-8');

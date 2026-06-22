@@ -24,8 +24,7 @@ class ClienteController extends Controller
 
         $nombre = $_GET['nombre'] ?? '';
         $data['page_title'] = 'Gestion de Clientes';
-        // Para el listado general en la vista podemos llamar al modelo directo o crear un método en el servicio
-        $data['clientes'] = $this->model->listar($nombre);
+        $data['clientes'] = $this->clienteService->listarClientes($nombre);
         $data['page_js'] = ['Modal-Clientes.js', 'Clientes.js'];
 
         $this->views->render($this, 'index', $data);
@@ -33,7 +32,7 @@ class ClienteController extends Controller
 
     public function listar($params = '')
     {
-        $this->responderJson($this->model->listar());
+        $this->responderJson($this->clienteService->listarClientes());
     }
 
     public function buscar($params = '')

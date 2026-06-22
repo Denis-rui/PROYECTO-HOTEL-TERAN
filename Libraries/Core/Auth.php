@@ -28,7 +28,6 @@ class Auth
             'marcarRegreso' => 'reservas.ausencia',
             'calcularTotal' => 'reservas.crear',
             'extenderEstadia' => 'reservas.extender',
-            'consumo' => 'reservas.editar',
             'cancelar' => 'reservas.cancelar',
             'calcularCancelacion' => 'reservas.cancelar',
             'cambiarHabitacion' => 'reservas.cambiar_habitacion',

@@ -34,6 +34,11 @@ class ClienteService
         ];
     }
 
+    public function listarClientes(string $nombre = ''): array
+    {
+        return $this->clienteModel->listar(trim($nombre));
+    }
+
     // ¡La llamada externa ahora vive en el servicio!
     public function consultarApiExterna(string $tipo, string $documento): array
     {

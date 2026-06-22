@@ -393,42 +393,6 @@ const configurarEventosReservas = () => {
         return;
       }
 
-      const btnConsumo = e.target.closest(".boton-consumo-reserva");
-      if (btnConsumo) {
-        const concepto = await window.SolicitarDato(
-          "Registrar consumo",
-          "Ingresa el concepto del consumo.",
-        );
-        if (!concepto) return;
-        const cantidad = await window.SolicitarDato(
-          "Cantidad",
-          "Ingresa la cantidad consumida.",
-          {
-            tipo: "number",
-            valor: "1",
-            atributos: { min: "1", step: "1" },
-          },
-        );
-        if (!cantidad) return;
-        const precioUnitario = await window.SolicitarDato(
-          "Precio unitario",
-          "Ingresa el precio unitario.",
-          {
-            tipo: "number",
-            valor: "0",
-            atributos: { min: "0.01", step: "0.01" },
-          },
-        );
-        if (!precioUnitario) return;
-        ejecutarAccionReserva("consumo", {
-          id_reserva: btnConsumo.dataset.id,
-          concepto,
-          cantidad,
-          precio_unitario: precioUnitario,
-        });
-        return;
-      }
-
       const btnCambioHabitacion = e.target.closest(".boton-cambio-habitacion");
       if (btnCambioHabitacion) {
         const idHabitacionNueva = await window.SolicitarDato(

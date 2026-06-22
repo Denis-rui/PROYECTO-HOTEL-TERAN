@@ -23,6 +23,7 @@ class ReporteOcupacionModel
         'ausente',
     ];
 
+
     private function aplicarAsignacionActiva($query): void
     {
         $query->where(function ($q) {
