@@ -6,6 +6,8 @@ use Helpers\FechaHotelHelper;
 use Helpers\ReservaHelper;
 use Models\DocumentoElectronicoModel;
 use Models\ReservaModel;
+use Services\Comprobantes\Nubefact\NubefactPayloadBuilder;
+use Services\Comprobantes\Nubefact\NubefactClient;
 
 class DocumentoElectronicoService
 {
@@ -13,12 +15,16 @@ class DocumentoElectronicoService
 
     private DocumentoElectronicoModel $documentoElectronicoModel;
     private ReservaModel $reservaModel;
+    private NubefactPayloadBuilder $payloadBuilder;
+    private NubefactClient $nubefactClient;
 
 
     public function __construct()
     {
         $this->documentoElectronicoModel = new DocumentoElectronicoModel();
         $this->reservaModel = new ReservaModel();
+        $this->payloadBuilder = new NubefactPayloadBuilder();
+        $this->nubefactClient = new NubefactClient();
     }
 
     public function prepararEmision(array $datos, ?int $idUsuario = null): array
@@ -270,22 +276,17 @@ class DocumentoElectronicoService
     public function emitir(array $datos, ?int $idUsuario = null): array
     {
         $preparado = $this->prepararEmision($datos, $idUsuario);
-
         if (!($preparado['exito'] ?? false)) {
             return $preparado;
         }
-
         $datosPreparados = $preparado['datos'] ?? [];
-        $payload = $this->prepararPayload($datosPreparados);
-
-        $respuestaApi = $this->ejecutarApi($payload);
+        $payload = $this->payloadBuilder->construirPayload($datosPreparados);
+        $respuestaApi = $this->nubefactClient->enviarComprobante($payload);
 
         if (!($respuestaApi['exito'] ?? false)) {
             return $respuestaApi;
         }
-
         $respuesta = $respuestaApi['respuesta'] ?? [];
-
         $registro = [
             'id_reserva' => (int) ($datosPreparados['id_reserva'] ?? 0),
             'id_usuario' => (int) ($datosPreparados['id_usuario'] ?? ($_SESSION['id_usuario'] ?? 0)),
@@ -333,14 +334,7 @@ class DocumentoElectronicoService
             'created_at' => FechaHotelHelper::ahora(),
         ];
 
-        $insertado = $this->documentoElectronicoModel->insertar($registro);
-
-        if (!$insertado) {
-            return [
-                'exito' => false,
-                'mensaje' => 'El documento fue enviado a NubeFact, pero no se pudo guardar en la base de datos.'
-            ];
-        }
+        $this->documentoElectronicoModel->insertar($registro);
 
         return [
             'exito' => true,
@@ -420,57 +414,13 @@ class DocumentoElectronicoService
         return strtoupper($tipoDocumento) === 'FACTURA' ? 1 : 2;
     }
 
-    private function codigoDocumentoSunat(string $codigo, string $numero): array
-    {
-        $codigo = strtoupper(trim($codigo));
-        $numero = preg_replace('/\D+/', '', trim($numero));
-
-        if ($codigo === '6' || strlen($numero) === 11) {
-            return [
-                'codigo' => '6',
-                'numero' => $numero
-            ];
-        }
-
-        if ($codigo === '1' || strlen($numero) === 8) {
-            return [
-                'codigo' => '1',
-                'numero' => $numero
-            ];
-        }
-
-        if ($codigo === '7') {
-            return [
-                'codigo' => '7',
-                'numero' => $numero
-            ];
-        }
-
-        if ($codigo === '0') {
-            return [
-                'codigo' => '0',
-                'numero' => $numero
-            ];
-        }
-
-        return [
-            'codigo' => '-',
-            'numero' => $numero
-        ];
-    }
-
     private function firmaUnica(array $datos): string
     {
         return sha1(json_encode($datos, JSON_UNESCAPED_UNICODE));
     }
 
-    private function construirLineas(
-        array $reserva,
-        array $habitaciones,
-        int $nochesDocumento,
-        string $fechaDesde,
-        string $fechaHasta
-    ): array {
+    private function construirLineas(array $reserva,  array $habitaciones,  int $nochesDocumento,  string $fechaDesde, string $fechaHasta): array
+    {
         $items = [];
         $totalGravada = 0.0;
         $totalIgv = 0.0;
@@ -627,12 +577,8 @@ class DocumentoElectronicoService
         ];
     }
 
-    private function validarRangoDentroDeHabitaciones(
-        array $habitacionesSeleccionadas,
-        array $reserva,
-        string $fechaDesde,
-        string $fechaHasta
-    ): array {
+    private function validarRangoDentroDeHabitaciones(array $habitacionesSeleccionadas,   array $reserva,  string $fechaDesde,  string $fechaHasta): array
+    {
         foreach ($habitacionesSeleccionadas as $habitacionSeleccionada) {
             $desdeHabitacion = $this->fechaIso((string) (
                 $habitacionSeleccionada['check_in'] ?? ($reserva['check_in'] ?? '')
@@ -678,12 +624,8 @@ class DocumentoElectronicoService
         return array_values(array_unique($ids));
     }
 
-    private function rangosSeCruzan(
-        string $inicioA,
-        string $finA,
-        string $inicioB,
-        string $finB
-    ): bool {
+    private function rangosSeCruzan(string $inicioA,  string $finA,  string $inicioB, string $finB): bool
+    {
         if ($inicioA === $finA) {
             $finA = (new \DateTimeImmutable($finA))
                 ->modify('+1 day')
@@ -699,12 +641,8 @@ class DocumentoElectronicoService
         return $inicioA < $finB && $finA > $inicioB;
     }
 
-    private function validarCrucesConDocumentos(
-        array $documentos,
-        array $habitacionesSeleccionadas,
-        string $fechaDesde,
-        string $fechaHasta
-    ): array {
+    private function validarCrucesConDocumentos(array $documentos,  array $habitacionesSeleccionadas,  string $fechaDesde,  string $fechaHasta): array
+    {
         $idsSeleccionados = array_values(array_unique(array_map(
             static fn($habitacion) => (int) ($habitacion['id'] ?? $habitacion['id_habitacion'] ?? 0),
             $habitacionesSeleccionadas
@@ -754,11 +692,8 @@ class DocumentoElectronicoService
         ), 2);
     }
 
-    private function obtenerDatosClienteDocumento(
-        array $datos,
-        array $reserva,
-        string $tipoDocumento
-    ): array {
+    private function obtenerDatosClienteDocumento(array $datos,  array $reserva,  string $tipoDocumento): array
+    {
         $clienteNombre = trim((string) ($datos['cliente_denominacion'] ?? ($reserva['cliente'] ?? '')));
         $clienteNumero = trim((string) ($datos['cliente_numero_documento'] ?? ($reserva['documento'] ?? '')));
         $clienteTipoDocumento = strtoupper(trim((string) ($datos['cliente_tipo_documento'] ?? '')));
@@ -792,13 +727,8 @@ class DocumentoElectronicoService
         ];
     }
 
-    private function construirObservaciones(
-        array $reserva,
-        int $idReserva,
-        string $fechaDesde,
-        string $fechaHasta,
-        array $habitacionesSeleccionadas
-    ): string {
+    private function construirObservaciones(array $reserva,  int $idReserva,  string $fechaDesde,  string $fechaHasta,  array $habitacionesSeleccionadas): string
+    {
         $fechaReserva = $this->fechaIso((string) ($reserva['fecha_creacion'] ?? ''));
         $fechaIngresoReal = $this->fechaIso((string) ($reserva['checkin_real'] ?? ''));
         $fechaSalidaReal = $this->fechaIso((string) ($reserva['checkout_real'] ?? ''));
@@ -830,142 +760,6 @@ class DocumentoElectronicoService
         ])));
     }
 
-    private function prepararPayload(array $datos): array
-    {
-        $documento = $this->codigoDocumentoSunat(
-            (string) ($datos['cliente_tipo_documento'] ?? '-'),
-            (string) ($datos['cliente_numero_documento'] ?? '')
-        );
-
-        return [
-            'operacion' => 'generar_comprobante',
-            'tipo_de_comprobante' => (int) ($datos['tipo_de_comprobante'] ?? 2),
-            'serie' => (string) ($datos['serie'] ?? $this->seriePorTipo((string) ($datos['tipo_documento'] ?? 'BOLETA'))),
-            'numero' => (int) ($datos['numero'] ?? 1),
-            'sunat_transaction' => 1,
-            'cliente_tipo_de_documento' => $documento['codigo'],
-            'cliente_numero_de_documento' => $documento['numero'],
-            'cliente_denominacion' => (string) ($datos['cliente_denominacion'] ?? ''),
-            'cliente_direccion' => (string) ($datos['cliente_direccion'] ?? ''),
-            'cliente_email' => (string) ($datos['cliente_email'] ?? ''),
-            'cliente_email_1' => '',
-            'cliente_email_2' => '',
-            'fecha_de_emision' => (string) ($datos['fecha_de_emision'] ?? date('d-m-Y')),
-            'fecha_de_vencimiento' => '',
-            'moneda' => 1,
-            'tipo_de_cambio' => '',
-            'porcentaje_de_igv' => self::IGV,
-            'descuento_global' => '',
-            'total_descuento' => '',
-            'total_anticipo' => '',
-            'total_gravada' => '',
-            'total_inafecta' => '',
-            'total_exonerada' => (float) ($datos['total_exonerada'] ?? 0),
-            'total_igv' => (float) ($datos['total_igv'] ?? 0),
-            'total_gratuita' => '',
-            'total_otros_cargos' => '',
-            'total' => (float) ($datos['total'] ?? 0),
-            'percepcion_tipo' => '',
-            'percepcion_base_imponible' => '',
-            'total_percepcion' => '',
-            'total_incluido_percepcion' => '',
-            'retencion_tipo' => '',
-            'retencion_base_imponible' => '',
-            'total_retencion' => '',
-            'total_impuestos_bolsas' => '',
-            'detraccion' => false,
-            'observaciones' => (string) ($datos['observaciones'] ?? ''),
-            'documento_que_se_modifica_tipo' => '',
-            'documento_que_se_modifica_serie' => '',
-            'documento_que_se_modifica_numero' => '',
-            'tipo_de_nota_de_credito' => '',
-            'tipo_de_nota_de_debito' => '',
-            'enviar_automaticamente_a_la_sunat' => true,
-            'enviar_automaticamente_al_cliente' => false,
-            'condiciones_de_pago' => '',
-            'medio_de_pago' => '',
-            'placa_vehiculo' => '',
-            'orden_compra_servicio' => '',
-            'formato_de_pdf' => 'A4',
-            'generado_por_contingencia' => false,
-            'bienes_region_selva' => false,
-            'servicios_region_selva' => true,
-            'items' => $datos['items'] ?? [],
-            'guias' => [],
-            'venta_al_credito' => [],
-        ];
-    }
-
-    private function ejecutarApi(array $payload): array
-    {
-        $apiUrl = defined('NUBEFACT_API_URL')
-            ? (string) constant('NUBEFACT_API_URL')
-            : '';
-
-        $apiToken = defined('NUBEFACT_API_TOKEN')
-            ? (string) constant('NUBEFACT_API_TOKEN')
-            : '';
-
-        if ($apiUrl === '' || $apiToken === '') {
-            return [
-                'exito' => false,
-                'mensaje' => 'Falta configurar la ruta y el token de la cuenta emisora de NubeFact.'
-            ];
-        }
-
-        $curl = curl_init($apiUrl);
-
-        curl_setopt_array($curl, [
-            CURLOPT_POST => true,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER => [
-                'Authorization: ' . $apiToken,
-                'Content-Type: application/json',
-            ],
-            CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
-            CURLOPT_TIMEOUT => 45,
-        ]);
-
-        $respuesta = curl_exec($curl);
-        $error = curl_error($curl);
-        $codigoHttp = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
-
-        curl_close($curl);
-
-        if ($respuesta === false) {
-            return [
-                'exito' => false,
-                'mensaje' => 'No se pudo conectar con NubeFact: ' . $error
-            ];
-        }
-
-        $datos = json_decode($respuesta, true);
-
-        if (!is_array($datos)) {
-            return [
-                'exito' => false,
-                'mensaje' => 'NubeFact devolvió una respuesta inválida.'
-            ];
-        }
-
-        if ($codigoHttp >= 400 || isset($datos['errors']) || isset($datos['codigo'])) {
-            $mensaje = (string) ($datos['errors'] ?? 'NubeFact devolvió un error.');
-
-            if (stripos($mensaje, 'serie') !== false) {
-                $mensaje .= ' Verifique las constantes NUBEFACT_SERIE_BOLETA y NUBEFACT_SERIE_FACTURA en Config/Config.php; deben coincidir con las series registradas en NubeFact.';
-            }
-
-            return [
-                'exito' => false,
-                'mensaje' => $mensaje
-            ];
-        }
-
-        return [
-            'exito' => true,
-            'respuesta' => $datos
-        ];
-    }
 
     private function formatearRegistro(array $registro): array
     {

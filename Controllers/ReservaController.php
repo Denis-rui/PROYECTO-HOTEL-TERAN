@@ -4,7 +4,6 @@ namespace Controllers;
 
 use Libraries\Core\Controller;
 use Models\DashboardModel;
-use Models\NotificacionModel;
 use Models\ReporteOcupacionModel;
 use Services\Reservas\CheckInReservaService;
 use Services\Reservas\CheckOutReservaService;
@@ -221,24 +220,6 @@ class ReservaController extends Controller
         $resultado = $service->marcarRegreso(
             $idReserva,
             $_SESSION['id_usuario'] ?? null
-        );
-
-        echo json_encode($resultado, JSON_UNESCAPED_UNICODE);
-    }
-    public function actualizarEstado($params = '')
-    {
-        header('Content-Type: application/json; charset=utf-8');
-
-        $datos = json_decode(file_get_contents('php://input'), true);
-
-        $idReserva = (int) ($datos['id_reserva'] ?? 0);
-        $nuevoEstado = trim((string) ($datos['estado'] ?? ''));
-
-        $service = new ActualizarEstadoReservaService();
-
-        $resultado = $service->actualizarEstadoReserva(
-            $idReserva,
-            $nuevoEstado
         );
 
         echo json_encode($resultado, JSON_UNESCAPED_UNICODE);
