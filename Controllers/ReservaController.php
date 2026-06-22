@@ -68,25 +68,21 @@ class ReservaController extends Controller
 
     public function emitirDocumentoElectronico($params = '')
     {
-        header('Content-Type: application/json');
-        $datos = json_decode(file_get_contents('php://input'), true) ?: [];
+        $datos = $this->obtenerPayloadJson() ?? [];
         $modelo = new DocumentoElectronicoService();
-        echo json_encode($modelo->emitir($datos, $_SESSION['id_usuario'] ?? null));
+        $this->responderJson($modelo->emitir($datos, $_SESSION['id_usuario'] ?? null));
     }
 
 
     public function registrar($params = '')
     {
-        header('Content-Type: application/json; charset=utf-8');
-
-        $datos = json_decode(file_get_contents('php://input'), true);
+        $datos = $this->obtenerPayloadJson();
 
         if (!is_array($datos)) {
-            echo json_encode([
+            $this->responderJson([
                 'exito' => false,
                 'mensaje' => 'Datos inválidos.'
-            ], JSON_UNESCAPED_UNICODE);
-            return;
+            ], 400);
         }
         $service = new RegistrarReservaService();
 
@@ -95,23 +91,20 @@ class ReservaController extends Controller
             $_SESSION['id_usuario'] ?? null
         );
 
-        echo json_encode($resultado, JSON_UNESCAPED_UNICODE);
+        $this->responderJson($resultado);
     }
 
 
 
     public function actualizar($params = '')
     {
-        header('Content-Type: application/json; charset=utf-8');
-
-        $datos = json_decode(file_get_contents('php://input'), true);
+        $datos = $this->obtenerPayloadJson();
 
         if (!is_array($datos)) {
-            echo json_encode([
+            $this->responderJson([
                 'exito' => false,
                 'mensaje' => 'Datos inválidos.'
-            ], JSON_UNESCAPED_UNICODE);
-            return;
+            ], 400);
         }
 
         $service = new ActualizarReservaService();
@@ -121,21 +114,18 @@ class ReservaController extends Controller
             $_SESSION['id_usuario'] ?? null
         );
 
-        echo json_encode($resultado, JSON_UNESCAPED_UNICODE);
+        $this->responderJson($resultado);
     }
 
     public function pago($params = '')
     {
-        header('Content-Type: application/json; charset=utf-8');
-
-        $datos = json_decode(file_get_contents('php://input'), true);
+        $datos = $this->obtenerPayloadJson();
 
         if (!is_array($datos)) {
-            echo json_encode([
+            $this->responderJson([
                 'exito' => false,
                 'mensaje' => 'Datos inválidos.'
-            ], JSON_UNESCAPED_UNICODE);
-            return;
+            ], 400);
         }
 
         $service = new RegistrarPagoService();
@@ -149,14 +139,12 @@ class ReservaController extends Controller
             $_SESSION['id_usuario'] ?? null
         );
 
-        echo json_encode($resultado, JSON_UNESCAPED_UNICODE);
+        $this->responderJson($resultado);
     }
 
     public function checkin($params = '')
     {
-        header('Content-Type: application/json; charset=utf-8');
-
-        $datos = json_decode(file_get_contents('php://input'), true);
+        $datos = $this->obtenerPayloadJson() ?? [];
         $idReserva = (int) ($datos['id_reserva'] ?? 0);
 
         $service = new CheckInReservaService();
@@ -166,14 +154,12 @@ class ReservaController extends Controller
             $_SESSION['id_usuario'] ?? null
         );
 
-        echo json_encode($resultado, JSON_UNESCAPED_UNICODE);
+        $this->responderJson($resultado);
     }
 
     public function checkout($params = '')
     {
-        header('Content-Type: application/json; charset=utf-8');
-
-        $datos = json_decode(file_get_contents('php://input'), true);
+        $datos = $this->obtenerPayloadJson() ?? [];
 
         $idReserva = (int) ($datos['id_reserva'] ?? 0);
         $autorizarSaldo = (bool) ($datos['autorizar_saldo'] ?? false);
@@ -188,14 +174,12 @@ class ReservaController extends Controller
             $motivoAutorizacion
         );
 
-        echo json_encode($resultado, JSON_UNESCAPED_UNICODE);
+        $this->responderJson($resultado);
     }
 
     public function marcarAusente($params = '')
     {
-        header('Content-Type: application/json; charset=utf-8');
-
-        $datos = json_decode(file_get_contents('php://input'), true);
+        $datos = $this->obtenerPayloadJson() ?? [];
         $idReserva = (int) ($datos['id_reserva'] ?? 0);
 
         $service = new AusenciaReservaService();
@@ -205,14 +189,12 @@ class ReservaController extends Controller
             $_SESSION['id_usuario'] ?? null
         );
 
-        echo json_encode($resultado, JSON_UNESCAPED_UNICODE);
+        $this->responderJson($resultado);
     }
 
     public function marcarRegreso($params = '')
     {
-        header('Content-Type: application/json; charset=utf-8');
-
-        $datos = json_decode(file_get_contents('php://input'), true);
+        $datos = $this->obtenerPayloadJson() ?? [];
         $idReserva = (int) ($datos['id_reserva'] ?? 0);
 
         $service = new AusenciaReservaService();
@@ -222,53 +204,46 @@ class ReservaController extends Controller
             $_SESSION['id_usuario'] ?? null
         );
 
-        echo json_encode($resultado, JSON_UNESCAPED_UNICODE);
+        $this->responderJson($resultado);
     }
 
     public function obtener($params = '')
     {
-        header('Content-Type: application/json');
         $id = (int) ($params ?? 0);
         $service = new ConsultarReservaService();
-        echo json_encode($service->obtenerPorId($id));
+        $this->responderJson($service->obtenerPorId($id));
     }
 
     public function dashboard($params = '')
     {
-        header('Content-Type: application/json');
         $dashboardService = new DashboardService();
         $respuesta = $dashboardService->obtenerEstadisticas();
-        echo json_encode($respuesta['data']);
+        $this->responderJson($respuesta['data']);
     }
 
     public function notificaciones($params = '')
     {
-        header('Content-Type: application/json');
-
         $notificacionService = new NotificacionService();
         $respuesta = $notificacionService->obtenerNotificacionesCheckout();
 
-        echo json_encode($respuesta['data']);
+        $this->responderJson($respuesta['data']);
     }
 
     public function calcularTotal($params = '')
     {
-        header('Content-Type: application/json');
-        $datos     = json_decode(file_get_contents('php://input'), true);
+        $datos = $this->obtenerPayloadJson() ?? [];
         $service = new ConsultarReservaService();
         $resultado = $service->calcularTotal(
             (int) ($datos['id_habitacion'] ?? 0),
             $datos['check_in']  ?? '',
             $datos['check_out'] ?? ''
         );
-        echo json_encode($resultado);
+        $this->responderJson($resultado);
     }
 
     public function extenderEstadia($params = '')
     {
-        header('Content-Type: application/json; charset=utf-8');
-
-        $datos = json_decode(file_get_contents('php://input'), true);
+        $datos = $this->obtenerPayloadJson() ?? [];
 
         $idReserva = (int) ($datos['id_reserva'] ?? 0);
         $nuevoCheckOut = (string) ($datos['nuevo_check_out'] ?? $datos['checkOut'] ?? '');
@@ -281,14 +256,12 @@ class ReservaController extends Controller
             $_SESSION['id_usuario'] ?? null
         );
 
-        echo json_encode($resultado, JSON_UNESCAPED_UNICODE);
+        $this->responderJson($resultado);
     }
 
     public function cancelar($params = '')
     {
-        header('Content-Type: application/json; charset=utf-8');
-
-        $datos = json_decode(file_get_contents('php://input'), true);
+        $datos = $this->obtenerPayloadJson() ?? [];
 
         $idReserva = (int) ($datos['id_reserva'] ?? 0);
         $motivo = trim((string) ($datos['motivo'] ?? ''));
@@ -301,22 +274,19 @@ class ReservaController extends Controller
             $_SESSION['id_usuario'] ?? null
         );
 
-        echo json_encode($resultado, JSON_UNESCAPED_UNICODE);
+        $this->responderJson($resultado);
     }
 
     public function calcularCancelacion($params = '')
     {
-        header('Content-Type: application/json');
-        $datos = json_decode(file_get_contents('php://input'), true) ?: [];
+        $datos = $this->obtenerPayloadJson() ?? [];
         $modelo = new CalculoDevolucionService();
-        echo json_encode($modelo->calcular((int) ($datos['id_reserva'] ?? 0)));
+        $this->responderJson($modelo->calcular((int) ($datos['id_reserva'] ?? 0)));
     }
 
     public function cambiarHabitacion($params = '')
     {
-        header('Content-Type: application/json; charset=utf-8');
-
-        $datos = json_decode(file_get_contents('php://input'), true);
+        $datos = $this->obtenerPayloadJson() ?? [];
 
         $service = new CambiarHabitacionService();
 
@@ -329,6 +299,6 @@ class ReservaController extends Controller
             $_SESSION['id_usuario'] ?? null
         );
 
-        echo json_encode($resultado, JSON_UNESCAPED_UNICODE);
+        $this->responderJson($resultado);
     }
 }

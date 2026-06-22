@@ -60,7 +60,7 @@ class HabitacionController extends Controller
     public function registrar($params = '')
     {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            $datos = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+            $datos = $this->obtenerPayloadJson() ?? $_POST;
             $this->responderJson($this->habitacionService->registrar($datos));
         }
     }
@@ -68,7 +68,7 @@ class HabitacionController extends Controller
     public function editar($params = '')
     {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            $datos = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+            $datos = $this->obtenerPayloadJson() ?? $_POST;
             $this->responderJson($this->habitacionService->editar($datos));
         }
     }
@@ -76,20 +76,20 @@ class HabitacionController extends Controller
     public function eliminar($params = '')
     {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            $datos = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+            $datos = $this->obtenerPayloadJson() ?? $_POST;
             $this->responderJson($this->habitacionService->eliminar((int) ($datos['id'] ?? 0)));
         }
     }
 
     public function actualizarEstado($params = '')
     {
-        $datos = json_decode(file_get_contents('php://input'), true);
+        $datos = $this->obtenerPayloadJson() ?? [];
         $this->responderJson($this->habitacionService->actualizarEstado((int) ($datos['id'] ?? 0), $datos['estado'] ?? '', $datos['motivo'] ?? ''));
     }
 
     public function terminarLimpieza($params = '')
     {
-        $datos = json_decode(file_get_contents('php://input'), true);
+        $datos = $this->obtenerPayloadJson() ?? [];
         $this->responderJson($this->habitacionService->terminarLimpieza((int) ($datos['id'] ?? 0)));
     }
     public function disponiblesPorRango($params = '')

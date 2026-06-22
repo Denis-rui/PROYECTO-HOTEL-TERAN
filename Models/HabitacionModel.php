@@ -38,6 +38,28 @@ class HabitacionModel extends Eloquent
         return self::where('id', $id)->update(['activo' => 0]);
     }
 
+    public function obtenerPorId(int $id): ?array
+    {
+        $item = DB::table('habitacion as h')
+            ->join('tipo_habitacion as t', 't.id', '=', 'h.id_tipo_habitacion')
+            ->where('h.id', $id)
+            ->select([
+                'h.id',
+                'h.numero_habitacion',
+                'h.piso',
+                'h.id_tipo_habitacion',
+                't.tipo as tipo_nombre',
+                DB::raw('t.precio_base as precio'),
+                'h.estado',
+                'h.capacidad',
+                'h.descripcion_habitacion',
+                'h.activo',
+            ])
+            ->first();
+
+        return $item ? (array) $item : null;
+    }
+
     // ── MÉTODOS DE CONSULTA Y VALIDACIÓN (SQL Pura) ──
 
     public function obtenerReservaActiva(int $idHabitacion)

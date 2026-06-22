@@ -38,11 +38,8 @@ class PerfilController extends Controller
 
     public function actualizarPerfil($params = '')
     {
-        header('Content-Type: application/json');
         if (!isset($_SESSION['usuario'])) {
-            http_response_code(401);
-            echo json_encode(['success' => false, 'message' => 'No autenticado']);
-            exit();
+            $this->responderJson(['success' => false, 'message' => 'No autenticado'], 401);
         }
 
         $datos = [
@@ -59,20 +56,16 @@ class PerfilController extends Controller
         }
 
         // Adaptamos la respuesta al formato que esperaba tu JS en este módulo específico
-        echo json_encode([
+        $this->responderJson([
             'success' => $respuesta['exito'],
             'message' => $respuesta['mensaje']
         ]);
-        exit();
     }
 
     public function cambiarClave($params = '')
     {
-        header('Content-Type: application/json');
         if (!isset($_SESSION['usuario'])) {
-            http_response_code(401);
-            echo json_encode(['success' => false, 'message' => 'No autenticado']);
-            exit();
+            $this->responderJson(['success' => false, 'message' => 'No autenticado'], 401);
         }
 
         $claveActual = $_POST['clave_actual']    ?? '';
@@ -81,10 +74,9 @@ class PerfilController extends Controller
 
         $respuesta = $this->usuarioService->cambiarContrasenia($_SESSION['usuario'], $claveActual, $claveNueva, $confirmar);
 
-        echo json_encode([
+        $this->responderJson([
             'success' => $respuesta['exito'],
             'message' => $respuesta['mensaje']
         ]);
-        exit();
     }
 }

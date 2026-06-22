@@ -24,26 +24,20 @@ class ConfiguracionController extends Controller
     public function actualizar($params = '')
     {
         if (!isset($_SESSION['usuario'])) {
-            header('Content-Type: application/json');
-            echo json_encode(['exito' => false, 'mensaje' => 'No autenticado']);
-            exit();
+            $this->responderJson(['exito' => false, 'mensaje' => 'No autenticado'], 401);
         }
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
 
-        $body  = file_get_contents('php://input');
-        $datos = json_decode($body, true) ?? [];
-
-        header('Content-Type: application/json');
+        $datos = $this->obtenerPayloadJson() ?? [];
 
         try {
             $service = new ConfiguracionService();
             $ok = $service->actualizarHotel($datos);
-            echo json_encode($ok);
+            $this->responderJson($ok);
         } catch (\Exception $e) {
-            echo json_encode(['exito' => false, 'mensaje' => $e->getMessage()]);
+            $this->responderJson(['exito' => false, 'mensaje' => $e->getMessage()], 500);
         }
-        exit();
     }
 
     public function obtener($params = '')
@@ -55,29 +49,22 @@ class ConfiguracionController extends Controller
     public function guardarTipo($params = '')
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo json_encode([
+            $this->responderJson([
                 'exito' => false,
                 'mensaje' => 'Método no permitido'
-            ]);
-            return;
+            ], 405);
         }
 
-        header('Content-Type: application/json');
-
         try {
-
-
-            $datos = json_decode(file_get_contents('php://input'), true);
+            $datos = $this->obtenerPayloadJson() ?? [];
 
             $service = new ConfiguracionService();
-            echo json_encode($service->guardarTipoHabitacion(is_array($datos) ? $datos : []));
+            $this->responderJson($service->guardarTipoHabitacion($datos));
         } catch (\Throwable $e) {
-            http_response_code(500);
-            echo json_encode([
+            $this->responderJson([
                 'exito' => false,
                 'mensaje' => $e->getMessage()
-            ]);
+            ], 500);
         }
     }
 }

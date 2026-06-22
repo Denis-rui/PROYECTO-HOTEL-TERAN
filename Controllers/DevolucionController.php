@@ -38,32 +38,29 @@ class DevolucionController extends Controller
 
     public function registrar($params = '')
     {
-        header('Content-Type: application/json');
-        $datos = json_decode(file_get_contents('php://input'), true) ?: [];
+        $datos = $this->obtenerPayloadJson() ?? [];
         $idUsuario = $_SESSION['id_usuario'] ?? null;
 
         // El servicio ya devuelve el arreglo ['exito' => ..., 'mensaje' => ...]
         // Así que podemos imprimirlo directamente en el json_encode
         $respuesta = $this->devolucionService->registrarDevolucion($datos, $idUsuario);
-        echo json_encode($respuesta);
+        $this->responderJson($respuesta);
     }
 
     public function actualizar($params = '')
     {
-        header('Content-Type: application/json');
-        $datos = json_decode(file_get_contents('php://input'), true) ?: [];
+        $datos = $this->obtenerPayloadJson() ?? [];
         $idUsuario = $_SESSION['id_usuario'] ?? null;
 
         $respuesta = $this->devolucionService->actualizarDevolucion($datos, $idUsuario);
-        echo json_encode($respuesta);
+        $this->responderJson($respuesta);
     }
 
     public function eliminar($params = '')
     {
-        header('Content-Type: application/json');
-        $datos = json_decode(file_get_contents('php://input'), true) ?: [];
+        $datos = $this->obtenerPayloadJson() ?? [];
 
         $respuesta = $this->devolucionService->eliminarDevolucion((int) ($datos['id'] ?? 0));
-        echo json_encode($respuesta);
+        $this->responderJson($respuesta);
     }
 }

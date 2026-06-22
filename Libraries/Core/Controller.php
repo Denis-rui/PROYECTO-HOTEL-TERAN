@@ -24,7 +24,7 @@ class Controller
         }
     }
 
-    protected function responderJson(array $payload, int $statusCode = 200): void
+    protected function responderJson(mixed $payload, int $statusCode = 200): void
     {
         http_response_code($statusCode);
         header('Content-Type: application/json; charset=utf-8');

@@ -33,41 +33,35 @@ class UsuarioController extends Controller
 
     public function listar($params = '')
     {
-        header('Content-Type: application/json');
         $respuesta = $this->usuarioService->listarUsuarios();
-        echo json_encode($respuesta['exito'] ? $respuesta['data'] : []);
+        $this->responderJson($respuesta['exito'] ? $respuesta['data'] : []);
     }
 
     public function perfil($params = '')
     {
-        header('Content-Type: application/json');
         $nombreUsuario = $_SESSION['usuario'] ?? $_SESSION['nombreUsuario'] ?? ''; // Cubrimos ambas variables por seguridad
 
         if (empty($nombreUsuario)) {
-            echo json_encode(['error' => 'No hay sesión activa']);
-            exit;
+            $this->responderJson(['error' => 'No hay sesión activa'], 401);
         }
 
         $respuesta = $this->usuarioService->obtenerPerfil($nombreUsuario);
-        echo json_encode($respuesta['exito'] ? $respuesta['data'] : []);
+        $this->responderJson($respuesta['exito'] ? $respuesta['data'] : []);
     }
 
     public function crear($params = '')
     {
-        header('Content-Type: application/json');
-        $datos = json_decode(file_get_contents('php://input'), true);
-        echo json_encode($this->usuarioService->crearUsuario($datos));
+        $datos = $this->obtenerPayloadJson() ?? [];
+        $this->responderJson($this->usuarioService->crearUsuario($datos));
     }
 
     public function actualizar($params = '')
     {
-        header('Content-Type: application/json');
-        $datos = json_decode(file_get_contents('php://input'), true);
+        $datos = $this->obtenerPayloadJson() ?? [];
         $nombreUsuario = $_SESSION['usuario'] ?? $_SESSION['nombreUsuario'] ?? '';
 
         if (empty($nombreUsuario)) {
-            echo json_encode(['exito' => false, 'mensaje' => 'No hay sesión activa']);
-            exit;
+            $this->responderJson(['exito' => false, 'mensaje' => 'No hay sesión activa'], 401);
         }
 
         $respuesta = $this->usuarioService->actualizarPerfilPropio($nombreUsuario, $datos);
@@ -78,20 +72,18 @@ class UsuarioController extends Controller
             $_SESSION['nombreUsuario'] = $respuesta['nuevo_usuario'];
         }
 
-        echo json_encode($respuesta);
+        $this->responderJson($respuesta);
     }
 
     public function actualizarAdmin($params = '')
     {
-        header('Content-Type: application/json');
-        $datos = json_decode(file_get_contents('php://input'), true);
-        echo json_encode($this->usuarioService->actualizarUsuarioAdmin((int)($datos['id'] ?? 0), $datos));
+        $datos = $this->obtenerPayloadJson() ?? [];
+        $this->responderJson($this->usuarioService->actualizarUsuarioAdmin((int)($datos['id'] ?? 0), $datos));
     }
 
     public function eliminar($params = '')
     {
-        header('Content-Type: application/json');
-        $datos = json_decode(file_get_contents('php://input'), true);
-        echo json_encode($this->usuarioService->eliminarUsuario((int)($datos['id'] ?? 0)));
+        $datos = $this->obtenerPayloadJson() ?? [];
+        $this->responderJson($this->usuarioService->eliminarUsuario((int)($datos['id'] ?? 0)));
     }
 }
