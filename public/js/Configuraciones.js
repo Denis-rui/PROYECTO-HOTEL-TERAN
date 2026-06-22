@@ -84,7 +84,8 @@ window.inicializarConfiguraciones = () => {
   }
 
   function mostrarError(input, idError, mensaje) {
-    document.getElementById(idError).textContent = mensaje;
+    const contenedorError = document.getElementById(idError);
+    if (contenedorError) contenedorError.textContent = mensaje;
     input.classList.add("input-error");
   }
 

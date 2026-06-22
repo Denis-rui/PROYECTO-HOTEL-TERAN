@@ -15,7 +15,7 @@ class Views
             }
 
             // Si es un parcial o es el Login (que tiene su propia estructura completa)
-            if ((isset($is_partial) && $is_partial) || $controllerName == 'Login') {
+            if ((isset($is_partial) && $is_partial) || in_array($controllerName, ['Login', 'Error'], true)) {
                 require_once $viewPath;
             } else {
                 // Renderizado estándar con Layout

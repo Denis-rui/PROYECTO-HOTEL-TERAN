@@ -28,8 +28,9 @@ class Router
         $params = array_slice($partes, 2);
 
         if (!isset($this->routes[$requestMethod][$ruta])) {
-            http_response_code(404);
-            die('Ruta no encontrada');
+            $errorController = new \Controllers\ErrorController();
+            $errorController->index();
+            exit();
         }
 
         return [

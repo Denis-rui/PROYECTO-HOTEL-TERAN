@@ -13,21 +13,25 @@ $tipos = $data['tipos_habitacion'] ?? [];
       <div class="form-campo">
         <label for="nombre" class="form-label">NOMBRE DEL HOTEL</label>
         <input id="nombre" type="text" name="nombre" class="form-input" value="<?= htmlspecialchars($hotel['nombre'] ?? '') ?>" />
+        <span id="error-nombre" class="error" aria-live="polite"></span>
       </div>
 
       <div class="form-campo">
         <label for="ruc" class="form-label">RUC</label>
         <input id="ruc" type="text" name="ruc" class="form-input" value="<?= htmlspecialchars($hotel['ruc'] ?? '') ?>" />
+        <span id="error-ruc" class="error" aria-live="polite"></span>
       </div>
 
       <div class="form-campo">
         <label for="telefono" class="form-label">TELÉFONO</label>
         <input id="telefono" type="tel" name="telefono" class="form-input" value="<?= htmlspecialchars($hotel['telefono'] ?? '') ?>" />
+        <span id="error-telefono" class="error" aria-live="polite"></span>
       </div>
 
       <div class="form-campo">
         <label for="email" class="form-label">EMAIL</label>
         <input id="email" type="email" name="email" class="form-input" value="<?= htmlspecialchars($hotel['email'] ?? '') ?>" />
+        <span id="error-email" class="error" aria-live="polite"></span>
       </div>
 
       <div class="form-campo">
