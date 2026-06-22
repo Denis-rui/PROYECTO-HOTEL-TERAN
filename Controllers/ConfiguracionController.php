@@ -48,6 +48,12 @@ class ConfiguracionController extends Controller
         exit();
     }
 
+    public function obtener($params = '')
+    {
+        $service = new ConfiguracionService();
+        $this->responderJson($service->obtenerHotel());
+    }
+
     public function guardarTipo($params = '')
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

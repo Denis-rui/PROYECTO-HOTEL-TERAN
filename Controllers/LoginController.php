@@ -50,7 +50,7 @@ class LoginController extends Controller
 
         // Si falla la autenticación, redirigimos con error
         // Opcional: podrías pasar $resultado['mensaje'] a la vista para dar feedback más específico
-        header('Location: ' . BASE_URL . 'Login/index&error=1');
+        header('Location: ' . BASE_URL . 'Login/index?error=1');
         exit();
     }
 

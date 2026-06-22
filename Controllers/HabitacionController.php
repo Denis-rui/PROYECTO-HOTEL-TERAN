@@ -4,7 +4,6 @@ namespace Controllers;
 
 use Libraries\Core\Controller;
 use Services\HabitacionService;
-use Models\HabitacionModel; // Solo para los métodos que no empaquetamos como filtros
 
 class HabitacionController extends Controller
 {
@@ -31,7 +30,8 @@ class HabitacionController extends Controller
         $respuestaBuscar = $this->habitacionService->buscar($numero, $tipo, $estado, $piso);
 
         $data['page_title'] = "Habitaciones";
-        $data['filtros'] = (new HabitacionModel())->obtenerFiltros(); // Esto se queda igual por ser directo
+        $respuestaFiltros = $this->habitacionService->obtenerFiltros();
+        $data['filtros'] = $respuestaFiltros['exito'] ? $respuestaFiltros['data'] : [];
         $data['habitaciones'] = $respuestaBuscar['exito'] ? $respuestaBuscar['data'] : [];
         $data['page_js'] = ['Modal-Habitaciones.js', 'Habitaciones.js'];
 
@@ -94,7 +94,6 @@ class HabitacionController extends Controller
     }
     public function disponiblesPorRango($params = '')
     {
-        header('Content-Type: application/json');
         $checkIn = $_GET['check_in'] ?? '';
         $checkOut = $_GET['check_out'] ?? '';
         $tipo = $_GET['tipo'] ?? null;
@@ -104,7 +103,24 @@ class HabitacionController extends Controller
             'tipo' => $_GET['tipo_referencia'] ?? null,
             'piso' => $_GET['piso_referencia'] ?? null,
         ];
-        $habitaciones = $this->model->disponiblesPorRango($checkIn, $checkOut, $tipo, $piso, $referencia);
-        echo json_encode(['habitaciones' => $habitaciones]);
+        $respuesta = $this->habitacionService->disponiblesPorRango(
+            $checkIn,
+            $checkOut,
+            $tipo,
+            $piso,
+            $referencia
+        );
+
+        $this->responderJson([
+            'habitaciones' => $respuesta['data'],
+            'exito' => $respuesta['exito'],
+            'mensaje' => $respuesta['mensaje'] ?? '',
+        ]);
+    }
+
+    public function obtenerFiltros($params = '')
+    {
+        $respuesta = $this->habitacionService->obtenerFiltros();
+        $this->responderJson($respuesta['data']);
     }
 }

@@ -149,6 +149,40 @@ class HabitacionService
         }
     }
 
+    public function obtenerFiltros(): array
+    {
+        try {
+            return ['exito' => true, 'data' => $this->habitacionModel->obtenerFiltros()];
+        } catch (Exception $e) {
+            error_log("Error al obtener filtros de habitaciones: " . $e->getMessage());
+            return ['exito' => false, 'data' => []];
+        }
+    }
+
+    public function disponiblesPorRango(
+        string $checkIn,
+        string $checkOut,
+        ?string $tipo = null,
+        ?string $piso = null,
+        array $referencia = []
+    ): array {
+        try {
+            return [
+                'exito' => true,
+                'data' => $this->reporteOcupacionModel->obtenerDisponiblesPorRango(
+                    $checkIn,
+                    $checkOut,
+                    $tipo,
+                    $piso,
+                    $referencia
+                ),
+            ];
+        } catch (Exception $e) {
+            error_log("Error al obtener habitaciones disponibles: " . $e->getMessage());
+            return ['exito' => false, 'data' => [], 'mensaje' => 'No se pudo consultar la disponibilidad.'];
+        }
+    }
+
     public function terminarLimpieza(int $id): array
     {
         try {

@@ -4,7 +4,7 @@ namespace Models;
 
 use Models\Entities\Reserva;
 use Models\Entities\ReservaHabitacion;
-use Services\Reservas\FormatearReservas as ReservaFormatter;
+use Helpers\FormatearReservas as ReservaFormatter;
 
 
 class ReservaModel

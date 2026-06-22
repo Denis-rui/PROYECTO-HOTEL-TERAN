@@ -1,6 +1,6 @@
 <?php
 
-namespace Services\Reservas;
+namespace Helpers;
 
 use Models\HabitacionModel;
 use Illuminate\Database\Capsule\Manager as DB;
