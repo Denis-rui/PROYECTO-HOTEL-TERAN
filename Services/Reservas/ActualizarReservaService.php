@@ -8,6 +8,7 @@ use Helpers\HabitacionInputHelper;
 use Helpers\ReservaHabitacionHelper;
 use Helpers\ReservaHelper;
 use Models\Entities\Habitacion;
+use Models\Entities\Reserva as ReservaEntity;
 use Models\HabitacionModel;
 use Models\ReporteOcupacionModel;
 use Models\ReservaHabitacionModel;
@@ -15,14 +16,6 @@ use Models\ReservaModel;
 
 class ActualizarReservaService
 {
-    private const ESTADOS_ACTIVOS = [
-        'pendiente',
-        'confirmada',
-        'checkin_realizado',
-        'en_estadia',
-        'checkout_pendiente'
-    ];
-
     private ReservaModel $reservaModel;
     private ReservaHabitacionModel $reservaHabitacionModel;
     private HabitacionModel $habitacionModel;
@@ -428,7 +421,7 @@ class ActualizarReservaService
 
             $sigueOcupada = $this->reservaHabitacionModel->habitacionSigueOcupada(
                 $idHabitacionAnterior,
-                self::ESTADOS_ACTIVOS
+                ReservaEntity::ESTADOS_ACTIVOS
             );
 
             if ($sigueOcupada) {

@@ -4,6 +4,7 @@ namespace Models;
 
 use Illuminate\Database\Eloquent\Model as Eloquent;
 use Illuminate\Database\Capsule\Manager as DB;
+use Models\Entities\Reserva as ReservaEntity;
 
 class HabitacionModel extends Eloquent
 {
@@ -68,7 +69,7 @@ class HabitacionModel extends Eloquent
             ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
             ->where('rh.id_habitacion', $idHabitacion)
             ->where('rh.activo', 1)
-            ->whereIn('r.estado', ['pendiente', 'confirmada', 'checkin_realizado', 'en_estadia', 'checkout_pendiente'])
+            ->whereIn('r.estado', ReservaEntity::ESTADOS_BLOQUEANTES)
             ->where(function ($q) {
                 $q->whereNull('rh.check_out')
                     ->orWhere('rh.check_out', '>', DB::raw('NOW()'));
@@ -81,6 +82,7 @@ class HabitacionModel extends Eloquent
         return DB::table('reserva_habitacion as rh')
             ->leftJoin('reserva as r', 'r.id', '=', 'rh.id_reserva')
             ->where('rh.id_habitacion', $idHabitacion)
+            ->whereIn('r.estado', ReservaEntity::ESTADOS_BLOQUEANTES)
             ->where(function ($q) {
                 $q->whereNull('rh.check_out')
                     ->orWhere('rh.check_out', '>', DB::raw('NOW()'));
@@ -93,17 +95,23 @@ class HabitacionModel extends Eloquent
     // La búsqueda compleja se queda aquí porque es 100% lógica de Base de Datos
     public function buscar($numero, $tipo, $estadoNorm, $piso)
     {
+        $estadosBloqueantes = ReservaEntity::ESTADOS_BLOQUEANTES;
+        $estadosOcupacion = ReservaEntity::ESTADOS_OCUPACION_ACTUAL;
+        $estadosPreCheckin = ReservaEntity::ESTADOS_PRE_CHECKIN;
+        $estadosOcupacionSql = "'" . implode("','", $estadosOcupacion) . "'";
+        $estadosPreCheckinSql = "'" . implode("','", $estadosPreCheckin) . "'";
+
         $subReserva = DB::table('reserva_habitacion as rh2')
             ->join('reserva as r2', 'r2.id', '=', 'rh2.id_reserva')
             ->where('rh2.activo', 1)
-            ->whereIn('r2.estado', ['pendiente', 'confirmada', 'checkin_realizado', 'en_estadia', 'checkout_pendiente'])
+            ->whereIn('r2.estado', $estadosBloqueantes)
             ->where(function ($q) {
                 $q->whereNull('rh2.check_out')->orWhere('rh2.check_out', '>', DB::raw('NOW()'));
             })
             ->select([
                 'rh2.id_habitacion',
                 DB::raw('MIN(r2.id) as id_reserva_activa'),
-                DB::raw("MAX(CASE WHEN r2.estado IN ('en_estadia', 'checkout_pendiente') THEN 'Ocupada' WHEN r2.estado IN ('confirmada', 'checkin_realizado', 'pendiente') THEN 'Reservada' ELSE NULL END) as estado_por_reserva")
+                DB::raw("MAX(CASE WHEN r2.estado IN ({$estadosOcupacionSql}) THEN 'Ocupada' WHEN r2.estado IN ({$estadosPreCheckinSql}) THEN 'Reservada' ELSE NULL END) as estado_por_reserva")
             ])
             ->groupBy('rh2.id_habitacion');
 
@@ -135,15 +143,15 @@ class HabitacionModel extends Eloquent
         if ($piso) $query->where('h.piso', (int) $piso);
 
         if ($estadoNorm) {
-            $query->where(function ($q) use ($estadoNorm) {
+            $query->where(function ($q) use ($estadoNorm, $estadosOcupacion, $estadosPreCheckin) {
                 if ($estadoNorm === 'Ocupada') {
-                    $q->whereIn('r.estado', ['en_estadia', 'checkout_pendiente']);
+                    $q->whereIn('r.estado', $estadosOcupacion);
                 } elseif ($estadoNorm === 'Reservada') {
-                    $q->whereIn('r.estado', ['confirmada', 'checkin_realizado', 'pendiente'])
+                    $q->whereIn('r.estado', $estadosPreCheckin)
                         ->whereNotIn('h.id', function ($sub) {
                             $sub->select('rh3.id_habitacion')->from('reserva_habitacion as rh3')
                                 ->join('reserva as r3', 'r3.id', '=', 'rh3.id_reserva')
-                                ->whereIn('r3.estado', ['en_estadia', 'checkout_pendiente'])->where('rh3.activo', 1);
+                                ->whereIn('r3.estado', ReservaEntity::ESTADOS_OCUPACION_ACTUAL)->where('rh3.activo', 1);
                         });
                 } else {
                     if ($estadoNorm === 'Mantenimiento') {

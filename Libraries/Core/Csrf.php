@@ -28,15 +28,12 @@ class Csrf {
             return true;
         }
 
-        $esXhr = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest';
-        $esJson = stripos($_SERVER['CONTENT_TYPE'] ?? '', 'application/json') !== false;
-
-        if ($esXhr || $esJson) {
-            return true;
-        }
-
         $tokenSesion = $_SESSION[self::SESSION_KEY] ?? '';
-        $tokenRecibido = trim($_POST[$nombreParametro] ?? '');
+        $tokenRecibido = trim(
+            $_SERVER['HTTP_X_CSRF_TOKEN']
+            ?? $_POST[$nombreParametro]
+            ?? ''
+        );
 
         if (empty($tokenSesion) || !hash_equals($tokenSesion, $tokenRecibido)) {
             http_response_code(403);
@@ -47,7 +44,6 @@ class Csrf {
             exit();
         }
 
-        $_SESSION[self::SESSION_KEY] = bin2hex(random_bytes(self::TOKEN_LENGTH));
         return true;
     }
 }

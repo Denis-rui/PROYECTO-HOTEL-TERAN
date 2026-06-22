@@ -5,6 +5,40 @@ use Illuminate\Database\Eloquent\Model as Eloquent;
 
 class Reserva extends Eloquent
 {
+    public const ESTADOS_ACTIVOS = [
+        'pendiente',
+        'confirmada',
+        'checkin_realizado',
+        'en_estadia',
+        'checkout_pendiente',
+    ];
+
+    public const ESTADOS_BLOQUEANTES = [
+        'pendiente',
+        'confirmada',
+        'checkin_realizado',
+        'en_estadia',
+        'checkout_pendiente',
+        'ausente',
+    ];
+
+    public const ESTADOS_OCUPACION_ACTUAL = [
+        'checkin_realizado',
+        'en_estadia',
+        'checkout_pendiente',
+        'ausente',
+    ];
+
+    public const ESTADOS_PRE_CHECKIN = [
+        'pendiente',
+        'confirmada',
+    ];
+
+    public const ESTADOS_EN_ESTADIA = [
+        'en_estadia',
+        'checkout_pendiente',
+    ];
+
     protected $table = 'reserva';
     public $timestamps = false;
     protected $fillable = [

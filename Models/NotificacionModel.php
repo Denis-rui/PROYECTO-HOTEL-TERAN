@@ -4,6 +4,7 @@ namespace Models;
 
 use Illuminate\Database\Capsule\Manager as DB;
 use Models\Entities\Notificacion;
+use Models\Entities\Reserva as ReservaEntity;
 
 class NotificacionModel
 {
@@ -24,7 +25,7 @@ class NotificacionModel
     {
         return DB::table('reserva_habitacion as rh')
             ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
-            ->whereIn('r.estado', ['en_estadia', 'checkout_pendiente'])
+            ->whereIn('r.estado', ReservaEntity::ESTADOS_EN_ESTADIA)
             ->where('rh.activo', 1)
             ->select(['r.id as id_reserva', 'rh.id_habitacion'])
             ->get()
@@ -50,7 +51,7 @@ class NotificacionModel
             ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
             ->join('cliente as c', 'c.id', '=', 'r.id_cliente')
             ->join('habitacion as h', 'h.id', '=', 'rh.id_habitacion')
-            ->whereIn('r.estado', ['en_estadia', 'checkout_pendiente'])
+            ->whereIn('r.estado', ReservaEntity::ESTADOS_EN_ESTADIA)
             ->whereNotNull('rh.check_out')
             ->where('rh.activo', 1)
             ->orderBy('rh.check_out', 'asc')

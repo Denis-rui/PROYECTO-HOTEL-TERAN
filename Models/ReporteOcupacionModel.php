@@ -4,26 +4,10 @@ namespace Models;
 
 use Illuminate\Database\Capsule\Manager as DB;
 use Helpers\ReservaHelper;
+use Models\Entities\Reserva as ReservaEntity;
 
 class ReporteOcupacionModel
 {
-    private const ESTADOS_RESERVA_BLOQUEANTES = [
-        'pendiente',
-        'confirmada',
-        'checkin_realizado',
-        'en_estadia',
-        'checkout_pendiente',
-        'ausente',
-    ];
-
-    private const ESTADOS_OCUPACION_ACTUAL = [
-        'checkin_realizado',
-        'en_estadia',
-        'checkout_pendiente',
-        'ausente',
-    ];
-
-
     private function aplicarAsignacionActiva($query): void
     {
         $query->where(function ($q) {
@@ -39,7 +23,7 @@ class ReporteOcupacionModel
                 $q->whereNull('rh.check_out')
                     ->orWhere('rh.check_out', '>', $checkIn)
                     ->orWhere(function ($ocupacion) use ($checkIn) {
-                        $ocupacion->whereIn('r.estado', self::ESTADOS_OCUPACION_ACTUAL)
+                        $ocupacion->whereIn('r.estado', ReservaEntity::ESTADOS_OCUPACION_ACTUAL)
                             ->whereNull('r.checkout_real')
                             ->whereRaw('NOW() > rh.check_out')
                             ->whereRaw('NOW() > ?', [$checkIn]);
@@ -53,7 +37,7 @@ class ReporteOcupacionModel
             $query = DB::table('reserva as r')
                 ->join('reserva_habitacion as rh', 'rh.id_reserva', '=', 'r.id')
                 ->where('rh.id_habitacion', (int) $idHabitacion)
-                ->whereIn('r.estado', self::ESTADOS_OCUPACION_ACTUAL)
+                ->whereIn('r.estado', ReservaEntity::ESTADOS_OCUPACION_ACTUAL)
                 ->whereNull('r.checkout_real');
 
             $this->aplicarAsignacionActiva($query);
@@ -95,7 +79,7 @@ class ReporteOcupacionModel
             $query = DB::table('reserva_habitacion as rh')
                 ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
                 ->where('rh.id_habitacion', (int) $idHabitacion)
-                ->whereIn('r.estado', self::ESTADOS_RESERVA_BLOQUEANTES);
+                ->whereIn('r.estado', ReservaEntity::ESTADOS_BLOQUEANTES);
 
             $this->aplicarAsignacionActiva($query);
             $this->aplicarCruceFechas($query, $checkIn, $checkOut);
@@ -115,7 +99,7 @@ class ReporteOcupacionModel
                 ->first();
 
             if ($conflicto) {
-                $ocupada = in_array($conflicto->estado_reserva, self::ESTADOS_OCUPACION_ACTUAL, true);
+                $ocupada = in_array($conflicto->estado_reserva, ReservaEntity::ESTADOS_OCUPACION_ACTUAL, true);
                 return [
                     'disponible' => false,
                     'mensaje' => $ocupada
@@ -135,7 +119,7 @@ class ReporteOcupacionModel
         try {
             $queryOcupadas = DB::table('reserva_habitacion as rh')
                 ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
-                ->whereIn('r.estado', self::ESTADOS_RESERVA_BLOQUEANTES);
+                ->whereIn('r.estado', ReservaEntity::ESTADOS_BLOQUEANTES);
 
             $this->aplicarAsignacionActiva($queryOcupadas);
             $this->aplicarCruceFechas($queryOcupadas, $checkIn, $checkOut);
@@ -204,7 +188,7 @@ class ReporteOcupacionModel
             $res = DB::table('reserva_habitacion as rh')
                 ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
                 ->where('rh.id_habitacion', $idHabitacion)
-                ->whereIn('r.estado', self::ESTADOS_OCUPACION_ACTUAL)
+                ->whereIn('r.estado', ReservaEntity::ESTADOS_OCUPACION_ACTUAL)
                 ->where(function ($q) {
                     $q->whereNull('rh.check_out')
                         ->orWhere('rh.check_out', '>', DB::raw('NOW()'));
