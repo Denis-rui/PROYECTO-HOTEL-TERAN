@@ -44,7 +44,8 @@ class ClienteService
     {
         $tipo = strtolower(trim($tipo));
         $documento = preg_replace('/\D+/', '', trim($documento));
-        $token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImRlbmlzcnVpbWUuMjBAZ21haWwuY29tIn0.D61eKsOn1hVPtzBFRhHrylY4Wa6b_-OUn1lnzkrp7qU';
+        $apiUrl = defined('API_PERU_URL') ? (string) constant('API_PERU_URL') : '';
+        $token = defined('API_PERU_TOKEN') ? (string) constant('API_PERU_TOKEN') : '';
 
         if (!in_array($tipo, ['dni', 'ruc'], true)) {
             return ['success' => false, 'message' => 'Tipo de documento inválido', 'code' => 422];
@@ -54,7 +55,11 @@ class ClienteService
             return ['success' => false, 'message' => 'Documento inválido', 'code' => 422];
         }
 
-        $url = 'https://dniruc.apisperu.com/api/v1/' . $tipo . '/' . $documento . '?token=' . urlencode($token);
+        if ($apiUrl === '' || $token === '') {
+            return ['success' => false, 'message' => 'Falta configurar la API de consulta de documentos.', 'code' => 500];
+        }
+
+        $url = rtrim($apiUrl, '/') . '/' . $tipo . '/' . $documento . '?token=' . urlencode($token);
 
         $curl = curl_init($url);
         curl_setopt_array($curl, [
