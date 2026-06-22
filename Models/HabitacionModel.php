@@ -61,7 +61,32 @@ class HabitacionModel extends Eloquent
         return $item ? (array) $item : null;
     }
 
-    // ── MÉTODOS DE CONSULTA Y VALIDACIÓN (SQL Pura) ──
+    /**
+     * Registra cambios operativos de una habitación cuando la auditoría está
+     * disponible. La reserva no debe fallar por no contar con esta tabla
+     * auxiliar en instalaciones que todavía no la hayan creado.
+     */
+    public function registrarHistorial(int $idHabitacion, ?int $idReserva, ?string $estadoAnterior, ?string $estadoNuevo, ?string $limpiezaAnterior = null, ?string $limpiezaNueva = null, string $accion = '', string $comentario = '', ?int $idUsuario = null): bool
+    {
+        try {
+            return DB::table('historial_habitacion')->insert([
+                'id_habitacion' => $idHabitacion,
+                'id_reserva' => $idReserva,
+                'estado_anterior' => $estadoAnterior,
+                'estado_nuevo' => $estadoNuevo,
+                'estado_limpieza_anterior' => $limpiezaAnterior,
+                'estado_limpieza_nuevo' => $limpiezaNueva,
+                'accion' => $accion,
+                'comentario' => $comentario,
+                'id_usuario' => $idUsuario,
+                'fecha_registro' => DB::raw('NOW()'),
+            ]);
+        } catch (\Throwable $e) {
+            error_log('HabitacionModel::registrarHistorial -> ' . $e->getMessage());
+            return false;
+        }
+    }
+
 
     public function obtenerReservaActiva(int $idHabitacion)
     {
