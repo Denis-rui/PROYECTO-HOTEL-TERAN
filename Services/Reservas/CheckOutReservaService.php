@@ -112,17 +112,6 @@ class CheckOutReservaService
                     'limpieza_inicio' => $fechaCheckout,
                 ]);
 
-                $this->habitacionModel->registrarHistorial(
-                    $idHabitacion,
-                    (int) $idReserva,
-                    'Ocupada',
-                    'Mantenimiento',
-                    null,
-                    null,
-                    'checkout',
-                    'Checkout manual confirmado.',
-                    $idUsuario
-                );
 
                 $this->notificacionModel->guardarNotificacion(
                     [

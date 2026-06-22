@@ -83,20 +83,6 @@ class ExtenderEstadiaService
             if ($ok) {
                 $habitacion = $reservaHabitacion->habitacion;
 
-                $estadoOperativo = $habitacion->estado_operativo ?? 'ocupada';
-                $estadoLimpieza = $habitacion->estado_limpieza ?? 'limpia';
-
-                $this->habitacionModel->registrarHistorial(
-                    $idHabitacionPrincipal,
-                    $idReserva,
-                    $estadoOperativo,
-                    $estadoOperativo,
-                    $estadoLimpieza,
-                    $estadoLimpieza,
-                    'extension_estadia',
-                    'Checkout extendido hasta ' . $nuevoCheckOut,
-                    $idUsuario
-                );
             }
 
             DB::connection()->commit();

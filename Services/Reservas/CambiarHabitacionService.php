@@ -196,29 +196,6 @@ class CambiarHabitacionService
 
             $this->reservaModel->guardar($reservaActual);
 
-            $this->habitacionModel->registrarHistorial(
-                $idHabitacionActual,
-                $idReserva,
-                $habitacionAnterior['estado'] ?? 'Ocupada',
-                'Mantenimiento',
-                null,
-                null,
-                'cambio_habitacion_salida',
-                $motivo,
-                $idUsuarioActual
-            );
-
-            $this->habitacionModel->registrarHistorial(
-                $idHabitacionNueva,
-                $idReserva,
-                $habitacionNueva['estado'] ?? 'Disponible',
-                'Ocupada',
-                null,
-                null,
-                'cambio_habitacion_entrada',
-                $motivo,
-                $idUsuarioActual
-            );
 
             DB::connection()->commit();
 

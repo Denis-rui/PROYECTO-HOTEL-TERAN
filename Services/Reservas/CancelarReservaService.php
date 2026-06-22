@@ -82,16 +82,6 @@ class CancelarReservaService
                     'estado' => $estadoHabitacionDestino,
                 ]);
 
-                $this->habitacionModel->registrarHistorial(
-                    $idHabitacion,
-                    (int) $idReserva,
-                    'Ocupada',
-                    $estadoHabitacionDestino,
-                    null,
-                    null,
-                    'cancelar_reserva',
-                    'Reserva cancelada. Monto no reembolsable: S/ ' . $calculo['monto_no_reembolsable']
-                );
             }
 
             Devolucion::updateOrCreate(
