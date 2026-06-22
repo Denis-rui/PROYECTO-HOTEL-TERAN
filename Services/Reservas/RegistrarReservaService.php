@@ -165,19 +165,6 @@ class RegistrarReservaService
                     'fecha_movimiento' => FechaHotelHelper::ahora(),
                 ]);
 
-                $habitacionActual = $habitacionNormalizada['habitacion'];
-
-                $this->habitacionModel->registrarHistorial(
-                    $habitacionNormalizada['id'],
-                    $idReserva,
-                    $habitacionActual['estado_operativo'] ?? 'disponible',
-                    $habitacionActual['estado_operativo'] ?? 'disponible',
-                    $habitacionActual['estado_limpieza'] ?? 'limpia',
-                    $habitacionActual['estado_limpieza'] ?? 'limpia',
-                    'crear_reserva',
-                    'Reserva creada',
-                    $idUsuarioActual
-                );
             }
 
             $pago = $this->pagoModel->crear([

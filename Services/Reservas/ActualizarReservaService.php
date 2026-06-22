@@ -444,22 +444,6 @@ class ActualizarReservaService
                     'estado' => 'Mantenimiento',
                 ]);
 
-                try {
-                    $habitacionActual = $this->habitacionModel->obtenerPorId($idHabitacionAnterior) ?? [];
-
-                    $this->habitacionModel->registrarHistorial(
-                        $idHabitacionAnterior,
-                        $idReserva,
-                        $habitacionActual['estado'] ?? 'Ocupada',
-                        'Mantenimiento',
-                        null,
-                        null,
-                        'editar_reserva_quitar_habitacion',
-                        'Habitación removida de reserva: estado ajustado según fechas.'
-                    );
-                } catch (\Throwable $e) {
-                    // No detenemos la actualización si falla el historial.
-                }
             }
         }
     }

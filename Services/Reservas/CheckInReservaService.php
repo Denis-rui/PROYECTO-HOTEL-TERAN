@@ -71,17 +71,6 @@ class CheckInReservaService
                 Habitacion::where('id', $idHabitacion)->update([
                     'estado' => 'Ocupada',
                 ]);
-                $this->habitacionModel->registrarHistorial(
-                    $idHabitacion,
-                    (int) $idReserva,
-                    'confirmada',
-                    'Ocupada',
-                    null,
-                    null,
-                    'check_in',
-                    'Check-in manual confirmado',
-                    $idUsuario
-                );
             }
 
             DB::connection()->commit();
