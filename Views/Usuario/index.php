@@ -2,13 +2,24 @@
 <section class="usuarios">
   <header class="header-usuarios">
     <h2>Usuarios</h2>
-    <button id="btnNuevoUsuario" type="button" class="boton-nuevo-usuario">
-      Nuevo Usuario
-    </button>
+    <div class="filtros-cli">
+      <div class="filtro-usuarios">
+        <select id="filtroEstadoUsuario">
+          <option value="">Todos</option>
+          <option value="activo">Activos</option>
+          <option value="inactivo">Inactivos</option>
+        </select>
+      </div>
+      <button id="btnNuevoUsuario" type="button" class="boton-nuevo-usuario">
+        Nuevo Usuario
+      </button>
+
+    </div>
+
   </header>
 
   <div class="tabla">
-    <table class="tbl-usuarios">
+    <table class="tbl-usuarios" id="tbl-usuarios">
       <thead>
         <tr>
           <th>ID</th>
@@ -23,19 +34,22 @@
         <?php if (!empty($usuarios)): ?>
           <?php foreach ($usuarios as $usuario): ?>
             <?php
-              // Soporta objetos (Eloquent/stdClass) o arrays
-              $id = is_array($usuario) ? ($usuario['id'] ?? '') : ($usuario->id ?? '');
-              $nombre_usuario = is_array($usuario) ? ($usuario['nombre_usuario'] ?? '') : ($usuario->nombre_usuario ?? '');
-              $nombre_completo = is_array($usuario) ? ($usuario['nombre_completo'] ?? '') : ($usuario->nombre_completo ?? '');
-              $correo = is_array($usuario) ? ($usuario['correo'] ?? '') : ($usuario->correo ?? '');
-              $telefono = is_array($usuario) ? ($usuario['telefono'] ?? '') : ($usuario->telefono ?? '');
-              $dni = is_array($usuario) ? ($usuario['dni'] ?? '') : ($usuario->dni ?? '');
-              $fecha_nacimiento = is_array($usuario) ? ($usuario['fecha_nacimiento'] ?? '') : ($usuario->fecha_nacimiento ?? '');
-              $rol = is_array($usuario) ? ($usuario['rol'] ?? '') : ($usuario->rol ?? '');
-              // Si no viene 'estado' en el resultado, asumimos activo (la consulta filtra estado=1)
-              $estado = is_array($usuario) ? ($usuario['estado'] ?? 'activo') : ($usuario->estado ?? 'activo');
+
+            // Soporta objetos (Eloquent/stdClass) o arrays
+            $id = is_array($usuario) ? ($usuario['id'] ?? '') : ($usuario->id ?? '');
+            $nombre_usuario = is_array($usuario) ? ($usuario['nombre_usuario'] ?? '') : ($usuario->nombre_usuario ?? '');
+            $nombre_completo = is_array($usuario) ? ($usuario['nombre_completo'] ?? '') : ($usuario->nombre_completo ?? '');
+            $correo = is_array($usuario) ? ($usuario['correo'] ?? '') : ($usuario->correo ?? '');
+            $telefono = is_array($usuario) ? ($usuario['telefono'] ?? '') : ($usuario->telefono ?? '');
+            $dni = is_array($usuario) ? ($usuario['dni'] ?? '') : ($usuario->dni ?? '');
+            $fecha_nacimiento = is_array($usuario) ? ($usuario['fecha_nacimiento'] ?? '') : ($usuario->fecha_nacimiento ?? '');
+            $rol = is_array($usuario) ? ($usuario['rol'] ?? '') : ($usuario->rol ?? '');
+            // Si no viene 'estado' en el resultado, asumimos activo (la consulta filtra estado=1)
+            $estado = is_array($usuario) ? ($usuario['estado'] ?? 'activo') : ($usuario->estado ?? 'activo');
             ?>
-            <tr>
+
+            <tr data-estado="<?= $estado ?>">
+
               <td><?= $id ?></td>
               <td><?= htmlspecialchars($nombre_usuario) ?></td>
               <td><?= htmlspecialchars($nombre_completo) ?></td>
@@ -62,7 +76,9 @@
             </tr>
           <?php endforeach; ?>
         <?php else: ?>
-          <tr><td colspan="6" style="text-align:center">No se encontraron usuarios.</td></tr>
+          <tr>
+            <td colspan="6" style="text-align:center">No se encontraron usuarios.</td>
+          </tr>
         <?php endif; ?>
       </tbody>
     </table>
@@ -71,3 +87,34 @@
   <!-- INCLUSIÓN DEL MODAL DE USUARIOS -->
   <?php require_once("Views/Template/Modals/Modal-Usuario.php"); ?>
 </section>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+
+    const table = new DataTable('#tbl-usuarios', {
+      pageLength: 10,
+      order: [
+        [0, 'asc']
+      ],
+      layout: {
+        topStart: 'search',
+        topEnd: 'pageLength'
+      }
+    });
+
+    document.getElementById('filtroEstadoUsuario').addEventListener('change', function() {
+      const value = this.value;
+
+      table.rows().every(function() {
+        const estado = this.node().getAttribute('data-estado');
+
+        if (value === '' || estado === value) {
+          this.node().style.display = '';
+        } else {
+          this.node().style.display = 'none';
+        }
+      });
+    });
+
+  });
+</script>

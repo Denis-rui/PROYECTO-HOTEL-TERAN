@@ -23,8 +23,7 @@ class ClienteModel
                 'c.observaciones',
                 'c.reservaciones',
                 'c.activo',
-                'c.fecha_creacion'
-            );
+                'c.fecha_creacion');
 
         if (!empty($nombre)) {
             $query->where(function ($q) use ($nombre) {

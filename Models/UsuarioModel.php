@@ -23,7 +23,6 @@ class UsuarioModel
     public function listarActivos()
     {
         return Usuario::with('rol')
-            ->where('estado', 1)
             ->orderBy('id', 'asc')
             ->get();
     }

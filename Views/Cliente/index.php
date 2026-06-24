@@ -13,12 +13,22 @@ $obtenerCampoCliente = static function ($cliente, string $campo, $defecto = '') 
 <section class="usuarios">
   <header class="header-usuarios">
     <h2>Clientes</h2>
-    <button id="btnNuevoCliente" type="button" class="boton-nuevo-usuario">
-      Nuevo Cliente
-    </button>
+    <div class="filtros-cli">
+      <div class="filtro-activo">
+        <select id="filtroActivo">
+          <option value="">Todos</option>
+          <option value="1">Activos</option>
+          <option value="0">Inactivos</option>
+        </select>
+      </div>
+      <button id="btnNuevoCliente" type="button" class="boton-nuevo-usuario">
+        Nuevo Cliente
+      </button>
+    </div>
+
   </header>
 
-  <div class="buscar">
+  <div class="buscar" hidden>
     <form action="<?= BASE_URL ?>" method="GET">
       <input type="hidden" name="url" value="Cliente/index">
       <input
@@ -26,13 +36,12 @@ $obtenerCampoCliente = static function ($cliente, string $campo, $defecto = '') 
         name="nombre"
         type="text"
         placeholder="&#128269; Buscar cliente"
-        value="<?= htmlspecialchars($_GET['nombre'] ?? '') ?>"
-      />
+        value="<?= htmlspecialchars($_GET['nombre'] ?? '') ?>" />
     </form>
   </div>
 
-  <div class="tabla">
-    <table class="tbl-usuarios">
+  <div class="tabla" id="tabla-cli">
+    <table class="tbl-usuarios" id="tablaClientes">
       <thead>
         <tr>
           <th>ID</th>
@@ -74,11 +83,58 @@ $obtenerCampoCliente = static function ($cliente, string $campo, $defecto = '') 
             </tr>
           <?php endforeach; ?>
         <?php else: ?>
-          <tr><td colspan="10" style="text-align:center">No se encontraron clientes.</td></tr>
+          <tr>
+            <td colspan="10" style="text-align:center">No se encontraron clientes.</td>
+          </tr>
         <?php endif; ?>
       </tbody>
     </table>
   </div>
 
+
+
   <?php require_once("Views/Template/Modals/Modal-Clientes.php"); ?>
 </section>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+
+    // 1. CREAR UNA SOLA INSTANCIA
+    const table = new DataTable('#tablaClientes', {
+      pageLength: 10,
+      order: [
+        [0, 'asc']
+      ],
+      layout: {
+        topStart: 'search',
+        topEnd: 'pageLength'
+      }
+    });
+
+    // 2. FILTRO ACTIVO/INACTIVO
+    document.getElementById('filtroActivo').addEventListener('change', function() {
+      const value = this.value;
+
+      // filtro por data-activo (RECOMENDADO)
+      table.search('').draw();
+
+      if (value === '') {
+        table.rows().every(function() {
+          this.node().style.display = '';
+        });
+        return;
+      }
+
+      table.rows().every(function() {
+        const activo = this.node().getAttribute('data-activo');
+
+        if (activo === value) {
+          this.node().style.display = '';
+        } else {
+          this.node().style.display = 'none';
+        }
+      });
+    });
+
+  });
+</script>
