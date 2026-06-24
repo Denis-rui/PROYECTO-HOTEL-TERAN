@@ -10,4 +10,11 @@ class TipoHabitacion extends Eloquent
     public    $timestamps = false;
     protected $fillable   = ['tipo', 'precio_base', 'capacidad_maxima', 'activo'];
 
+
+    // Un tipo de habitacion tiene muchas habitaciones.
+
+    public function habitaciones()
+    {
+        return $this->hasMany(Habitacion::class, 'id_tipo_habitacion');
+    }
 }
