@@ -22,6 +22,7 @@ class DashboardModel
                 SUM(CASE WHEN estado = 'Ocupada'        THEN 1 ELSE 0 END) AS ocupadas,
                 SUM(CASE WHEN estado = 'Reservada'      THEN 1 ELSE 0 END) AS reservadas,
                 SUM(CASE WHEN estado = 'Mantenimiento'  THEN 1 ELSE 0 END) AS mantenimiento,
+                SUM(CASE WHEN estado = 'En Limpieza'    THEN 1 ELSE 0 END) AS en_limpieza,
                 COUNT(*)                                                    AS total
             ")
             ->first();
@@ -30,6 +31,7 @@ class DashboardModel
         $stats['habitaciones_ocupadas']     = (int) ($conteoEstados->ocupadas      ?? 0);
         $stats['habitaciones_reservadas']   = (int) ($conteoEstados->reservadas    ?? 0);
         $stats['habitaciones_mantenimiento']= (int) ($conteoEstados->mantenimiento ?? 0);
+        $stats['habitaciones_en_limpieza']  = (int) ($conteoEstados->en_limpieza   ?? 0);
         $totalHabitaciones                  = max(1, (int) ($conteoEstados->total  ?? 1));
 
         // ── Porcentaje de ocupación ──
@@ -92,7 +94,49 @@ class DashboardModel
             ->map(fn($row) => (array) $row)
             ->toArray();
 
+        $stats['grafico_ingresos'] = $this->obtenerIngresosPorMes(6);
+        $stats['grafico_estados_reserva'] = $this->obtenerEstadosReserva();
+
         return $stats;
     }
 
+    public function obtenerIngresosPorMes(int $meses = 6): array
+    {
+        $filas = DB::table('pago')
+            ->selectRaw("DATE_FORMAT(fecha_pago, '%Y-%m') AS periodo, DATE_FORMAT(fecha_pago, '%b %Y') AS mes, SUM(monto) AS total")
+            ->whereRaw('fecha_pago >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)', [$meses])
+            ->groupByRaw("DATE_FORMAT(fecha_pago, '%Y-%m'), DATE_FORMAT(fecha_pago, '%b %Y')")
+            ->orderBy('periodo', 'asc')
+            ->get();
+
+        return $filas->map(fn($fila) => [
+            'mes' => (string) $fila->mes,
+            'total' => (float) $fila->total,
+        ])->toArray();
+    }
+
+    public function obtenerEstadosReserva(): array
+    {
+        $estadosVisibles = [
+            'pendiente',
+            'confirmada',
+            'checkin_realizado',
+            'en_estadia',
+            'checkout_pendiente',
+            'checkout_realizado',
+            'cancelada',
+        ];
+
+        $filas = DB::table('reserva')
+            ->selectRaw('estado, COUNT(*) AS total')
+            ->whereIn('estado', $estadosVisibles)
+            ->groupBy('estado')
+            ->orderBy('total', 'desc')
+            ->get();
+
+        return $filas->map(fn($fila) => [
+            'estado' => (string) $fila->estado,
+            'total' => (int) $fila->total,
+        ])->toArray();
+    }
 }

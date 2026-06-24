@@ -2,16 +2,14 @@
 
 namespace Models;
 
-use Illuminate\Database\Capsule\Manager as DB;
+use Models\Entities\DocumentoElectronico; // agregamos para usar eloquent
 
 class DocumentoElectronicoModel
 {
-    private const TABLE = 'documento_electronico_reserva';
-
+    
     public function siguienteNumero(string $tipoDocumento, string $serie): int
     {
-        $maximo = (int) DB::table(self::TABLE)
-            ->where('tipo_documento', $tipoDocumento)
+        $maximo = (int) DocumentoElectronico::where('tipo_documento', $tipoDocumento)
             ->where('serie', $serie)
             ->max('numero');
 
@@ -20,21 +18,18 @@ class DocumentoElectronicoModel
 
     public function obtenerPorCodigoUnico(string $codigoUnico): ?array
     {
-        $documento = DB::table(self::TABLE)
-            ->where('codigo_unico', $codigoUnico)
+        $documento = DocumentoElectronico::where('codigo_unico', $codigoUnico)
             ->first();
 
-        return $documento ? (array) $documento : null;
+        return $documento ? $documento->toArray() : null;
     }
 
     public function obtenerPorReserva(int $idReserva): array
     {
         try {
-            return DB::table(self::TABLE)
-                ->where('id_reserva', $idReserva)
+            return DocumentoElectronico::where('id_reserva', $idReserva)
                 ->orderBy('id', 'asc')
                 ->get()
-                ->map(static fn($documento) => (array) $documento)
                 ->toArray();
         } catch (\Throwable $e) {
             error_log('DocumentoElectronicoModel::obtenerPorReserva -> ' . $e->getMessage());
@@ -44,6 +39,6 @@ class DocumentoElectronicoModel
 
     public function insertar(array $datos): bool
     {
-        return DB::table(self::TABLE)->insert($datos);
+        return DocumentoElectronico::create($datos) !== null;
     }
 }

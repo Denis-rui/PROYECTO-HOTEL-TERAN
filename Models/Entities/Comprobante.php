@@ -20,4 +20,18 @@ class Comprobante extends Eloquent
     {
         return $this->belongsTo(Usuario::class, 'id_usuario');
     }
+
+    //Acceso directo a la reserva a través del pago, sin JOINs manuales.
+
+    public function reserva()
+    {
+        return $this->hasOneThrough(
+            Reserva::class,
+            Pago::class,
+            'id',          
+            'id',          
+            'id_pago',     
+            'id_reserva'   
+        );
+    }
 }

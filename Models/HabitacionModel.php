@@ -5,6 +5,7 @@ namespace Models;
 use Illuminate\Database\Eloquent\Model as Eloquent;
 use Illuminate\Database\Capsule\Manager as DB;
 use Models\Entities\Reserva as ReservaEntity;
+use Models\Entities\Habitacion;
 
 class HabitacionModel extends Eloquent
 {
@@ -41,24 +42,27 @@ class HabitacionModel extends Eloquent
 
     public function obtenerPorId(int $id): ?array
     {
-        $item = DB::table('habitacion as h')
-            ->join('tipo_habitacion as t', 't.id', '=', 'h.id_tipo_habitacion')
-            ->where('h.id', $id)
-            ->select([
-                'h.id',
-                'h.numero_habitacion',
-                'h.piso',
-                'h.id_tipo_habitacion',
-                't.tipo as tipo_nombre',
-                DB::raw('t.precio_base as precio'),
-                'h.estado',
-                'h.capacidad',
-                'h.descripcion_habitacion',
-                'h.activo',
-            ])
+        $habitacion = Habitacion::with('tipoHabitacion')
+            ->whereHas('tipoHabitacion')
+            ->where('id', $id)
             ->first();
 
-        return $item ? (array) $item : null;
+            if(!$habitacion) {
+                return null;
+            }
+
+        return [
+            'id' => $habitacion->id,
+            'numero_habitacion' => $habitacion->numero_habitacion,
+            'piso' => $habitacion->piso,
+            'id_tipo_habitacion' => $habitacion->id_tipo_habitacion,
+            'tipo_nombre' => $habitacion->tipoHabitacion->tipo,
+            'precio' => $habitacion->tipoHabitacion->precio_base,
+            'estado' => $habitacion->estado,
+            'capacidad' => $habitacion->capacidad,
+            'descripcion_habitacion' => $habitacion->descripcion_habitacion,
+            'activo' => $habitacion->activo,
+        ];
     }
 
 

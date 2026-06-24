@@ -2,9 +2,9 @@
 
 namespace Models;
 
-use Illuminate\Database\Capsule\Manager as DB;
 use Models\Entities\Hotel;
 use Models\Entities\Reserva;
+use Models\Entities\DocumentoElectronico;
 
 class CalculoDevolucionModel
 {
@@ -21,8 +21,7 @@ class CalculoDevolucionModel
 
     public function obtenerDocumentosElectronicosPorReserva(int $idReserva)
     {
-        return DB::table('documento_electronico_reserva')
-            ->where('id_reserva', $idReserva)
+        return DocumentoElectronico::where('id_reserva', $idReserva)
             ->orderBy('id')
             ->get();
     }

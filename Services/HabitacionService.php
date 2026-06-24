@@ -5,16 +5,19 @@ namespace Services;
 use Models\HabitacionModel;
 use Models\ReporteOcupacionModel;
 use Exception;
+use Models\NotificacionModel;
 
 class HabitacionService
 {
     private HabitacionModel $habitacionModel;
     private ReporteOcupacionModel $reporteOcupacionModel;
+    private NotificacionModel $notificacionModel;
 
     public function __construct()
     {
         $this->habitacionModel = new HabitacionModel();
         $this->reporteOcupacionModel = new ReporteOcupacionModel(); // Integración limpia
+        $this->notificacionModel = new NotificacionModel();
     }
 
     public function registrar(array $datos): array
@@ -199,6 +202,10 @@ class HabitacionService
                 'limpieza_inicio' => null,
                 'descripcion_habitacion' => ''
             ]);
+
+            // agregamos para que se actualicen las notificaciones
+
+            $this->notificacionModel->marcarCheckoutLeidoPorHabitacion($id);
 
             return ['exito' => true, 'mensaje' => 'Limpieza finalizada. Habitación disponible.'];
         } catch (Exception $e) {

@@ -2,8 +2,8 @@
 
 namespace Models;
 
-use Illuminate\Database\Capsule\Manager as DB;
 use Models\Entities\Comprobante;
+use Models\Entities\Pago;
 
 class ComprobanteModel
 {
@@ -47,29 +47,20 @@ class ComprobanteModel
 
     public function obtenerTicketsPorReserva(int $idReserva)
     {
-        return DB::table('comprobante as c')
-            ->join('pago as p', 'p.id', '=', 'c.id_pago')
-            ->where('p.id_reserva', $idReserva)
-            ->orderBy('p.fecha_pago', 'asc')
-            ->orderBy('c.id', 'asc')
-            ->select([
-                'c.id',
-                'c.id_pago',
-                'c.numero_ticket',
-                'c.fecha_emision',
-                'c.descripcion',
-                'c.total',
-                'c.id_forma_pago',
-                'c.id_usuario',
-                'p.fecha_pago',
-            ])
+        return Comprobante::with('pago')
+            ->whereHas('pago', fn($q) => $q->where('id_reserva', $idReserva))
+            ->orderBy( 
+                Pago::select('fecha_pago')
+                ->whereColumn('pago.id', 'comprobante.id_pago')
+                ->limit(1), 'asc')
+            ->orderBy('id', 'asc')
             ->get();
+       
     }
 
     public function sumarPagosPorReserva(int $idReserva): float
     {
-        return (float) DB::table('pago')
-            ->where('id_reserva', $idReserva)
-            ->sum('monto');
+        return (float) Pago::where('id_reserva', $idReserva)->sum('monto');
+       
     }
 }
