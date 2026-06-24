@@ -4,23 +4,23 @@ namespace Services\Reservas;
 
 use Illuminate\Database\Capsule\Manager as DB;
 use Helpers\ReservaHabitacionHelper;
-use Models\CalculoDevolucionModel;
 use Models\Entities\Devolucion;
 use Models\Entities\Habitacion;
 use Models\HabitacionModel;
 use Models\ReservaModel;
+use Services\Devoluciones\CalculoDevolucionService;
 
 class CancelarReservaService
 {
     private ReservaModel $reservaModel;
     private HabitacionModel $habitacionModel;
-    private CalculoDevolucionModel $calculoDevolucionModel;
+    private CalculoDevolucionService $calculoDevolucionService;
 
     public function __construct()
     {
         $this->reservaModel = new ReservaModel();
         $this->habitacionModel = new HabitacionModel();
-        $this->calculoDevolucionModel = new CalculoDevolucionModel();
+        $this->calculoDevolucionService = new CalculoDevolucionService();
     }
 
     public function cancelarReserva(int $idReserva, string $motivo = '', ?int $idUsuario = null): array
@@ -45,14 +45,16 @@ class CancelarReservaService
                 ];
             }
 
-            $calculo = $this->calculoDevolucionModel->obtenerReservaParaCalculo($idReserva);
+            $resultadoCalculo = $this->calculoDevolucionService->calcular($idReserva);
 
-            if (!$calculo) {
+            if (!($resultadoCalculo['exito'] ?? false)) {
                 return [
                     'exito' => false,
-                    'mensaje' => 'Error al calcular devolución: ' . ($calculo['mensaje'] ?? 'Desconocido')
+                    'mensaje' => 'Error al calcular devolucion: ' . ($resultadoCalculo['mensaje'] ?? 'Desconocido')
                 ];
             }
+
+            $calculo = $resultadoCalculo['data'] ?? [];
 
             DB::connection()->beginTransaction();
 
@@ -62,7 +64,7 @@ class CancelarReservaService
                 (string) ($reservaActual->observaciones ?? '')
                     . "\nCancelada: " . $motivo
                     . " (No reembolsable: S/ " . number_format((float) $calculo['monto_no_reembolsable'], 2)
-                    . "; devolución: S/ " . number_format((float) $calculo['monto_devuelto'], 2) . ")"
+                    . "; devolucion: S/ " . number_format((float) $calculo['monto_devuelto'], 2) . ")"
             );
 
             $this->reservaModel->guardar($reservaActual);
@@ -81,7 +83,6 @@ class CancelarReservaService
                 Habitacion::where('id', $idHabitacion)->update([
                     'estado' => $estadoHabitacionDestino,
                 ]);
-
             }
 
             Devolucion::updateOrCreate(
@@ -111,7 +112,7 @@ class CancelarReservaService
 
             return [
                 'exito' => true,
-                'mensaje' => 'Reserva cancelada. Devolución: S/ ' . number_format((float) $calculo['monto_devuelto'], 2)
+                'mensaje' => 'Reserva cancelada. Devolucion: S/ ' . number_format((float) $calculo['monto_devuelto'], 2)
                     . '. Monto no reembolsable: S/ ' . number_format((float) $calculo['monto_no_reembolsable'], 2) . '.',
                 'devolucion' => $calculo,
             ];

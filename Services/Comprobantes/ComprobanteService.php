@@ -114,7 +114,7 @@ class ComprobanteService
             'es_documento_electronico' => false,
             'tipo' => 'Ticket',
             'numero' => $comprobante->numero_ticket,
-            'fecha' => $comprobante->fecha_pago ?: $comprobante->fecha_emision,
+            'fecha' => $comprobante->pago->fecha_pago ?? $comprobante->fecha_emision,
             'estado' => 'emitido',
             'monto' => (float) $comprobante->total,
             'descripcion' => $comprobante->descripcion ?? '',

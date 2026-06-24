@@ -39,11 +39,11 @@ class NotificacionService
 
             return [
                 'exito' => $guardado,
-                'mensaje' => $guardado ? 'Notificación creada.' : 'No se pudo crear la notificación.'
+                'mensaje' => $guardado ? 'Notificacion creada.' : 'No se pudo crear la notificacion.'
             ];
         } catch (Exception $e) {
             error_log('Error crear notificacion: ' . $e->getMessage());
-            return ['exito' => false, 'mensaje' => 'Error inesperado al crear notificación.'];
+            return ['exito' => false, 'mensaje' => 'Error inesperado al crear notificacion.'];
         }
     }
 
@@ -58,18 +58,38 @@ class NotificacionService
 
         foreach ($notificacionesDb as $item) {
             $tipo = (string) $item['tipo'];
+            $titulo = strtolower((string) ($item['titulo'] ?? ''));
+            $mensaje = strtolower((string) ($item['mensaje'] ?? ''));
+            $idHabitacion = (int) ($item['id_habitacion'] ?? 0);
+            $estadoHabitacion = strtolower((string) ($item['habitacion']['estado'] ?? ''));
 
-            if (strpos($tipo, 'checkout_') === 0) {
-                $claveCheckout = (int) $item['id_reserva'] . '|' . (int) $item['id_habitacion'];
+            $esNotificacionLimpieza = $tipo === 'checkout'
+                || strpos($tipo, 'limpieza') !== false
+                || strpos($titulo, 'limpieza') !== false
+                || strpos($mensaje, 'limpieza') !== false
+                || strpos($mensaje, 'mantenimiento') !== false;
+
+            if (
+                $idHabitacion > 0
+                && $esNotificacionLimpieza
+                && !in_array($estadoHabitacion, ['mantenimiento', 'en limpieza'], true)
+            ) {
+                continue;
+            }
+
+            if ($tipo === 'checkout' || strpos($tipo, 'checkout_') === 0) {
+                $claveCheckout = (int) $item['id_reserva'] . '|' . $idHabitacion;
                 if (!isset($clavesActivasCheckout[$claveCheckout])) {
-                    continue; // Ignorar si no está activa
+                    continue;
                 }
             }
 
-            $claveNotificacion = $tipo . '|' . (int) $item['id_reserva'] . '|' . (int) $item['id_habitacion'];
+            $claveNotificacion = $esNotificacionLimpieza && $idHabitacion > 0
+                ? 'limpieza|' . $idHabitacion
+                : $tipo . '|' . (int) $item['id_reserva'] . '|' . $idHabitacion;
 
             if (isset($clavesAgregadas[$claveNotificacion])) {
-                continue; // Evitar duplicados
+                continue;
             }
 
             $clavesAgregadas[$claveNotificacion] = true;
@@ -89,7 +109,6 @@ class NotificacionService
             $reservas = $this->notificacionModel->obtenerReservasEnCheckout();
             $notificaciones = $this->obtenerPendientes(30);
 
-            // Filtrar reservas según minutos
             $data = [
                 'proximos' => array_values(array_filter($reservas, fn($r) => (int) $r['minutos_faltantes'] >= 0 && (int) $r['minutos_faltantes'] <= 120)),
                 'vencidos' => array_values(array_filter($reservas, fn($r) => (int) $r['minutos_excedidos'] > 0)),
@@ -100,7 +119,6 @@ class NotificacionService
         } catch (Exception $e) {
             error_log('Error obtenerNotificacionesCheckout: ' . $e->getMessage());
 
-            // Retornar estructura vacía segura para no romper la vista
             return [
                 'exito' => false,
                 'mensaje' => 'Error al cargar las notificaciones.',

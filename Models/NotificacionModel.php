@@ -38,6 +38,7 @@ class NotificacionModel
     public function obtenerNoLeidas(int $limite): array
     {
         return Notificacion::query()
+            ->with('habitacion')
             ->where('leida', 0)
             ->orderByDesc('fecha_creacion')
             ->limit($limite)
@@ -66,5 +67,15 @@ class NotificacionModel
         $notificacion->fill($datos);
         $notificacion->fecha_creacion = date('Y-m-d H:i:s');
         return $notificacion->save();
+    }
+
+    // Agregamos funcion para actualizar notificacion en dashboard
+
+    public function marcarCheckoutLeidoPorHabitacion(int $idHabitacion): bool
+    {
+        return Notificacion::where('id_habitacion', $idHabitacion)
+            ->where('tipo', 'checkout')
+            ->where('leida', 0)
+            ->update(['leida' => 1]) !== false;
     }
 }

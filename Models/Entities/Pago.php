@@ -20,4 +20,11 @@ class Pago extends Eloquent
     {
         return $this->belongsTo(Usuario::class, 'id_usuario');
     }
+
+    //Un pago genera un comprobante.
+
+    public function comprobante()
+    {
+        return $this->hasOne(Comprobante::class, 'id_pago');
+    }
 }

@@ -1,9 +1,24 @@
-<?php 
-$stats = $data['stats'] ?? []; 
+<?php
+$stats = $data['stats'] ?? [];
 $notificaciones = $data['notificaciones'] ?? [];
+
+$graficoIngresos = $stats['grafico_ingresos'] ?? [];
+$graficoEstados = $stats['grafico_estados_reserva'] ?? [];
+
+$habitacionesLabels = json_encode(['Disponibles', 'Ocupadas', 'Reservadas', 'Mantenimiento', 'En limpieza'], JSON_UNESCAPED_UNICODE);
+$habitacionesTotales = json_encode([
+  (int) ($stats['habitaciones_disponibles'] ?? 0),
+  (int) ($stats['habitaciones_ocupadas'] ?? 0),
+  (int) ($stats['habitaciones_reservadas'] ?? 0),
+  (int) ($stats['habitaciones_mantenimiento'] ?? 0),
+  (int) ($stats['habitaciones_en_limpieza'] ?? 0),
+], JSON_UNESCAPED_UNICODE);
+$ingresosMeses = json_encode(array_column($graficoIngresos, 'mes'), JSON_UNESCAPED_UNICODE);
+$ingresosTotales = json_encode(array_column($graficoIngresos, 'total'), JSON_UNESCAPED_UNICODE);
+$estadosLabels = json_encode(array_column($graficoEstados, 'estado'), JSON_UNESCAPED_UNICODE);
+$estadosTotales = json_encode(array_column($graficoEstados, 'total'), JSON_UNESCAPED_UNICODE);
 ?>
 <section class="main-content dashboard">
-  <!-- HEADER -->
   <header class="main-header">
     <div class="header-left">
       <h1>DASHBOARD - TERAN HOTEL</h1>
@@ -16,9 +31,7 @@ $notificaciones = $data['notificaciones'] ?? [];
     </div>
   </header>
 
-  <!-- WIDGETS SUPERIORES -->
   <section class="dashboard-widgets-top">
-    <!-- Widget 1: Habitaciones -->
     <div class="widget widget-red">
       <div class="widget-icon">🛏️</div>
       <div class="widget-info">
@@ -27,7 +40,6 @@ $notificaciones = $data['notificaciones'] ?? [];
       </div>
     </div>
 
-    <!-- Widget 2: Reservas -->
     <div class="widget widget-green">
       <div class="widget-icon">🗓️</div>
       <div class="widget-info">
@@ -36,7 +48,6 @@ $notificaciones = $data['notificaciones'] ?? [];
       </div>
     </div>
 
-    <!-- Widget 3: Ingresos -->
     <div class="widget widget-gray">
       <div class="widget-icon">💰📈</div>
       <div class="widget-info">
@@ -46,9 +57,7 @@ $notificaciones = $data['notificaciones'] ?? [];
     </div>
   </section>
 
-  <!-- COLUMNAS INFERIORES -->
   <div class="content-columns">
-    <!-- COLUMNA IZQUIERDA: Actividades Recientes -->
     <div class="column-left">
       <h3 class="section-title">Actividades Recientes</h3>
 
@@ -79,7 +88,6 @@ $notificaciones = $data['notificaciones'] ?? [];
       </div>
     </div>
 
-    <!-- COLUMNA DERECHA: Resumen del día -->
     <div class="column-right">
       <section class="card summary-card">
         <div class="card-header">
@@ -96,8 +104,7 @@ $notificaciones = $data['notificaciones'] ?? [];
                 </div>
                 <span class="summary-value" id="statMantenimiento"><?= htmlspecialchars($stats['habitaciones_mantenimiento'] ?? 0) ?></span>
               </div>
-              
-              <!-- Detalles desplegables (Debajo) -->
+
               <div class="mante-accordion-content" id="manteDetalle">
                 <?php if (!empty($stats['detalles_mantenimiento'])): ?>
                   <div class="mante-grid">
@@ -140,8 +147,49 @@ $notificaciones = $data['notificaciones'] ?? [];
     </div>
   </div>
 
-  <!-- INCLUSIÓN DEL MODAL -->
-   <?php require_once("Views/Template/Modals/Modal-NuevaReserva.php"); ?>
+  <section class="dashboard-graficos">
+    <div class="grafico-card">
+      <h3 class="grafico-titulo">Estado de habitaciones</h3>
+      <canvas id="graficoHabitaciones"></canvas>
+    </div>
+
+    <div class="grafico-card">
+      <h3 class="grafico-titulo">Ingresos acumulados (ultimos 6 meses)</h3>
+      <?php if (empty($graficoIngresos)): ?>
+        <p class="grafico-vacio">Sin datos de ingresos registrados aun.</p>
+      <?php else: ?>
+        <canvas id="graficoIngresos"></canvas>
+      <?php endif; ?>
+    </div>
+
+    <div class="grafico-card">
+      <h3 class="grafico-titulo">Reservas por estado</h3>
+      <?php if (empty($graficoEstados)): ?>
+        <p class="grafico-vacio">Sin reservas registradas aun.</p>
+      <?php else: ?>
+        <canvas id="graficoEstados"></canvas>
+      <?php endif; ?>
+    </div>
+  </section>
+
+  <script>
+    window.DASHBOARD_GRAFICOS = {
+      habitaciones: {
+        labels: <?= $habitacionesLabels ?: '[]' ?>,
+        totales: <?= $habitacionesTotales ?: '[]' ?>
+      },
+      ingresos: {
+        meses: <?= $ingresosMeses ?: '[]' ?>,
+        totales: <?= $ingresosTotales ?: '[]' ?>
+      },
+      estados: {
+        labels: <?= $estadosLabels ?: '[]' ?>,
+        totales: <?= $estadosTotales ?: '[]' ?>
+      }
+    };
+  </script>
+
+  <?php require_once("Views/Template/Modals/Modal-NuevaReserva.php"); ?>
   <?php require_once("Views/Template/Modals/Modal-Pago.php"); ?>
   <?php require_once("Views/Template/Modals/Modal-Comprobante.php"); ?>
   <?php require_once("Views/Template/Modals/Modal-Clientes.php"); ?>
