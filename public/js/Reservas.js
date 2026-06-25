@@ -2,8 +2,105 @@ window.inicializarReservas = () => {
   if (window.__reservasEventosInicializados) return;
   window.__reservasEventosInicializados = true;
 
+  inicializarTablaReservas();
   configurarEventosReservas();
 };
+
+const inicializarTablaReservas = () => {
+  const tabla = document.getElementById("tablaReservas");
+  if (!tabla || typeof DataTable === "undefined") return;
+
+  const inputBusqueda = document.getElementById("inputBuscarReserva");
+  const filtroEstado = document.getElementById("filtroEstado");
+  const formularioFiltros = inputBusqueda?.closest("form");
+
+  // Esta instancia reemplaza la carga MVC de filas por una carga Ajax server-side.
+  // DataTables mandará paginación, orden y búsqueda al endpoint Reserva/datatable.
+  const tablaReservas = new DataTable("#tablaReservas", {
+    processing: true,
+    serverSide: true,
+    pageLength: 30,
+    lengthMenu: [10, 30, 50, 100],
+    searching: false,
+    ajax: {
+      url: BASE_URL + "Reserva/datatable",
+      type: "POST",
+      headers: {
+        "X-CSRF-Token": typeof CSRF_TOKEN !== "undefined" ? CSRF_TOKEN : "",
+      },
+      data: (datos) => {
+        // Además de los datos propios de DataTables, enviamos nuestros filtros externos.
+        datos.csrf_token = typeof CSRF_TOKEN !== "undefined" ? CSRF_TOKEN : "";
+        datos.busqueda = inputBusqueda?.value?.trim() || "";
+        datos.estado = filtroEstado?.value || "";
+        return datos;
+      },
+    },
+    order: [],
+    columns: [
+      { data: "cliente", orderable: false },
+      { data: "habitacion", orderable: false },
+      { data: "check_in" },
+      { data: "check_out" },
+      { data: "estado" },
+      { data: "pago", orderable: false, searchable: false },
+      { data: "acciones", orderable: false, searchable: false },
+    ],
+    language: {
+      processing: "Cargando reservas...",
+      emptyTable: "No hay reservas para mostrar.",
+      zeroRecords: "No se encontraron reservas con esos filtros.",
+      lengthMenu: "Mostrar _MENU_ reservas",
+      info: "Mostrando _START_ a _END_ de _TOTAL_ reservas",
+      infoEmpty: "Mostrando 0 reservas",
+      infoFiltered: "(filtrado de _MAX_ reservas)",
+      paginate: {
+        first: "Primero",
+        last: "Último",
+        next: "Siguiente",
+        previous: "Anterior",
+      },
+    },
+  });
+
+  // Guardamos una función global para refrescar la tabla después de check-in, pago, cancelación, etc.
+  window.recargarTablaReservas = () => {
+    tablaReservas.ajax.reload(null, false);
+    return true;
+  };
+
+  let temporizadorBusqueda;
+  inputBusqueda?.addEventListener("input", () => {
+    clearTimeout(temporizadorBusqueda);
+    temporizadorBusqueda = setTimeout(() => tablaReservas.ajax.reload(), 350);
+  });
+
+  filtroEstado?.addEventListener("change", () => tablaReservas.ajax.reload());
+
+  formularioFiltros?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    tablaReservas.ajax.reload();
+  });
+
+  formularioFiltros
+    ?.querySelector(".btn-limpiar-filtros")
+    ?.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (inputBusqueda) inputBusqueda.value = "";
+      if (filtroEstado) filtroEstado.value = "";
+      tablaReservas.ajax.reload();
+    });
+};
+
+const recargarReservasDespuesDeAccion = () => {
+  if (typeof window.recargarTablaReservas === "function") {
+    window.recargarTablaReservas();
+    return;
+  }
+
+  window.location.reload();
+};
+
 const configurarEventosReservas = () => {
   const cuerpoTabla = document.getElementById("contenido-reservas");
   const anchoMenu = 220;
@@ -301,7 +398,7 @@ const configurarEventosReservas = () => {
                 timer: 2500,
                 timerProgressBar: true,
               });
-              window.location.reload();
+              recargarReservasDespuesDeAccion();
             } else {
               Swal.fire({
                 icon: "error",
@@ -444,7 +541,7 @@ const ejecutarAccionReserva = async (accion, datos) => {
         timer: 2500,
         timerProgressBar: true,
       });
-      window.location.reload();
+      recargarReservasDespuesDeAccion();
     } else {
       if (accion === "checkout" && resultado.requiere_pago) {
         const decisionPago = await Swal.fire({
@@ -481,7 +578,7 @@ const ejecutarAccionReserva = async (accion, datos) => {
             recargarAlCerrar: true,
           });
         } else {
-          window.location.reload();
+          recargarReservasDespuesDeAccion();
         }
         return;
       }

@@ -72,6 +72,7 @@ $router->get('Reserva/dashboard', ['Reserva', 'dashboard']);
 $router->get('Reserva/notificaciones', ['Reserva', 'notificaciones']);
 
 // Operaciones de escritura
+$router->post('Reserva/datatable', ['Reserva', 'datatable']);
 $router->post('Reserva/registrar', ['Reserva', 'registrar']);
 $router->post('Reserva/actualizar', ['Reserva', 'actualizar']);
 $router->post('Reserva/pago', ['Reserva', 'pago']);

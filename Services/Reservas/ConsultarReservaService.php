@@ -21,6 +21,13 @@ class ConsultarReservaService
         return $this->reservaModel->obtenerReservas($filtros, $limite);
     }
 
+    public function listarParaDataTable(array $parametros): array
+    {
+        // Este método separa la consulta vieja de la consulta especial que exige DataTables:
+        // paginación por start/length, búsqueda global y conteo total/filtrado.
+        return $this->reservaModel->obtenerReservasDataTable($parametros);
+    }
+
     public function obtenerPorId(int $idReserva): ?array
     {
         return $this->reservaModel->obtenerReservaPorId($idReserva);
