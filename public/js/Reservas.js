@@ -38,13 +38,13 @@ const inicializarTablaReservas = () => {
     },
     order: [],
     columns: [
-      { data: "cliente", orderable: false },
-      { data: "habitacion", orderable: false },
-      { data: "check_in" },
-      { data: "check_out" },
-      { data: "estado" },
-      { data: "pago", orderable: false, searchable: false },
-      { data: "acciones", orderable: false, searchable: false },
+      { data: "cliente", orderable: false, render: renderTextoSeguro },
+      { data: null, orderable: false, render: (_, __, reserva) => renderHabitaciones(reserva) },
+      { data: "check_in", render: renderFechaReserva },
+      { data: "check_out", render: (_, __, reserva) => renderCheckOut(reserva) },
+      { data: "estado", render: renderEstadoReserva },
+      { data: "porcentaje_pago", orderable: false, searchable: false, render: renderPagoReserva },
+      { data: null, orderable: false, searchable: false, render: (_, __, reserva) => renderAccionesReserva(reserva) },
     ],
     language: {
       processing: "Cargando reservas...",
@@ -68,6 +68,10 @@ const inicializarTablaReservas = () => {
     tablaReservas.ajax.reload(null, false);
     return true;
   };
+
+  // Permite a los eventos delegados recuperar el objeto completo de la fila.
+  // Así evitamos guardar toda la reserva en atributos data-* del HTML.
+  window.obtenerReservaDesdeFila = (fila) => tablaReservas.row(fila).data() || null;
 
   let temporizadorBusqueda;
   inputBusqueda?.addEventListener("input", () => {
@@ -99,6 +103,157 @@ const recargarReservasDespuesDeAccion = () => {
   }
 
   window.location.reload();
+};
+
+const escaparHtml = (valor) =>
+  String(valor ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+const renderTextoSeguro = (valor) => escaparHtml(valor);
+
+const formatearFechaReserva = (fecha) => {
+  if (!fecha) return "Sin fecha";
+  const texto = String(fecha).trim();
+  return texto.length > 16 ? texto.slice(0, 16) : texto;
+};
+
+const renderFechaReserva = (fecha) => escaparHtml(formatearFechaReserva(fecha));
+
+const renderHabitaciones = (reserva) => {
+  const habitaciones = Array.isArray(reserva?.habitaciones)
+    ? reserva.habitaciones
+    : [];
+
+  if (!habitaciones.length) {
+    return escaparHtml(reserva?.habitacion || "Sin habitación");
+  }
+
+  return habitaciones
+    .map((habitacion) => {
+      const numero = habitacion?.numero_habitacion || "";
+      const piso = habitacion?.piso || "";
+      const tipo = habitacion?.tipo_nombre || "";
+      const texto = `Hab. ${numero}${piso !== "" ? ` - Piso ${piso}` : ""}${tipo !== "" ? ` - ${tipo}` : ""}`.trim();
+      return escaparHtml(texto);
+    })
+    .filter(Boolean)
+    .join("<br>");
+};
+
+const renderCheckOut = (reserva) => {
+  const fecha = renderFechaReserva(reserva?.check_out);
+  const badges = [];
+
+  if (Number(reserva?.minutos_checkout_vencido || 0) > 0) {
+    badges.push('<span class="badge-vencido">Checkout vencido</span>');
+  } else if (reserva?.checkout_hoy) {
+    badges.push('<span class="badge-checkout-hoy">Checkout hoy</span>');
+  }
+
+  return `${fecha}${badges.length ? `<br>${badges.join("")}` : ""}`;
+};
+
+const textoEstadoReserva = (estado) => {
+  const mapa = {
+    confirmada: "Confirmada",
+    en_estadia: "En estadía",
+    ausente: "Ausente",
+    checkout_pendiente: "Checkout pendiente",
+    checkout_realizado: "Checkout realizado",
+    cancelada: "Cancelada",
+  };
+
+  const clave = String(estado || "").trim().toLowerCase();
+  return mapa[clave] || clave.charAt(0).toUpperCase() + clave.slice(1);
+};
+
+const claseEstadoReserva = (estado) => {
+  const mapa = {
+    confirmada: "estado-confirmada",
+    en_estadia: "estado-en-estadia",
+    ausente: "estado-ausente",
+    checkout_pendiente: "estado-checkout-pendiente",
+    checkout_realizado: "estado-checkout-realizado",
+    cancelada: "estado-cancelada",
+  };
+
+  return mapa[String(estado || "").trim().toLowerCase()] || "estado-reserva-desconocido";
+};
+
+const renderEstadoReserva = (estado) =>
+  `<span class="estado-reserva ${claseEstadoReserva(estado)}">${escaparHtml(textoEstadoReserva(estado))}</span>`;
+
+const renderPagoReserva = (porcentaje) => {
+  const valor = Math.max(0, Math.min(100, Number(porcentaje || 0)));
+  return `<span class="porcentaje-pago">${valor}%</span>`;
+};
+
+const tieneAccionReserva = (reserva, accion) =>
+  Array.isArray(reserva?.acciones_disponibles) &&
+  reserva.acciones_disponibles.includes(accion);
+
+const renderAccionesReserva = (reserva) => {
+  const estado = String(reserva?.estado || "").toLowerCase();
+  const editarDisabled = estado === "checkout_realizado"
+    ? ' disabled title="No se puede editar una reserva con checkout realizado"'
+    : "";
+  const partes = [
+    `<button type="button" class="boton-editar-reserva"${editarDisabled}>✏️</button>`,
+  ];
+
+  if (tieneAccionReserva(reserva, "checkin")) {
+    partes.push('<button type="button" class="boton-checkin-reserva" title="Confirmar check-in">Check-in</button>');
+  }
+
+  if (tieneAccionReserva(reserva, "checkout")) {
+    partes.push('<button type="button" class="boton-checkout-reserva" title="Confirmar checkout">Checkout</button>');
+  }
+
+  partes.push('<button type="button" class="boton-pago-tabla" title="Registrar pago">💳</button>');
+  partes.push(renderMenuAccionesReserva(reserva));
+
+  return `<div class="acciones-reserva-wrap">${partes.join("")}</div>`;
+};
+
+const renderMenuAccionesReserva = (reserva) => {
+  const opciones = [];
+
+  if (tieneAccionReserva(reserva, "marcar_ausente")) {
+    opciones.push('<button type="button" class="item-menu-opcion accion-marcar-ausente">Marcar ausente</button>');
+  }
+
+  if (tieneAccionReserva(reserva, "marcar_regreso")) {
+    opciones.push('<button type="button" class="item-menu-opcion accion-marcar-regreso">Marcar regreso</button>');
+  }
+
+  if (tieneAccionReserva(reserva, "emitir_documento")) {
+    opciones.push('<button type="button" class="item-menu-opcion accion-emitir-documento">Emitir boleta / factura</button>');
+  }
+
+  if (tieneAccionReserva(reserva, "ver_detalles")) {
+    opciones.push('<button type="button" class="item-menu-opcion accion-ver-detalles">Ver detalles</button>');
+  }
+
+  if (tieneAccionReserva(reserva, "cancelar")) {
+    opciones.push('<button type="button" class="item-menu-opcion accion-cancelar-reserva">Cancelar reserva</button>');
+  }
+
+  return `
+    <div class="menu-mas-opciones-wrap">
+      <button type="button" class="boton-mas-opciones" aria-label="Más opciones">⋮</button>
+      <div class="menu-mas-opciones-panel">${opciones.join("")}</div>
+    </div>
+  `;
+};
+
+const obtenerReservaDesdeEvento = (elemento) => {
+  const fila = elemento?.closest("tr");
+  if (!fila || typeof window.obtenerReservaDesdeFila !== "function") return null;
+  return window.obtenerReservaDesdeFila(fila);
 };
 
 const configurarEventosReservas = () => {
@@ -174,13 +329,15 @@ const configurarEventosReservas = () => {
       const accionMarcarAusente = e.target.closest(".accion-marcar-ausente");
       if (accionMarcarAusente) {
         cerrarMenusOpciones();
+        const reserva = obtenerReservaDesdeEvento(accionMarcarAusente);
+        if (!reserva) return;
         const confirmado = await window.Confirmar(
           "¿Marcar esta reserva como ausente?",
         );
         if (!confirmado) return;
 
         ejecutarAccionReserva("marcarAusente", {
-          id_reserva: accionMarcarAusente.dataset.id,
+          id_reserva: reserva.id,
         });
         return;
       }
@@ -188,48 +345,27 @@ const configurarEventosReservas = () => {
       const accionMarcarRegreso = e.target.closest(".accion-marcar-regreso");
       if (accionMarcarRegreso) {
         cerrarMenusOpciones();
+        const reserva = obtenerReservaDesdeEvento(accionMarcarRegreso);
+        if (!reserva) return;
         const confirmado = await window.Confirmar(
           "¿Marcar regreso y volver la reserva a en estadía?",
         );
         if (!confirmado) return;
 
         ejecutarAccionReserva("marcarRegreso", {
-          id_reserva: accionMarcarRegreso.dataset.id,
+          id_reserva: reserva.id,
         });
         return;
       }
 
       const accionVerDetalles = e.target.closest(".accion-ver-detalles");
       if (accionVerDetalles) {
-        const fila = accionVerDetalles.closest("tr");
-        if (!fila) return;
         cerrarMenusOpciones();
-
-        const parseArray = (valor) => {
-          try {
-            return JSON.parse(valor || "[]");
-          } catch (error) {
-            return [];
-          }
-        };
-
-        const datosReserva = {
-          id: fila.dataset.id,
-          estado: fila.dataset.estado,
-          porcentaje_pago: fila.dataset.porcentajepago,
-          total: fila.dataset.total,
-          saldo_pendiente: fila.dataset.saldoPendiente,
-          cliente: fila.dataset.cliente,
-          habitacion: fila.dataset.habitacion,
-          habitaciones: parseArray(fila.dataset.habitaciones),
-          check_in: fila.dataset.checkin,
-          check_out: fila.dataset.checkout,
-          email: fila.dataset.email,
-          correo_electronico: fila.dataset.email,
-        };
+        const reserva = obtenerReservaDesdeEvento(accionVerDetalles);
+        if (!reserva) return;
 
         if (typeof window.abrirModalVerDetalles === "function") {
-          window.abrirModalVerDetalles(datosReserva);
+          window.abrirModalVerDetalles(reserva);
         } else {
           window.Alerta("No se pudo abrir el módulo de detalles", "error");
         }
@@ -241,16 +377,16 @@ const configurarEventosReservas = () => {
         ".accion-emitir-documento",
       );
       if (accionEmitirDocumento) {
-        const fila = accionEmitirDocumento.closest("tr");
-        if (!fila) return;
         cerrarMenusOpciones();
+        const reserva = obtenerReservaDesdeEvento(accionEmitirDocumento);
+        if (!reserva) return;
 
         const estadosConCheckIn = [
           "en_estadia",
           "checkout_pendiente",
           "checkout_realizado",
         ];
-        if (!estadosConCheckIn.includes(String(fila.dataset.estado || "").toLowerCase())) {
+        if (!estadosConCheckIn.includes(String(reserva.estado || "").toLowerCase())) {
           window.Alerta(
             "Solo se puede emitir una boleta o factura después de realizar el check-in del cliente.",
             "error",
@@ -258,36 +394,8 @@ const configurarEventosReservas = () => {
           return;
         }
 
-        const parseArray = (valor) => {
-          try {
-            return JSON.parse(valor || "[]");
-          } catch (error) {
-            return [];
-          }
-        };
-
-        const datosReserva = {
-          id: fila.dataset.id,
-          estado: fila.dataset.estado,
-          porcentaje_pago: fila.dataset.porcentajepago,
-          total: fila.dataset.total,
-          saldo_pendiente: fila.dataset.saldoPendiente,
-          cliente: fila.dataset.cliente,
-          documento: fila.dataset.clienteDocumento,
-          id_tipo_documento: fila.dataset.clienteTipoDocumento,
-          cliente_direccion: fila.dataset.clienteDireccion,
-          habitacion: fila.dataset.habitacion,
-          habitaciones: parseArray(fila.dataset.habitaciones),
-          check_in: fila.dataset.checkin,
-          check_out: fila.dataset.checkout,
-          email: fila.dataset.email,
-          correo_electronico: fila.dataset.email,
-          total_pagado: fila.dataset.totalPagado,
-          dias_estadia: fila.dataset.diasEstadia,
-        };
-
         if (typeof window.abrirModalDocumentoElectronico === "function") {
-          window.abrirModalDocumentoElectronico(datosReserva);
+          window.abrirModalDocumentoElectronico(reserva);
         } else {
           window.Alerta(
             "No se pudo abrir el módulo de emisión de documentos.",
@@ -301,11 +409,13 @@ const configurarEventosReservas = () => {
       const accionCancelar = e.target.closest(".accion-cancelar-reserva");
       if (accionCancelar) {
         cerrarMenusOpciones();
+        const reserva = obtenerReservaDesdeEvento(accionCancelar);
+        if (!reserva) return;
 
-        const id = accionCancelar.dataset.id;
-        const codigo = accionCancelar.dataset.codigo;
-        const cliente = accionCancelar.dataset.cliente;
-        const checkin = accionCancelar.dataset.checkin;
+        const id = reserva.id;
+        const codigo = reserva.codigo_reserva || `#${id}`;
+        const cliente = reserva.cliente || "";
+        const checkin = formatearFechaReserva(reserva.check_in);
 
         let calculoCancelacion;
         try {
@@ -423,16 +533,18 @@ const configurarEventosReservas = () => {
 
       const btnEditar = e.target.closest(".boton-editar-reserva");
       if (btnEditar) {
-        const fila = btnEditar.closest("tr");
-        const id = Number(fila.dataset.id);
-        window.abrirModalReserva("editar", { id });
+        const reserva = obtenerReservaDesdeEvento(btnEditar);
+        if (!reserva) return;
+        window.abrirModalReserva("editar", { id: Number(reserva.id) });
         return;
       }
 
       // Evento para botón de pago
       const btnPago = e.target.closest(".boton-pago-tabla");
       if (btnPago) {
-        const idReserva = btnPago.dataset.id;
+        const reserva = obtenerReservaDesdeEvento(btnPago);
+        if (!reserva) return;
+        const idReserva = reserva.id;
 
         // Guardar el ID en el modal de pago
         const formPago = document.getElementById("formPago");
@@ -451,64 +563,28 @@ const configurarEventosReservas = () => {
 
       const btnCheckin = e.target.closest(".boton-checkin-reserva");
       if (btnCheckin) {
+        const reserva = obtenerReservaDesdeEvento(btnCheckin);
+        if (!reserva) return;
         const confirmado = await window.Confirmar(
           "¿Confirmar check-in para esta reserva?",
         );
 
         if (!confirmado) return;
 
-        ejecutarAccionReserva("checkin", { id_reserva: btnCheckin.dataset.id });
+        ejecutarAccionReserva("checkin", { id_reserva: reserva.id });
         return;
       }
 
       const btnCheckout = e.target.closest(".boton-checkout-reserva");
       if (btnCheckout) {
+        const reserva = obtenerReservaDesdeEvento(btnCheckout);
+        if (!reserva) return;
         ejecutarAccionReserva("checkout", {
-          id_reserva: btnCheckout.dataset.id,
+          id_reserva: reserva.id,
         });
         return;
       }
 
-      const btnExtender = e.target.closest(".boton-extender-reserva");
-      if (btnExtender) {
-        const fechaSalida = await window.SolicitarDato(
-          "Extender reserva",
-          "Selecciona la nueva fecha de checkout.",
-          { tipo: "date" },
-        );
-        if (!fechaSalida) return;
-        const horaSalida = await window.SolicitarDato(
-          "Hora de checkout",
-          "Selecciona la nueva hora de salida.",
-          { tipo: "time", valor: "12:00" },
-        );
-        if (!horaSalida) return;
-        ejecutarAccionReserva("extender", {
-          id_reserva: btnExtender.dataset.id,
-          nuevo_check_out: `${fechaSalida} ${horaSalida}`,
-        });
-        return;
-      }
-
-      const btnCambioHabitacion = e.target.closest(".boton-cambio-habitacion");
-      if (btnCambioHabitacion) {
-        const idHabitacionNueva = await window.SolicitarDato(
-          "Cambiar habitación",
-          "ID de la nueva habitación disponible:",
-          { tipo: "number", atributos: { min: "1", step: "1" } },
-        );
-        if (!idHabitacionNueva) return;
-        const motivo = await window.SolicitarDato(
-          "Motivo del cambio",
-          "Describe por qué se cambia la habitación.",
-        );
-        if (!motivo) return;
-        ejecutarAccionReserva("cambiarHabitacion", {
-          id_reserva: btnCambioHabitacion.dataset.id,
-          id_habitacion_nueva: idHabitacionNueva,
-          motivo,
-        });
-      }
     });
   }
 

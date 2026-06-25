@@ -93,6 +93,45 @@
   }
 }
 
+/* Ajustes específicos para la tabla cuando la controla DataTables.
+   DataTables agrega clases propias; estos selectores mantienen el aspecto de la tabla anterior. */
+.tabla .tbl-reservas.dataTable {
+  width: 100% !important;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.tabla .tbl-reservas.dataTable thead th {
+  background: var(--primary-dark);
+  color: var(--text-white);
+  font-weight: 600;
+  padding: 14px 12px;
+  text-align: left;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  border-bottom: 0;
+}
+
+.tabla .tbl-reservas.dataTable tbody td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--primary-dark);
+  vertical-align: middle;
+}
+
+.tabla .tbl-reservas.dataTable tbody tr:nth-child(even) {
+  background: var(--bg-light);
+}
+
+.tabla .tbl-reservas.dataTable tbody tr:hover {
+  background: var(--primary-bg);
+}
+
+.tabla .tbl-reservas.dataTable tbody td:last-child {
+  white-space: nowrap;
+}
+
 .contenedor-ver-mas {
   margin-top: 14px;
   display: flex;
@@ -172,9 +211,7 @@
 
 .boton-checkin-reserva,
 .boton-checkout-reserva,
-.boton-extender-reserva,
 .boton-consumo-reserva,
-.boton-cambio-habitacion,
 .boton-cancelar-reserva,
 .estado-reserva {
   border: 0;
@@ -192,9 +229,7 @@
 
 .boton-checkin-reserva,
 .boton-checkout-reserva,
-.boton-extender-reserva,
 .boton-consumo-reserva,
-.boton-cambio-habitacion,
 .boton-cancelar-reserva {
   cursor: pointer;
 }
@@ -248,19 +283,9 @@
   color: var(--danger);
 }
 
-.boton-extender-reserva {
-  background: var(--info-bg);
-  color: var(--info);
-}
-
 .boton-consumo-reserva {
   background: var(--warning-bg);
   color: var(--warning);
-}
-
-.boton-cambio-habitacion {
-  background: #ede9fe;
-  color: #5b21b6;
 }
 
 .acciones-reserva-wrap {
@@ -283,6 +308,7 @@
 }
 
 .acciones-reserva-wrap .boton-editar-reserva,
+.acciones-reserva-wrap .boton-pago-tabla,
 .acciones-reserva-wrap .boton-checkin-reserva,
 .acciones-reserva-wrap .boton-checkout-reserva,
 .acciones-reserva-wrap .boton-mas-opciones {
@@ -292,6 +318,19 @@
   font-size: 12px;
   line-height: 1;
   margin: 0;
+}
+
+.acciones-reserva-wrap .boton-editar-reserva {
+  border: 1px solid #b9b9b9;
+  border-radius: 3px;
+  background: #f4f4f4;
+  color: var(--primary-dark);
+  cursor: pointer;
+}
+
+.acciones-reserva-wrap .boton-editar-reserva:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .boton-mas-opciones {
