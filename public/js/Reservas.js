@@ -118,7 +118,12 @@ const renderTextoSeguro = (valor) => escaparHtml(valor);
 const formatearFechaReserva = (fecha) => {
   if (!fecha) return "Sin fecha";
   const texto = String(fecha).trim();
-  return texto.length > 16 ? texto.slice(0, 16) : texto;
+  const coincidencia = texto.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
+
+  if (!coincidencia) return texto;
+
+  const [, anio, mes, dia, hora, minuto] = coincidencia;
+  return `${hora}:${minuto} ${dia}/${mes}/${anio}`;
 };
 
 const renderFechaReserva = (fecha) => escaparHtml(formatearFechaReserva(fecha));
@@ -189,7 +194,12 @@ const renderEstadoReserva = (estado) =>
 
 const renderPagoReserva = (porcentaje) => {
   const valor = Math.max(0, Math.min(100, Number(porcentaje || 0)));
-  return `<span class="porcentaje-pago">${valor}%</span>`;
+  return `
+    <div class="barra-pago-reserva" aria-label="Pago ${valor}%">
+      <span class="barra-pago-reserva-fill" style="width:${valor}%"></span>
+      <span class="barra-pago-reserva-texto">${valor}%</span>
+    </div>
+  `;
 };
 
 const tieneAccionReserva = (reserva, accion) =>
@@ -213,7 +223,10 @@ const renderAccionesReserva = (reserva) => {
     partes.push('<button type="button" class="boton-checkout-reserva" title="Confirmar checkout">Checkout</button>');
   }
 
-  partes.push('<button type="button" class="boton-pago-tabla" title="Registrar pago">💳</button>');
+  if (Number(reserva?.porcentaje_pago || 0) < 100) {
+    partes.push('<button type="button" class="boton-pago-tabla" title="Registrar pago">💳</button>');
+  }
+
   partes.push(renderMenuAccionesReserva(reserva));
 
   return `<div class="acciones-reserva-wrap">${partes.join("")}</div>`;
