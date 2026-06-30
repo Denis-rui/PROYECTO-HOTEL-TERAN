@@ -63,8 +63,7 @@ class NotificacionService
             $idHabitacion = (int) ($item['id_habitacion'] ?? 0);
             $estadoHabitacion = strtolower((string) ($item['habitacion']['estado'] ?? ''));
 
-            $esNotificacionLimpieza = $tipo === 'checkout'
-                || strpos($tipo, 'limpieza') !== false
+            $esNotificacionLimpieza = strpos($tipo, 'limpieza') !== false
                 || strpos($titulo, 'limpieza') !== false
                 || strpos($mensaje, 'limpieza') !== false
                 || strpos($mensaje, 'mantenimiento') !== false;
@@ -77,7 +76,11 @@ class NotificacionService
                 continue;
             }
 
-            if ($tipo === 'checkout' || strpos($tipo, 'checkout_') === 0) {
+            if ($esNotificacionLimpieza && $idHabitacion <= 0) {
+                continue;
+            }
+
+            if (!$esNotificacionLimpieza && ($tipo === 'checkout' || strpos($tipo, 'checkout_') === 0)) {
                 $claveCheckout = (int) $item['id_reserva'] . '|' . $idHabitacion;
                 if (!isset($clavesActivasCheckout[$claveCheckout])) {
                     continue;
@@ -92,6 +95,9 @@ class NotificacionService
                 continue;
             }
 
+            $item['titulo'] = $this->normalizarTextoNotificacion((string) ($item['titulo'] ?? ''));
+            $item['mensaje'] = $this->normalizarTextoNotificacion((string) ($item['mensaje'] ?? ''));
+
             $clavesAgregadas[$claveNotificacion] = true;
             $resultado[] = $item;
 
@@ -101,6 +107,27 @@ class NotificacionService
         }
 
         return $resultado;
+    }
+
+    private function normalizarTextoNotificacion(string $texto): string
+    {
+        return strtr($texto, [
+            'Ã¡' => 'a',
+            'Ã©' => 'e',
+            'Ã­' => 'i',
+            'Ã³' => 'o',
+            'Ãº' => 'u',
+            'Ã±' => 'n',
+            'Ã' => 'A',
+            'Ã‰' => 'E',
+            'Ã' => 'I',
+            'Ã“' => 'O',
+            'Ãš' => 'U',
+            'Ã‘' => 'N',
+            'Â¿' => '',
+            'Â¡' => '',
+            'Â°' => 'o',
+        ]);
     }
 
     public function obtenerNotificacionesCheckout(): array

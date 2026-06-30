@@ -358,3 +358,31 @@ select {
   background: #1b5e20;
   transform: scale(1.03);
 }
+
+.limpieza-timer-bloque.limpieza-vencida {
+  background: rgba(220, 53, 69, 0.08);
+  border-color: rgba(220, 53, 69, 0.35);
+}
+
+.limpieza-timer-bloque.limpieza-vencida .limpieza-icono,
+.limpieza-timer-bloque.limpieza-vencida .limpieza-countdown {
+  color: #8f2f2f;
+}
+
+.btn-extender-limpieza {
+  padding: 5px 14px;
+  background: #75511a;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  width: 100%;
+}
+
+.btn-extender-limpieza:hover {
+  background: #5d3f13;
+  transform: scale(1.03);
+}

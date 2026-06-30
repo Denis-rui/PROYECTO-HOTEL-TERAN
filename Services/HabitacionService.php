@@ -133,6 +133,12 @@ class HabitacionService
             }
 
             $this->habitacionModel->actualizar($id, $updateData);
+
+            if ($nuevoEstado === 'Disponible') {
+                $this->notificacionModel->marcarCheckoutLeidoPorHabitacion($id);
+                $this->notificacionModel->marcarLimpiezaLeidaPorHabitacion($id);
+            }
+
             return ['exito' => true, 'mensaje' => 'Estado actualizado correctamente.'];
         } catch (Exception $e) {
             error_log("Error actualizar estado: " . $e->getMessage());
@@ -206,10 +212,76 @@ class HabitacionService
             // agregamos para que se actualicen las notificaciones
 
             $this->notificacionModel->marcarCheckoutLeidoPorHabitacion($id);
+            $this->notificacionModel->marcarLimpiezaLeidaPorHabitacion($id);
 
             return ['exito' => true, 'mensaje' => 'Limpieza finalizada. Habitación disponible.'];
         } catch (Exception $e) {
             return ['exito' => false, 'mensaje' => 'Error al finalizar limpieza.'];
+        }
+    }
+
+    public function notificarLimpiezaVencida(int $id): array
+    {
+        try {
+            $habitacion = $this->habitacionModel->find($id);
+            if (!$habitacion) return ['exito' => false, 'mensaje' => 'Habitacion no encontrada.'];
+
+            if (strtolower((string) $habitacion->estado) !== 'en limpieza') {
+                return ['exito' => false, 'mensaje' => 'La habitacion no esta en limpieza.'];
+            }
+
+            $numero = $habitacion->numero_habitacion ?? $id;
+            $guardado = $this->notificacionModel->guardarNotificacion(
+                [
+                    'tipo' => 'limpieza_vencida',
+                    'id_reserva' => null,
+                    'id_habitacion' => $id,
+                    'leida' => 0,
+                ],
+                [
+                    'tipo' => 'limpieza_vencida',
+                    'titulo' => 'Limpieza vencida - Hab. ' . $numero,
+                    'mensaje' => 'La habitacion ' . $numero . ' supero el tiempo de limpieza. Confirma la limpieza o extiende el tiempo.',
+                    'id_reserva' => null,
+                    'id_habitacion' => $id,
+                    'id_cliente' => null,
+                    'leida' => 0,
+                    'prioridad' => 'critica',
+                ]
+            );
+
+            return [
+                'exito' => (bool) $guardado,
+                'mensaje' => $guardado ? 'Alerta de limpieza vencida registrada.' : 'No se pudo registrar la alerta de limpieza.',
+            ];
+        } catch (Exception $e) {
+            error_log("Error al notificar limpieza vencida: " . $e->getMessage());
+            return ['exito' => false, 'mensaje' => 'Error al registrar la alerta de limpieza.'];
+        }
+    }
+
+    public function extenderLimpieza(int $id, int $minutos = 15): array
+    {
+        try {
+            $habitacion = $this->habitacionModel->find($id);
+            if (!$habitacion) return ['exito' => false, 'mensaje' => 'Habitacion no encontrada.'];
+
+            if (strtolower((string) $habitacion->estado) !== 'en limpieza') {
+                return ['exito' => false, 'mensaje' => 'La habitacion no esta en limpieza.'];
+            }
+
+            $minutos = max(5, min(120, $minutos));
+            $nuevoInicio = date('Y-m-d H:i:s', time() - (3600 - ($minutos * 60)));
+
+            $this->habitacionModel->actualizar($id, [
+                'limpieza_inicio' => $nuevoInicio,
+            ]);
+            $this->notificacionModel->marcarLimpiezaLeidaPorHabitacion($id);
+
+            return ['exito' => true, 'mensaje' => 'Limpieza extendida por ' . $minutos . ' minutos.'];
+        } catch (Exception $e) {
+            error_log("Error al extender limpieza: " . $e->getMessage());
+            return ['exito' => false, 'mensaje' => 'Error al extender la limpieza.'];
         }
     }
 

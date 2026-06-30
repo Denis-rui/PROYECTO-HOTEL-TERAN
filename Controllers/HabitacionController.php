@@ -92,6 +92,22 @@ class HabitacionController extends Controller
         $datos = $this->obtenerPayloadJson() ?? [];
         $this->responderJson($this->habitacionService->terminarLimpieza((int) ($datos['id'] ?? 0)));
     }
+
+    public function notificarLimpiezaVencida($params = '')
+    {
+        $datos = $this->obtenerPayloadJson() ?? [];
+        $this->responderJson($this->habitacionService->notificarLimpiezaVencida((int) ($datos['id'] ?? 0)));
+    }
+
+    public function extenderLimpieza($params = '')
+    {
+        $datos = $this->obtenerPayloadJson() ?? [];
+        $this->responderJson($this->habitacionService->extenderLimpieza(
+            (int) ($datos['id'] ?? 0),
+            (int) ($datos['minutos'] ?? 15)
+        ));
+    }
+
     public function disponiblesPorRango($params = '')
     {
         $checkIn = $_GET['check_in'] ?? '';

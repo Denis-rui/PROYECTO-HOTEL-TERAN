@@ -78,4 +78,12 @@ class NotificacionModel
             ->where('leida', 0)
             ->update(['leida' => 1]) !== false;
     }
+
+    public function marcarLimpiezaLeidaPorHabitacion(int $idHabitacion): bool
+    {
+        return Notificacion::where('id_habitacion', $idHabitacion)
+            ->where('tipo', 'limpieza_vencida')
+            ->where('leida', 0)
+            ->update(['leida' => 1]) !== false;
+    }
 }

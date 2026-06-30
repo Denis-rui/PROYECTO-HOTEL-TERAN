@@ -57,6 +57,8 @@ $router->post('Habitacion/editar', ['Habitacion', 'editar']);
 $router->post('Habitacion/eliminar', ['Habitacion', 'eliminar']);
 $router->post('Habitacion/actualizarEstado', ['Habitacion', 'actualizarEstado']);
 $router->post('Habitacion/terminarLimpieza', ['Habitacion', 'terminarLimpieza']);
+$router->post('Habitacion/notificarLimpiezaVencida', ['Habitacion', 'notificarLimpiezaVencida']);
+$router->post('Habitacion/extenderLimpieza', ['Habitacion', 'extenderLimpieza']);
 
 $router->get('Habitacion/disponiblesPorRango', ['Habitacion', 'disponiblesPorRango']);
 $router->get('Habitacion/obtenerFiltros', ['Habitacion', 'obtenerFiltros']);
