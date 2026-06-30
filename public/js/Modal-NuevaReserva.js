@@ -1,5 +1,6 @@
 let eventosDashboardConfigurados = false;
-
+let _temporizadorBusquedaClienteModal = null;
+let _controladorBusquedaClienteModal = null;
 window.__modalReservaState = window.__modalReservaState || {};
 
 const obtenerEstadoModalReserva = () => window.__modalReservaState;
@@ -40,7 +41,8 @@ const abrirModalNuevoClienteConDocumento = (documento = "") => {
   });
 };
 
-const esDocumentoCompletoOchoDigitos = (texto = "") => /^\d{8}$/.test(String(texto || "").trim());
+const esDocumentoCompletoOchoDigitos = (texto = "") =>
+  /^\d{8}$/.test(String(texto || "").trim());
 
 const obtenerFechaActualISO = () => {
   const hoy = new Date();
@@ -218,7 +220,8 @@ const normalizarHabitacion = (habitacion) => ({
   precio: Number(habitacion.precio || 0),
   precio_aplicado: Number(habitacion.precio_aplicado || habitacion.precio || 0),
   subtotal: Number(habitacion.subtotal || 0),
-  id_tipo_habitacion: habitacion.id_tipo_habitacion || habitacion.tipo_id || null,
+  id_tipo_habitacion:
+    habitacion.id_tipo_habitacion || habitacion.tipo_id || null,
   tipo_asignacion: habitacion.tipo_asignacion || "original",
   estado_asignacion: habitacion.estado_asignacion || "activa",
   check_in: habitacion.check_in || "",
@@ -259,7 +262,9 @@ const esEdicionEnEstadia = () => {
   const estado = obtenerEstadoModalReserva();
   return (
     estado.modo === "editar" &&
-    ["en_estadia", "checkout_pendiente"].includes(String(estado.reservaEstado || ""))
+    ["en_estadia", "checkout_pendiente"].includes(
+      String(estado.reservaEstado || ""),
+    )
   );
 };
 
@@ -391,7 +396,8 @@ const renderizarHabitacionesSeleccionadas = () => {
   habitaciones.forEach((habitacion) => {
     const cambioPendiente =
       estado.habitacionCambioPendiente &&
-      String(estado.habitacionCambioPendiente.actual?.id) === String(habitacion.id)
+      String(estado.habitacionCambioPendiente.actual?.id) ===
+        String(habitacion.id)
         ? estado.habitacionCambioPendiente
         : null;
     const botonAccion = cambioPendiente
@@ -415,9 +421,8 @@ const renderizarHabitacionesSeleccionadas = () => {
             </div>
           </div>`
         : "";
-    const reemplazo =
-      cambioPendiente
-        ? `<div class="habitacion-cambio-pendiente">
+    const reemplazo = cambioPendiente
+      ? `<div class="habitacion-cambio-pendiente">
             <span class="habitacion-cambio-etiqueta">Cambio pendiente</span>
             <div class="habitacion-cambio-par">
               <div>
@@ -431,10 +436,10 @@ const renderizarHabitacionesSeleccionadas = () => {
             </div>
             <p>${cambioPendiente.tipo_motivo === "falla_hotel" ? "Falla de habitación" : "Solicitud del cliente"} - ${cambioPendiente.motivo}</p>
           </div>`
-        : estado.habitacionCambioActual &&
+      : estado.habitacionCambioActual &&
           String(estado.habitacionCambioActual.id) === String(habitacion.id) &&
           estado.habitacionCambioNueva
-          ? `<div class="habitacion-reemplazo">Se cambiará por: <strong>${formatearHabitacionTexto(estado.habitacionCambioNueva)}</strong></div>`
+        ? `<div class="habitacion-reemplazo">Se cambiará por: <strong>${formatearHabitacionTexto(estado.habitacionCambioNueva)}</strong></div>`
         : "";
     const card = document.createElement("article");
     card.className = "habitacion-card seleccionada";
@@ -516,7 +521,11 @@ const agregarHabitacionSeleccionada = (idHabitacion) => {
 const iniciarCambioHabitacion = (idHabitacion) => {
   const estado = obtenerEstadoModalReserva();
   if (estado.habitacionCambioPendiente) {
-    Swal.fire("Cambio pendiente", "Primero guarda o cancela el cambio de habitación pendiente.", "info");
+    Swal.fire(
+      "Cambio pendiente",
+      "Primero guarda o cancela el cambio de habitación pendiente.",
+      "info",
+    );
     return;
   }
 
@@ -552,10 +561,16 @@ const confirmarCambioHabitacion = async () => {
   const nueva = estado.habitacionCambioNueva;
   if (!actual || !nueva) return;
 
-  const tipoMotivo = document.getElementById("motivoTipoCambioHabitacion")?.value || "";
-  const motivo = document.getElementById("motivoCambioHabitacion")?.value?.trim() || "";
+  const tipoMotivo =
+    document.getElementById("motivoTipoCambioHabitacion")?.value || "";
+  const motivo =
+    document.getElementById("motivoCambioHabitacion")?.value?.trim() || "";
   if (!motivo) {
-    Swal.fire("Motivo requerido", "Indica el detalle del cambio de habitación.", "warning");
+    Swal.fire(
+      "Motivo requerido",
+      "Indica el detalle del cambio de habitación.",
+      "warning",
+    );
     return;
   }
 
@@ -575,14 +590,21 @@ const confirmarCambioHabitacion = async () => {
     new Date().toISOString().slice(0, 10),
     estado.elementos?.fechaSalida?.value || "",
   );
-  const diferencia = tipoMotivo === "falla_hotel"
-    ? 0
-    : Math.max(0, (Number(nueva.precio || 0) - Number(actual.precio_aplicado || actual.precio || 0)) * diasRestantes);
+  const diferencia =
+    tipoMotivo === "falla_hotel"
+      ? 0
+      : Math.max(
+          0,
+          (Number(nueva.precio || 0) -
+            Number(actual.precio_aplicado || actual.precio || 0)) *
+            diasRestantes,
+        );
   const nuevoTotal = totalActual + diferencia;
 
-  const nota = tipoMotivo === "falla_hotel"
-    ? "<p>No se cobrará diferencia porque el cambio es responsabilidad del hotel.</p>"
-    : `<p>El cliente debe pagar S/ ${diferencia.toFixed(2)} adicionales.</p>`;
+  const nota =
+    tipoMotivo === "falla_hotel"
+      ? "<p>No se cobrará diferencia porque el cambio es responsabilidad del hotel.</p>"
+      : `<p>El cliente debe pagar S/ ${diferencia.toFixed(2)} adicionales.</p>`;
 
   const resultado = await Swal.fire({
     title: "Cambio de habitación",
@@ -611,7 +633,11 @@ const confirmarCambioHabitacion = async () => {
   };
   estado.habitacionCambioActual = null;
   estado.habitacionCambioNueva = null;
-  await Swal.fire("Cambio preparado", "El cambio se aplicará cuando guardes la actualización.", "success");
+  await Swal.fire(
+    "Cambio preparado",
+    "El cambio se aplicará cuando guardes la actualización.",
+    "success",
+  );
   renderizarHabitacionesDisponibles();
   renderizarHabitacionesSeleccionadas();
 };
@@ -625,15 +651,13 @@ const quitarHabitacionSeleccionada = (idHabitacion) => {
   renderizarHabitacionesSeleccionadas();
 };
 
-const cargarClientes = (texto = "") => {
+const cargarClientes = async (texto = "") => {
   const estado = obtenerEstadoModalReserva();
   const mensajeBusquedaCliente = estado.elementos?.mensajeBusquedaCliente;
   const textoBusqueda = String(texto || "").trim();
   const btnRegistrar = estado.elementos?.btnRegistrarCliente;
   const esDniCompleto = esDocumentoCompletoOchoDigitos(textoBusqueda);
-
   limpiarResaltadoRegistrarCliente();
-
   // No cargar la lista completa si el usuario no ha escrito nada
   if (textoBusqueda === "") {
     estado.clientes = [];
@@ -642,55 +666,58 @@ const cargarClientes = (texto = "") => {
       mensajeBusquedaCliente.textContent =
         "Escribe un nombre o DNI para buscar clientes.";
     }
-    return Promise.resolve();
+    return;
   }
-
-  return fetch(
-    BASE_URL + `Cliente/buscar&q=${encodeURIComponent(textoBusqueda)}`,
-  )
-    .then((res) => res.json())
-    .then((respuesta) => {
-      if (respuesta.error) {
-        window.Alerta("No se pudo cargar clientes", "error");
+  // AbortController: cancela la petición anterior si todavía está en vuelo
+  _controladorBusquedaClienteModal?.abort();
+  _controladorBusquedaClienteModal = new AbortController();
+  if (mensajeBusquedaCliente) {
+    mensajeBusquedaCliente.textContent = "Buscando clientes...";
+  }
+  try {
+    const res = await fetch(
+      BASE_URL + `Cliente/buscar&q=${encodeURIComponent(textoBusqueda)}`,
+      { signal: _controladorBusquedaClienteModal.signal },
+    );
+    const respuesta = await res.json();
+    if (respuesta.error) {
+      if (mensajeBusquedaCliente)
+        mensajeBusquedaCliente.textContent = "No se pudo cargar clientes.";
+      return;
+    }
+    estado.clientes = respuesta.clientes || [];
+    renderizarClientes();
+    if (mensajeBusquedaCliente) {
+      const clienteInhabilitado = respuesta.cliente_inhabilitado || null;
+      if (textoBusqueda !== "" && clienteInhabilitado) {
+        mensajeBusquedaCliente.textContent =
+          "Este cliente ya existe en la base de datos pero esta inhabilitado. Si desea hacer una reserva, habilitelo desde el modulo de clientes.";
         return;
       }
-
-      estado.clientes = respuesta.clientes || [];
-      renderizarClientes();
-
-      if (mensajeBusquedaCliente) {
-        const clienteInhabilitado = respuesta.cliente_inhabilitado || null;
-        if (textoBusqueda !== "" && clienteInhabilitado) {
-          mensajeBusquedaCliente.textContent =
-            "Este cliente ya existe en la base de datos pero esta inhabilitado. Si desea hacer una reserva, habilitelo desde el modulo de clientes.";
-          return;
+      if (estado.clientes.length === 0) {
+        mensajeBusquedaCliente.textContent = esDniCompleto
+          ? "No se encontró un cliente con ese documento."
+          : "No se encontraron clientes.";
+        if (esDniCompleto) {
+          abrirModalNuevoClienteConDocumento(textoBusqueda);
+        } else if (btnRegistrar) {
+          resaltarBotonRegistrarCliente();
         }
-
-        if (estado.clientes.length === 0) {
-          mensajeBusquedaCliente.textContent = esDniCompleto
-            ? "No se encontró un cliente con ese documento."
-            : "No se encontraron clientes.";
-
-          if (esDniCompleto) {
-            abrirModalNuevoClienteConDocumento(textoBusqueda);
-          } else if (btnRegistrar) {
-            resaltarBotonRegistrarCliente();
-          }
-          return;
-        }
-
-        mensajeBusquedaCliente.textContent = "Selecciona un cliente de la lista.";
+        return;
       }
-    })
-    .catch(() => {
-      if (mensajeBusquedaCliente) {
-        mensajeBusquedaCliente.textContent =
-          "No se pudieron cargar los clientes.";
-      }
-      if (!esDniCompleto && textoBusqueda !== "") {
-        resaltarBotonRegistrarCliente();
-      }
-    });
+      mensajeBusquedaCliente.textContent = "Selecciona un cliente de la lista.";
+    }
+  } catch (error) {
+    if (error.name === "AbortError") return; // petición cancelada intencionalmente, ignorar
+    console.error("Error buscando clientes en modal reserva:", error);
+    if (mensajeBusquedaCliente) {
+      mensajeBusquedaCliente.textContent =
+        "No se pudieron cargar los clientes.";
+    }
+    if (!esDniCompleto && textoBusqueda !== "") {
+      resaltarBotonRegistrarCliente();
+    }
+  }
 };
 
 const seleccionarCliente = () => {
@@ -780,7 +807,9 @@ const cargarHabitacionesDisponibles = () => {
   const horaCambioISO = `${String(fechaCambio.getHours()).padStart(2, "0")}:${String(fechaCambio.getMinutes()).padStart(2, "0")}:00`;
   const checkIn = estado.habitacionCambioActual
     ? `${fechaCambioISO} ${horaCambioISO}`
-    : fechaEntrada && horaEntrada ? `${fechaEntrada} 12:00:00` : "";
+    : fechaEntrada && horaEntrada
+      ? `${fechaEntrada} 12:00:00`
+      : "";
   const checkOut = fechaSalida && horaSalida ? `${fechaSalida} 12:00:00` : "";
 
   estado.habitacionesDisponibles = [];
@@ -799,7 +828,7 @@ const cargarHabitacionesDisponibles = () => {
 
   if (
     new Date(`${checkOut.slice(0, 10)}T00:00:00`) <=
-    new Date(`${checkIn.slice(0, 10)}T00:00:00`) &&
+      new Date(`${checkIn.slice(0, 10)}T00:00:00`) &&
     !estado.habitacionCambioActual
   ) {
     if (mensajeHabitaciones)
@@ -822,9 +851,17 @@ const cargarHabitacionesDisponibles = () => {
   if (filtroPisoReserva && filtroPisoReserva.value)
     params.append("piso", filtroPisoReserva.value);
   if (estado.habitacionCambioActual) {
-    params.append("precio_referencia", estado.habitacionCambioActual.precio_aplicado || estado.habitacionCambioActual.precio || 0);
+    params.append(
+      "precio_referencia",
+      estado.habitacionCambioActual.precio_aplicado ||
+        estado.habitacionCambioActual.precio ||
+        0,
+    );
     if (estado.habitacionCambioActual.id_tipo_habitacion) {
-      params.append("tipo_referencia", estado.habitacionCambioActual.id_tipo_habitacion);
+      params.append(
+        "tipo_referencia",
+        estado.habitacionCambioActual.id_tipo_habitacion,
+      );
     }
     if (estado.habitacionCambioActual.piso) {
       params.append("piso_referencia", estado.habitacionCambioActual.piso);
@@ -931,12 +968,8 @@ const obtenerDatosReservaDesdeFormulario = () => {
     window.Alerta("Correo electrónico obligatorio", "advertencia");
     return null;
   }
-  if (habitaciones.length === 0)
-    {
-    window.Alerta(
-      "Selecciona al menos una habitación",
-      "advertencia",
-    );
+  if (habitaciones.length === 0) {
+    window.Alerta("Selecciona al menos una habitación", "advertencia");
     return null;
   }
 
@@ -1022,7 +1055,10 @@ const registrarReservaPendiente = async () => {
     const resultado = await respuesta.json();
 
     if (!resultado.exito) {
-      window.Alerta(resultado.mensaje || "No se pudo registrar la reserva pendiente.", "error");
+      window.Alerta(
+        resultado.mensaje || "No se pudo registrar la reserva pendiente.",
+        "error",
+      );
       return;
     }
 
@@ -1037,11 +1073,15 @@ const registrarReservaPendiente = async () => {
     });
 
     if (estado.elementos?.modal) estado.elementos.modal.style.display = "none";
-    if (estado.elementos?.contenedor) estado.elementos.contenedor.style.display = "none";
+    if (estado.elementos?.contenedor)
+      estado.elementos.contenedor.style.display = "none";
     window.location.reload();
   } catch (error) {
     console.error(error);
-    window.Alerta("Error de conexión al registrar la reserva pendiente.", "error");
+    window.Alerta(
+      "Error de conexión al registrar la reserva pendiente.",
+      "error",
+    );
   }
 };
 
@@ -1112,7 +1152,9 @@ const confirmarGuardarEdicionReserva = async (datosReserva) => {
       Swal.fire({
         icon: "error",
         title: "No se pudo cambiar la habitación",
-        text: resultadoCambio.mensaje || "La reserva se guardó, pero no se pudo aplicar el cambio de habitación.",
+        text:
+          resultadoCambio.mensaje ||
+          "La reserva se guardó, pero no se pudo aplicar el cambio de habitación.",
       });
       return;
     }
@@ -1189,7 +1231,9 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
       "mensajeHabitacionesDisponibles",
     ),
     mensajeBusquedaCliente: document.getElementById("mensajeBusquedaCliente"),
-    btnRegistrarCliente: document.getElementById("btn-registrar-cliente-manual"),
+    btnRegistrarCliente: document.getElementById(
+      "btn-registrar-cliente-manual",
+    ),
     listaHabitacionesDisponibles: document.getElementById(
       "listaHabitacionesDisponibles",
     ),
@@ -1279,7 +1323,11 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
 
   if (!eventosDashboardConfigurados) {
     estado.elementos.inputBuscarCliente?.addEventListener("input", () => {
-      cargarClientes(estado.elementos.inputBuscarCliente.value.trim());
+      // Debounce: espera 300ms después de la última tecla antes de lanzar la petición
+      clearTimeout(_temporizadorBusquedaClienteModal);
+      _temporizadorBusquedaClienteModal = setTimeout(() => {
+        cargarClientes(estado.elementos.inputBuscarCliente.value.trim());
+      }, 300);
     });
 
     estado.elementos.selectorCliente?.addEventListener(
@@ -1336,19 +1384,25 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
           return;
         }
 
-        const botonConfirmarCambio = evento.target.closest(".boton-habitacion.confirmar-cambio");
+        const botonConfirmarCambio = evento.target.closest(
+          ".boton-habitacion.confirmar-cambio",
+        );
         if (botonConfirmarCambio) {
           confirmarCambioHabitacion();
           return;
         }
 
-        const botonCancelarCambio = evento.target.closest(".boton-habitacion.cancelar-cambio");
+        const botonCancelarCambio = evento.target.closest(
+          ".boton-habitacion.cancelar-cambio",
+        );
         if (botonCancelarCambio) {
           cancelarCambioHabitacion();
           return;
         }
 
-        const botonCancelarCambioPendiente = evento.target.closest(".boton-habitacion.cancelar-cambio-pendiente");
+        const botonCancelarCambioPendiente = evento.target.closest(
+          ".boton-habitacion.cancelar-cambio-pendiente",
+        );
         if (botonCancelarCambioPendiente) {
           cancelarCambioHabitacionPendiente();
           return;
