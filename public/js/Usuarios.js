@@ -11,24 +11,36 @@ const obtenerDatosUsuarioDesdeBoton = (boton) => ({
 });
 
 const eliminarUsuarioPorId = async (idUsuario) => {
-  const confirmado = await window.Confirmar?.("¿Estás seguro de eliminar este usuario?");
+  const confirmado = await window.Confirmar?.(
+    "¿Estás seguro de eliminar este usuario?",
+  );
   if (!confirmado) return;
 
-  fetch(BASE_URL + "Usuario/eliminar", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ accion: "eliminar", id: idUsuario }),
-  })
-    .then((res) => res.json())
-    .then((data) => {
-      if (data.exito) {
-        window.Notificar?.("Usuario eliminado correctamente.", "exito");
-        setTimeout(() => window.location.reload(), 1500);
-      } else {
-        window.Notificar?.(data.error || "Error al eliminar usuario.", "error");
-      }
-    })
-    .catch(() => window.Notificar?.("Error de conexión.", "error"));
+  const csrfToken = typeof CSRF_TOKEN !== "undefined" ? CSRF_TOKEN : "";
+
+  try {
+    const res = await fetch(BASE_URL + "Usuario/eliminar", {
+      method: "DELETE", // ← Cambiar POST → DELETE
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": csrfToken,
+      },
+      body: JSON.stringify({ id: idUsuario }),
+    });
+    const data = await res.json();
+    if (data.exito) {
+      window.Notificar?.("Usuario eliminado correctamente.", "exito");
+      setTimeout(() => window.location.reload(), 1500);
+    } else {
+      window.Notificar?.(
+        data.mensaje || data.error || "Error al eliminar usuario.",
+        "error",
+      );
+    }
+  } catch (error) {
+    console.error("Error al eliminar usuario:", error);
+    window.Notificar?.("Error de conexión.", "error");
+  }
 };
 
 const abrirModalParaEditar = (boton) => {
@@ -106,7 +118,7 @@ window.registrarUsuarioNuevo = (datosUsuario) => {
     });
 };
 
-window.actualizarUsuarioExistente = (datosUsuario) => {
+window.actualizarUsuarioExistente = async (datosUsuario) => {
   const datos = {
     accion: "actualizar_admin",
     id: datosUsuario.id,
@@ -120,29 +132,34 @@ window.actualizarUsuarioExistente = (datosUsuario) => {
     rol: datosUsuario.rol,
   };
 
-  return fetch(BASE_URL + "Usuario/actualizarAdmin", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(datos),
-  })
-    .then((res) => res.json())
-    .then((data) => {
-      if (data.exito) {
-        window.location.reload();
-        return data;
-      } else {
-        window.mostrarMensajeModalUsuario?.(
-          data.error || "Error al actualizar usuario.",
-          "error",
-        );
-        return data;
-      }
-    })
-    .catch(() => {
-      const respuesta = { exito: false, error: "Error de conexion." };
-      window.mostrarMensajeModalUsuario?.(respuesta.error, "error");
-      return respuesta;
+  const csrfToken = typeof CSRF_TOKEN !== "undefined" ? CSRF_TOKEN : "";
+
+  try {
+    const res = await fetch(BASE_URL + "Usuario/actualizarAdmin", {
+      method: "PUT", // ← Cambiar POST → PUT
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": csrfToken,
+      },
+      body: JSON.stringify(datos),
     });
+    const data = await res.json();
+    if (data.exito) {
+      window.location.reload();
+      return data;
+    } else {
+      window.mostrarMensajeModalUsuario?.(
+        data.error || "Error al actualizar usuario.",
+        "error",
+      );
+      return data;
+    }
+  } catch (error) {
+    console.error("Error al actualizar usuario:", error);
+    const respuesta = { exito: false, error: "Error de conexión." };
+    window.mostrarMensajeModalUsuario?.(respuesta.error, "error");
+    return respuesta;
+  }
 };
 
 document.addEventListener("DOMContentLoaded", window.inicializarUsuarios);

@@ -28,9 +28,7 @@ const configurarEventosClientes = () => {
           .trim();
 
       const texto = normalizarTexto(inputBuscar.value);
-      const filas = cuerpoTabla
-        ? cuerpoTabla.querySelectorAll("tr")
-        : [];
+      const filas = cuerpoTabla ? cuerpoTabla.querySelectorAll("tr") : [];
 
       filas.forEach((fila) => {
         const nombre = normalizarTexto(fila.cells[1]?.innerText);
@@ -52,7 +50,7 @@ const configurarEventosClientes = () => {
           email: fila.cells[4]?.innerText.trim() || "",
           procedencia: fila.cells[5]?.innerText.trim() || "",
           telefono: fila.cells[6]?.innerText.trim() || "",
-          observaciones: fila.cells[8]?.innerText.trim() || ""
+          observaciones: fila.cells[8]?.innerText.trim() || "",
         };
         mostrarPerfilCliente(datosCliente);
         return;
@@ -93,7 +91,11 @@ const configurarEventosClientes = () => {
           cancelButtonText: "Cancelar",
         }).then((result) => {
           if (result.isConfirmed) {
-            cambiarEstadoCliente("eliminar", botonInhabilitar.dataset.id, "Cliente inhabilitado correctamente");
+            cambiarEstadoCliente(
+              "eliminar",
+              botonInhabilitar.dataset.id,
+              "Cliente inhabilitado correctamente",
+            );
           }
         });
         return;
@@ -112,7 +114,11 @@ const configurarEventosClientes = () => {
           cancelButtonText: "Cancelar",
         }).then((result) => {
           if (result.isConfirmed) {
-            cambiarEstadoCliente("habilitar", botonHabilitar.dataset.id, "Cliente habilitado correctamente");
+            cambiarEstadoCliente(
+              "habilitar",
+              botonHabilitar.dataset.id,
+              "Cliente habilitado correctamente",
+            );
           }
         });
       }
@@ -121,10 +127,16 @@ const configurarEventosClientes = () => {
 };
 
 const cambiarEstadoCliente = async (accion, idCliente, mensajeExito) => {
+  const metodo = accion === "eliminar" ? "DELETE" : "PUT";
+  const csrfToken = typeof CSRF_TOKEN !== "undefined" ? CSRF_TOKEN : "";
+
   try {
     const res = await fetch(BASE_URL + `Cliente/${accion}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: metodo,
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": csrfToken,
+      },
       body: JSON.stringify({ id: idCliente }),
     });
 
@@ -222,16 +234,22 @@ window.inicializarClientes = () => {
 };
 
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", () => window.inicializarClientes());
+  document.addEventListener("DOMContentLoaded", () =>
+    window.inicializarClientes(),
+  );
 } else {
   window.inicializarClientes();
 }
 
 window.registrarClienteNuevo = async (datos) => {
   try {
+    const csrfToken = typeof CSRF_TOKEN !== "undefined" ? CSRF_TOKEN : "";
     const res = await fetch(BASE_URL + "Cliente/registrar", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": csrfToken,
+      },
       body: JSON.stringify(datos),
     });
     const resultado = await res.json();
@@ -262,9 +280,13 @@ window.registrarClienteNuevo = async (datos) => {
 
 window.actualizarClienteExistente = async (datos) => {
   try {
+    const csrfToken = typeof CSRF_TOKEN !== "undefined" ? CSRF_TOKEN : "";
     const res = await fetch(BASE_URL + "Cliente/actualizar", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: "PUT", // ← Cambiar POST → PUT
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": csrfToken,
+      },
       body: JSON.stringify(datos),
     });
     const resultado = await res.json();
