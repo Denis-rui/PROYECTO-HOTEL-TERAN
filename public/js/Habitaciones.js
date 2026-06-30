@@ -20,9 +20,9 @@ function iniciarCountdownsLimpieza() {
 
     if (!timerEl) return;
 
-    // Si ya expiró al renderizar, terminar inmediatamente
+    // Si ya expiro al renderizar, registrar alerta sin liberar la habitacion.
     if (segundos <= 0) {
-      _terminarLimpiezaAuto(id);
+      _notificarLimpiezaVencida(id, false);
       return;
     }
 
@@ -32,7 +32,7 @@ function iniciarCountdownsLimpieza() {
         clearInterval(intervalo);
         delete _limpiezaIntervalos[id];
         if (timerEl) timerEl.textContent = "00:00";
-        _terminarLimpiezaAuto(id);
+        _notificarLimpiezaVencida(id, true);
       } else {
         const m = Math.floor(segundos / 60);
         const s = segundos % 60;
@@ -45,24 +45,32 @@ function iniciarCountdownsLimpieza() {
 }
 
 /**
- * Llama al servidor para terminar la limpieza automáticamente (sin confirmación).
+ * Registra la alerta de limpieza vencida sin cambiar la habitacion a disponible.
  */
-async function _terminarLimpiezaAuto(id) {
+async function _notificarLimpiezaVencida(id, refrescarGrid = true) {
+  const claveNotificacion = `limpieza-vencida-${id}`;
+  const yaNotificada = sessionStorage.getItem(claveNotificacion) === "1";
+
+  if (yaNotificada && !refrescarGrid) return;
+
   try {
-    const res = await fetch(`${BASE_URL}Habitacion/terminarLimpieza`, {
+    const res = await fetch(`${BASE_URL}Habitacion/notificarLimpiezaVencida`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: parseInt(id, 10) }),
     });
     const resultado = await res.json();
+    if (resultado.exito) sessionStorage.setItem(claveNotificacion, "1");
     if (resultado.exito) {
-      Notificar?.("Limpieza completada. Habitación disponible.", "exito");
+      Notificar?.("Tiempo de limpieza vencido. La habitacion sigue bloqueada.", "error");
     }
   } catch (e) {
-    console.error("Error al terminar limpieza automática:", e);
+    console.error("Error al registrar limpieza vencida:", e);
   }
-  // Recargar el grid para reflejar el nuevo estado
-  setTimeout(() => window.actualizarHabitaciones(), 500);
+  // Recargar solo cuando el contador acaba de vencer en pantalla.
+  if (refrescarGrid) {
+    setTimeout(() => window.actualizarHabitaciones(), 500);
+  }
 }
 
 /**
@@ -80,6 +88,7 @@ window.terminarLimpieza = async (id, numero) => {
     });
     const resultado = await res.json();
     if (resultado.exito) {
+      sessionStorage.removeItem(`limpieza-vencida-${id}`);
       Notificar?.(resultado.mensaje, "exito");
       setTimeout(() => window.actualizarHabitaciones(), 600);
     } else {
@@ -91,6 +100,27 @@ window.terminarLimpieza = async (id, numero) => {
 };
 
 // ─── FILTROS Y GRID ──────────────────────────────────────────────────────────
+window.extenderLimpieza = async (id, numero, minutos = 15) => {
+  const ok = await Confirmar(`Extender ${minutos} minutos la limpieza de la habitacion ${numero}?`);
+  if (!ok) return;
+
+  try {
+    const res = await fetch(`${BASE_URL}Habitacion/extenderLimpieza`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, minutos }),
+    });
+    const resultado = await res.json();
+    Notificar?.(resultado.mensaje || "Limpieza extendida.", resultado.exito ? "exito" : "error");
+    if (resultado.exito) {
+      sessionStorage.removeItem(`limpieza-vencida-${id}`);
+      setTimeout(() => window.actualizarHabitaciones(), 500);
+    }
+  } catch (e) {
+    Notificar?.("Error de conexion con el servidor.", "error");
+  }
+};
+
 window.actualizarHabitaciones = (e) => {
   if (e && !e.target?.closest?.(".seccion-filtros")) return;
   if (window._modalAbierto) return;
@@ -113,7 +143,17 @@ window.actualizarHabitaciones = (e) => {
     .catch(() => (grid.innerHTML = "<p>Error al cargar.</p>"));
 };
 
-document.addEventListener("input", window.actualizarHabitaciones);
+// Debounce: evita lanzar una peticion AJAX por cada tecla del buscador.
+let temporizadorFiltroHabitaciones = null;
+
+document.addEventListener("input", (e) => {
+  if (!e.target?.closest?.(".seccion-filtros")) return;
+
+  clearTimeout(temporizadorFiltroHabitaciones);
+  temporizadorFiltroHabitaciones = setTimeout(() => {
+    window.actualizarHabitaciones(e);
+  }, 300);
+});
 document.addEventListener("change", window.actualizarHabitaciones);
 
 window.cambiarEstado = async (id, nuevoEstado) => {

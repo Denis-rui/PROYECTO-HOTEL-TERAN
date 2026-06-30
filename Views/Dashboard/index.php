@@ -77,15 +77,6 @@ $estadosTotales = json_encode(array_column($graficoEstados, 'total'), JSON_UNESC
         <strong id="statCheckoutsHoy"><?= htmlspecialchars($stats['checkouts_hoy'] ?? 0) ?></strong>
       </div>
 
-      <h3 class="section-title">Notificaciones</h3>
-      <div id="panelNotificacionesCheckout" class="panel-notificaciones">
-        <?php foreach (($notificaciones['notificaciones'] ?? []) as $notificacion): ?>
-          <div class="notificacion-dashboard <?= htmlspecialchars($notificacion['prioridad']) ?>">
-            <strong><?= htmlspecialchars($notificacion['titulo']) ?></strong>
-            <span><?= htmlspecialchars($notificacion['mensaje']) ?></span>
-          </div>
-        <?php endforeach; ?>
-      </div>
     </div>
 
     <div class="column-right">
@@ -145,6 +136,18 @@ $estadosTotales = json_encode(array_column($graficoEstados, 'total'), JSON_UNESC
         </div>
       </section>
     </div>
+
+    <section class="dashboard-notificaciones">
+      <h3 class="section-title">Notificaciones</h3>
+      <div id="panelNotificacionesCheckout" class="panel-notificaciones">
+        <?php foreach (($notificaciones['notificaciones'] ?? []) as $notificacion): ?>
+          <div class="notificacion-dashboard <?= htmlspecialchars($notificacion['prioridad']) ?>">
+            <strong><?= htmlspecialchars($notificacion['titulo']) ?></strong>
+            <span><?= htmlspecialchars($notificacion['mensaje']) ?></span>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    </section>
   </div>
 
   <section class="dashboard-graficos">
