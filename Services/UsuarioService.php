@@ -20,25 +20,50 @@ class UsuarioService
     public function listarUsuarios(): array
     {
         try {
-            $usuarios = $this->usuarioModel->listarActivos()->map(function ($user) {
-                return [
-                    'id'               => $user->id,
-                    'nombre_completo'  => $user->nombre_completo,
-                    'nombre_usuario'   => $user->nombre_usuario,
-                    'correo'           => $user->correo,
-                    'telefono'         => $user->telefono,
-                    'dni'              => $user->dni,
-                    'fecha_nacimiento' => $user->fecha_nacimiento,
-                    'rol'              => $user->rol->rol ?? '',
-                    'estado'           => $user->estado ? 'activo' : 'inactivo',
-                ];
-            })->toArray();
+            $usuarios = $this->usuarioModel->listarActivos()
+                ->map(fn($user) => $this->mapearUsuario($user))
+                ->toArray();
 
             return ['exito' => true, 'data' => $usuarios];
         } catch (Exception $e) {
             error_log('Error listarUsuarios: ' . $e->getMessage());
             return ['exito' => false, 'mensaje' => 'Error al cargar los usuarios.', 'data' => []];
         }
+    }
+
+    public function buscarUsuarios(string $termino): array
+    {
+        try {
+            $termino = trim($termino);
+
+            if ($termino === '') {
+                return $this->listarUsuarios();
+            }
+
+            $usuarios = $this->usuarioModel->buscarPorTermino($termino)
+                ->map(fn($user) => $this->mapearUsuario($user))
+                ->toArray();
+
+            return ['exito' => true, 'data' => $usuarios];
+        } catch (Exception $e) {
+            error_log('Error buscarUsuarios: ' . $e->getMessage());
+            return ['exito' => false, 'mensaje' => 'Error al buscar usuarios.', 'data' => []];
+        }
+    }
+
+    private function mapearUsuario($user): array
+    {
+        return [
+            'id'               => $user->id,
+            'nombre_completo'  => $user->nombre_completo,
+            'nombre_usuario'   => $user->nombre_usuario,
+            'correo'           => $user->correo,
+            'telefono'         => $user->telefono,
+            'dni'              => $user->dni,
+            'fecha_nacimiento' => $user->fecha_nacimiento,
+            'rol'              => $user->rol->rol ?? '',
+            'estado'           => $user->estado ? 'activo' : 'inactivo',
+        ];
     }
 
     public function obtenerPerfil(string $nombreUsuario): array

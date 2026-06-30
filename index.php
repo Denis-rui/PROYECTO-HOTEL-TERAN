@@ -40,9 +40,9 @@ $router->get('Cliente/buscar', ['Cliente', 'buscar']);
 $router->get('Cliente/consultarApiPeru', ['Cliente', 'consultarApiPeru']);
 
 $router->post('Cliente/registrar', ['Cliente', 'registrar']);
-$router->post('Cliente/actualizar', ['Cliente', 'actualizar']);
-$router->post('Cliente/eliminar', ['Cliente', 'eliminar']);
-$router->post('Cliente/habilitar', ['Cliente', 'habilitar']);
+$router->put('Cliente/actualizar', ['Cliente', 'actualizar']);
+$router->delete('Cliente/eliminar', ['Cliente', 'eliminar']);
+$router->put('Cliente/habilitar', ['Cliente', 'habilitar']);
 
 // =====================
 // HABITACIONES
@@ -53,8 +53,8 @@ $router->get('Habitacion/index', ['Habitacion', 'index']);
 $router->get('Habitacion/buscar', ['Habitacion', 'buscar']);
 
 $router->post('Habitacion/registrar', ['Habitacion', 'registrar']);
-$router->post('Habitacion/editar', ['Habitacion', 'editar']);
-$router->post('Habitacion/eliminar', ['Habitacion', 'eliminar']);
+$router->put('Habitacion/editar', ['Habitacion', 'editar']);
+$router->delete('Habitacion/eliminar', ['Habitacion', 'eliminar']);
 $router->post('Habitacion/actualizarEstado', ['Habitacion', 'actualizarEstado']);
 $router->post('Habitacion/terminarLimpieza', ['Habitacion', 'terminarLimpieza']);
 $router->post('Habitacion/notificarLimpiezaVencida', ['Habitacion', 'notificarLimpiezaVencida']);
@@ -104,8 +104,8 @@ $router->get('Comprobante/emitidosPorReserva', ['Comprobante', 'emitidosPorReser
 $router->get('Devolucion/index', ['Devolucion', 'index']);
 
 $router->post('Devolucion/registrar', ['Devolucion', 'registrar']);
-$router->post('Devolucion/actualizar', ['Devolucion', 'actualizar']);
-$router->post('Devolucion/eliminar', ['Devolucion', 'eliminar']);
+$router->put('Devolucion/actualizar', ['Devolucion', 'actualizar']);
+$router->delete('Devolucion/eliminar', ['Devolucion', 'eliminar']);
 
 
 // =====================
@@ -115,11 +115,12 @@ $router->post('Devolucion/eliminar', ['Devolucion', 'eliminar']);
 $router->get('Usuario/index', ['Usuario', 'index']);
 $router->get('Usuario/listar', ['Usuario', 'listar']);
 $router->get('Usuario/perfil', ['Usuario', 'perfil']);
+$router->get('Usuario/buscar', ['Usuario', 'buscar']);
 
 $router->post('Usuario/crear', ['Usuario', 'crear']);
-$router->post('Usuario/actualizar', ['Usuario', 'actualizar']);
-$router->post('Usuario/actualizarAdmin', ['Usuario', 'actualizarAdmin']);
-$router->post('Usuario/eliminar', ['Usuario', 'eliminar']);
+$router->put('Usuario/actualizar', ['Usuario', 'actualizar']);
+$router->put('Usuario/actualizarAdmin', ['Usuario', 'actualizarAdmin']);
+$router->delete('Usuario/eliminar', ['Usuario', 'eliminar']);
 
 // =====================
 // CONFIGURACION

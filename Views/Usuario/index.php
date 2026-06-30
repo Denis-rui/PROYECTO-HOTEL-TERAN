@@ -4,6 +4,15 @@
     <h2>Usuarios</h2>
     <div class="filtros-cli">
       <div class="filtro-usuarios">
+
+        <label for="buscarUsuarioInput">Buscar:</label>
+        <input 
+          type="text"
+          id="buscarUsuarioInput"
+          placeholder="Busca un usuario ..."
+          autocomplete="off"
+        >
+
         <select id="filtroEstadoUsuario">
           <option value="">Todos</option>
           <option value="activo">Activos</option>
@@ -91,28 +100,35 @@
 <script>
   document.addEventListener('DOMContentLoaded', () => {
 
-    const table = new DataTable('#tbl-usuarios', {
-      pageLength: 10,
-      order: [
-        [0, 'asc']
-      ],
-      layout: {
-        topStart: 'search',
-        topEnd: 'pageLength'
+    let table = null;
+
+    window.destruirTablaUsuarios = () => {
+      if (table) {
+        table.destroy(); // Restaura el DOM a su estado original (sin filas filtradas)
+        table = null;
       }
-    });
+    };
+
+    window.inicializarTablaUsuarios = () => {
+      window.destruirTablaUsuarios(); // Por si quedó una instancia activa
+
+      table = new DataTable('#tbl-usuarios',{
+        pageLength: 10,
+        order: [[0, 'asc']],
+        layout: {
+          topStart: 'pageLength',
+          topEnd: null
+        }
+      });
+    };
+
+    window.inicializarTablaUsuarios();
 
     document.getElementById('filtroEstadoUsuario').addEventListener('change', function() {
       const value = this.value;
-
       table.rows().every(function() {
         const estado = this.node().getAttribute('data-estado');
-
-        if (value === '' || estado === value) {
-          this.node().style.display = '';
-        } else {
-          this.node().style.display = 'none';
-        }
+        this.node().style.display = (value === '' || estado === value) ? '' : 'none';
       });
     });
 
