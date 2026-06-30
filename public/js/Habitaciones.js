@@ -121,7 +121,9 @@ window.extenderLimpieza = async (id, numero, minutos = 15) => {
   }
 };
 
-window.actualizarHabitaciones = (e) => {
+let controladorFiltroHabitaciones = null;
+
+window.actualizarHabitaciones = async (e) => {
   if (e && !e.target?.closest?.(".seccion-filtros")) return;
   if (window._modalAbierto) return;
 
@@ -131,16 +133,33 @@ window.actualizarHabitaciones = (e) => {
 
   const params = new URLSearchParams(new FormData(form)).toString();
 
-  fetch(`${BASE_URL}Habitacion/buscar?html=1&${params}`, {
-    headers: { "X-Requested-With": "XMLHttpRequest" },
-  })
-    .then((res) => res.text())
-    .then((html) => {
-      grid.innerHTML = html;
-      inicializarCarruseles();
-      iniciarCountdownsLimpieza();
-    })
-    .catch(() => (grid.innerHTML = "<p>Error al cargar.</p>"));
+  controladorFiltroHabitaciones?.abort();
+  const controladorActual = new AbortController();
+  controladorFiltroHabitaciones = controladorActual;
+
+  try {
+    const res = await fetch(`${BASE_URL}Habitacion/buscar?html=1&${params}`, {
+      headers: { "X-Requested-With": "XMLHttpRequest" },
+      signal: controladorActual.signal,
+    });
+
+    if (!res.ok) {
+      throw new Error("Error al obtener habitaciones");
+    }
+
+    const html = await res.text();
+    grid.innerHTML = html;
+    inicializarCarruseles();
+    iniciarCountdownsLimpieza();
+  } catch (error) {
+    if (error.name === "AbortError") return;
+    console.error("Error al cargar habitaciones:", error);
+    grid.innerHTML = "<p>Error al cargar.</p>";
+  } finally {
+    if (controladorFiltroHabitaciones === controladorActual) {
+      controladorFiltroHabitaciones = null;
+    }
+  }
 };
 
 // Debounce: evita lanzar una peticion AJAX por cada tecla del buscador.
