@@ -41,7 +41,7 @@ class PerfilController extends Controller
         if (!isset($_SESSION['usuario'])) {
             $this->responderJson(['success' => false, 'message' => 'No autenticado'], 401);
         }
-
+        $this->validarCsrf();
         $datos = [
             'nombre_completo' => trim($_POST['nombre_completo'] ?? ''),
             'nombre_usuario'  => trim($_POST['usuario']         ?? ''),
@@ -67,7 +67,7 @@ class PerfilController extends Controller
         if (!isset($_SESSION['usuario'])) {
             $this->responderJson(['success' => false, 'message' => 'No autenticado'], 401);
         }
-
+        $this->validarCsrf();
         $claveActual = $_POST['clave_actual']    ?? '';
         $claveNueva  = $_POST['clave_nueva']     ?? '';
         $confirmar   = $_POST['confirmar_clave'] ?? '';

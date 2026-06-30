@@ -59,6 +59,7 @@ class HabitacionController extends Controller
 
     public function registrar($params = '')
     {
+        $this->validarCsrf();
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $datos = $this->obtenerPayloadJson() ?? $_POST;
             $this->responderJson($this->habitacionService->registrar($datos));
@@ -67,6 +68,7 @@ class HabitacionController extends Controller
 
     public function editar($params = '')
     {
+        $this->validarCsrf();
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $datos = $this->obtenerPayloadJson() ?? $_POST;
             $this->responderJson($this->habitacionService->editar($datos));
@@ -75,6 +77,7 @@ class HabitacionController extends Controller
 
     public function eliminar($params = '')
     {
+        $this->validarCsrf();
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $datos = $this->obtenerPayloadJson() ?? $_POST;
             $this->responderJson($this->habitacionService->eliminar((int) ($datos['id'] ?? 0)));
@@ -83,12 +86,14 @@ class HabitacionController extends Controller
 
     public function actualizarEstado($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
         $this->responderJson($this->habitacionService->actualizarEstado((int) ($datos['id'] ?? 0), $datos['estado'] ?? '', $datos['motivo'] ?? ''));
     }
 
     public function terminarLimpieza($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
         $this->responderJson($this->habitacionService->terminarLimpieza((int) ($datos['id'] ?? 0)));
     }

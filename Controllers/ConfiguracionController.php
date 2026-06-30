@@ -23,6 +23,7 @@ class ConfiguracionController extends Controller
 
     public function actualizar($params = '')
     {
+        $this->validarCsrf();
         if (!isset($_SESSION['usuario'])) {
             $this->responderJson(['exito' => false, 'mensaje' => 'No autenticado'], 401);
         }
@@ -49,6 +50,7 @@ class ConfiguracionController extends Controller
 
     public function guardarTipo($params = '')
     {
+        $this->validarCsrf();
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->responderJson([
                 'exito' => false,
