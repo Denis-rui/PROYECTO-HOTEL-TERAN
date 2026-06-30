@@ -12,6 +12,7 @@ const inicializarTablaReservas = () => {
 
   const inputBusqueda = document.getElementById("inputBuscarReserva");
   const filtroEstado = document.getElementById("filtroEstado");
+  const filtroHoy = document.getElementById("filtroHoyReserva");
   const formularioFiltros = inputBusqueda?.closest("form");
 
   // Esta instancia reemplaza la carga MVC de filas por una carga Ajax server-side.
@@ -31,9 +32,11 @@ const inicializarTablaReservas = () => {
       },
       data: (datos) => {
         // Además de los datos propios de DataTables, enviamos nuestros filtros externos.
+        const filtroHoyActivo = filtroHoy?.value || "";
         datos.csrf_token = typeof CSRF_TOKEN !== "undefined" ? CSRF_TOKEN : "";
-        datos.busqueda = inputBusqueda?.value?.trim() || "";
-        datos.estado = filtroEstado?.value || "";
+        datos.filtro_hoy = filtroHoyActivo;
+        datos.busqueda = filtroHoyActivo ? "" : inputBusqueda?.value?.trim() || "";
+        datos.estado = filtroHoyActivo ? "" : filtroEstado?.value || "";
         return datos;
       },
     },
@@ -94,11 +97,23 @@ const inicializarTablaReservas = () => {
 
   let temporizadorBusqueda;
   inputBusqueda?.addEventListener("input", () => {
+    if (filtroHoy) filtroHoy.value = "";
     clearTimeout(temporizadorBusqueda);
     temporizadorBusqueda = setTimeout(() => tablaReservas.ajax.reload(), 350);
   });
 
-  filtroEstado?.addEventListener("change", () => tablaReservas.ajax.reload());
+  filtroEstado?.addEventListener("change", () => {
+    if (filtroHoy) filtroHoy.value = "";
+    tablaReservas.ajax.reload();
+  });
+
+  filtroHoy?.addEventListener("change", () => {
+    if (filtroHoy.value) {
+      if (inputBusqueda) inputBusqueda.value = "";
+      if (filtroEstado) filtroEstado.value = "";
+    }
+    tablaReservas.ajax.reload();
+  });
 
   formularioFiltros?.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -111,6 +126,7 @@ const inicializarTablaReservas = () => {
       e.preventDefault();
       if (inputBusqueda) inputBusqueda.value = "";
       if (filtroEstado) filtroEstado.value = "";
+      if (filtroHoy) filtroHoy.value = "";
       tablaReservas.ajax.reload();
     });
 };

@@ -23,12 +23,28 @@
   }
 }
 .buscar-filtro {
-  .filtro-estado {
+  margin-bottom: 20px;
+  form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+  }
+
+  #inputBuscarReserva {
+    padding: 10px;
+    width: 300px;
+    border: none;
+    margin: 0;
+  }
+
+  .filtro-estado,
+  .filtro-hoy-reserva {
     margin-bottom: 20px;
     padding: 10px;
     width: 200px;
     border: none;
-    margin: 0 2%;
+    margin: 0;
   }
   .btn {
     background-color: var(--primary);

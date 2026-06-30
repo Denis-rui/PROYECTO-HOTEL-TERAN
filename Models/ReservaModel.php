@@ -113,11 +113,17 @@ class ReservaModel
             $busquedaPropia = trim((string) ($parametros['busqueda'] ?? ''));
             $busqueda = $busquedaPropia !== '' ? $busquedaPropia : $busquedaDataTable;
             $estado = strtolower(trim((string) ($parametros['estado'] ?? '')));
+            $filtroHoy = strtolower(trim((string) ($parametros['filtro_hoy'] ?? '')));
 
-            $queryTotal = $this->crearConsultaReservasDataTable('', '');
+            if ($this->esFiltroHoyDataTable($filtroHoy)) {
+                $busqueda = '';
+                $estado = '';
+            }
+
+            $queryTotal = $this->crearConsultaReservasDataTable('', '', '');
             $total = (clone $queryTotal)->count();
 
-            $queryFiltrada = $this->crearConsultaReservasDataTable($busqueda, $estado);
+            $queryFiltrada = $this->crearConsultaReservasDataTable($busqueda, $estado, $filtroHoy);
             $filtrados = (clone $queryFiltrada)->count();
 
             $this->aplicarOrdenDataTable($queryFiltrada, $parametros);
@@ -146,7 +152,7 @@ class ReservaModel
         }
     }
 
-    private function crearConsultaReservasDataTable(string $busqueda, string $estado)
+    private function crearConsultaReservasDataTable(string $busqueda, string $estado, string $filtroHoy = '')
     {
         $estadosPermitidos = [
             'confirmada',
@@ -174,7 +180,9 @@ class ReservaModel
             $query->where('estado', $estado);
         }
 
-        if ($busqueda !== '') {
+        if ($this->esFiltroHoyDataTable($filtroHoy)) {
+            $this->aplicarFiltroHoyDataTable($query, $filtroHoy);
+        } elseif ($busqueda !== '') {
             $query->where(function ($q) use ($busqueda) {
                 $q->where('codigo_reserva', 'like', '%' . $busqueda . '%')
                     ->orWhere('estado', 'like', '%' . $busqueda . '%')
@@ -205,6 +213,75 @@ class ReservaModel
                     }),
                 'primer_check_in'
             );
+    }
+
+    private function aplicarFiltroHoyDataTable($query, string $filtroHoy): void
+    {
+        if (!$this->esFiltroHoyDataTable($filtroHoy)) {
+            return;
+        }
+
+        if ($filtroHoy === 'checkin_hoy') {
+            $query->whereHas('reservaHabitacion', function ($q) {
+                $q->whereRaw('DATE(reserva_habitacion.check_in) = CURDATE()')
+                    ->where(function ($estadoHabitacion) {
+                        $estadoHabitacion->whereNull('reserva_habitacion.estado')
+                            ->orWhere('reserva_habitacion.estado', 'activa');
+                    });
+            });
+            return;
+        }
+
+        if ($filtroHoy === 'checkout_hoy') {
+            $query->whereHas('reservaHabitacion', function ($q) {
+                $q->whereRaw('DATE(reserva_habitacion.check_out) = CURDATE()')
+                    ->where(function ($estadoHabitacion) {
+                        $estadoHabitacion->whereNull('reserva_habitacion.estado')
+                            ->orWhere('reserva_habitacion.estado', 'activa');
+                    });
+            });
+            return;
+        }
+
+        if ($filtroHoy === 'checkout_vencido') {
+            $query->whereIn('reserva.estado', ['en_estadia', 'checkout_pendiente', 'ausente'])
+                ->whereNull('reserva.checkout_real')
+                ->whereHas('reservaHabitacion', function ($q) {
+                    $q->whereNotNull('reserva_habitacion.check_out')
+                        ->whereRaw('NOW() > reserva_habitacion.check_out')
+                        ->where(function ($estadoHabitacion) {
+                            $estadoHabitacion->whereNull('reserva_habitacion.estado')
+                                ->orWhere('reserva_habitacion.estado', 'activa');
+                        });
+                });
+            return;
+        }
+
+        if ($filtroHoy === 'checkins_realizados_hoy') {
+            $query->whereRaw('DATE(reserva.checkin_real) = CURDATE()');
+            return;
+        }
+
+        if ($filtroHoy === 'checkouts_realizados_hoy') {
+            $query->whereRaw('DATE(reserva.checkout_real) = CURDATE()');
+            return;
+        }
+
+        $query->whereHas('pagos', function ($q) {
+            $q->whereRaw('DATE(pago.fecha_pago) = CURDATE()');
+        });
+    }
+
+    private function esFiltroHoyDataTable(string $filtroHoy): bool
+    {
+        return in_array($filtroHoy, [
+            'checkin_hoy',
+            'checkout_hoy',
+            'checkout_vencido',
+            'checkins_realizados_hoy',
+            'checkouts_realizados_hoy',
+            'pagos_realizados_hoy',
+        ], true);
     }
 
     private function aplicarOrdenDataTable($query, array $parametros): void

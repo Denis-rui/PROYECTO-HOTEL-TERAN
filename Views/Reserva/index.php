@@ -34,12 +34,19 @@ $valorEstado = (string) ($filtros['estado'] ?? '');
 
       </select>
 
-      <button type="submit" class="btn">
-        Aplicar filtros
-      </button>
-      <a href="<?= BASE_URL ?>?url=Reserva/index" class="btn btn-limpiar-filtros">
+      <select id="filtroHoyReserva" name="filtro_hoy" class="filtro-hoy-reserva">
+        <option value="">Hoy</option>
+        <option value="checkin_hoy">Check-in hoy</option>
+        <option value="checkout_hoy">Checkout hoy</option>
+        <option value="checkout_vencido">Checkout vencido</option>
+        <option value="checkins_realizados_hoy">Check-ins realizados hoy</option>
+        <option value="checkouts_realizados_hoy">Checkouts realizados hoy</option>
+        <option value="pagos_realizados_hoy">Pagos realizados hoy</option>
+      </select>
+
+      <button type="button" class="btn btn-limpiar-filtros">
         Limpiar filtros
-      </a>
+      </button>
 
     </form>
 
