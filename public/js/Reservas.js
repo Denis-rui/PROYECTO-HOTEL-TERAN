@@ -35,7 +35,9 @@ const inicializarTablaReservas = () => {
         const filtroHoyActivo = filtroHoy?.value || "";
         datos.csrf_token = typeof CSRF_TOKEN !== "undefined" ? CSRF_TOKEN : "";
         datos.filtro_hoy = filtroHoyActivo;
-        datos.busqueda = filtroHoyActivo ? "" : inputBusqueda?.value?.trim() || "";
+        datos.busqueda = filtroHoyActivo
+          ? ""
+          : inputBusqueda?.value?.trim() || "";
         datos.estado = filtroHoyActivo ? "" : filtroEstado?.value || "";
         return datos;
       },
@@ -495,7 +497,9 @@ const configurarEventosReservas = () => {
         return;
       }
 
-      const accionEliminarPendiente = e.target.closest(".accion-eliminar-pendiente");
+      const accionEliminarPendiente = e.target.closest(
+        ".accion-eliminar-pendiente",
+      );
       if (accionEliminarPendiente) {
         cerrarMenusOpciones();
         const reserva = obtenerReservaDesdeEvento(accionEliminarPendiente);
