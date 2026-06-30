@@ -56,6 +56,7 @@ class ClienteController extends Controller
 
     public function registrar($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson();
 
         if ($datos === null) {
@@ -72,6 +73,7 @@ class ClienteController extends Controller
 
     public function actualizar($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson();
 
         if ($datos === null) {
@@ -88,6 +90,7 @@ class ClienteController extends Controller
 
     public function eliminar($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson();
         if ($datos === null) {
             $this->responderJson(['exito' => false, 'mensaje' => 'JSON inválido'], 400);
@@ -103,6 +106,7 @@ class ClienteController extends Controller
 
     public function habilitar($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson();
         if ($datos === null) {
             $this->responderJson(['exito' => false, 'mensaje' => 'JSON inválido'], 400);

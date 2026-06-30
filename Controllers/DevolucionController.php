@@ -38,6 +38,7 @@ class DevolucionController extends Controller
 
     public function registrar($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
         $idUsuario = $_SESSION['id_usuario'] ?? null;
 
@@ -49,6 +50,7 @@ class DevolucionController extends Controller
 
     public function actualizar($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
         $idUsuario = $_SESSION['id_usuario'] ?? null;
 
@@ -58,6 +60,7 @@ class DevolucionController extends Controller
 
     public function eliminar($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
 
         $respuesta = $this->devolucionService->eliminarDevolucion((int) ($datos['id'] ?? 0));
