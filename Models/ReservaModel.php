@@ -5,6 +5,7 @@ namespace Models;
 use Models\Entities\Reserva;
 use Models\Entities\ReservaHabitacion;
 use Models\Entities\Cliente;
+use Models\Entities\Habitacion;
 use Helpers\FormatearReservas as ReservaFormatter;
 
 
@@ -13,16 +14,20 @@ class ReservaModel
     public function obtenerReservas(array $filtros = [], int $limite = 30): array
     {
         try {
+            $this->inactivarPendientesVencidas();
+
             $busqueda = trim((string) ($filtros['busqueda'] ?? ''));
             $estado = strtolower(trim((string) ($filtros['estado'] ?? '')));
 
             $estadosPermitidos = [
                 'confirmada',
+                'pendiente',
                 'en_estadia',
                 'checkout_realizado',
                 'checkout_pendiente',
                 'ausente',
-                'cancelada'
+                'cancelada',
+                'inactiva'
             ];
 
             $limite = max(30, $limite);
@@ -34,8 +39,10 @@ class ReservaModel
                 'reservaHabitacion.habitacion'
             ]);
 
-            if ($estado === '' || $estado !== 'cancelada') {
-                $query->where('estado', '!=', 'cancelada');
+            if ($estado === '') {
+                $query->whereNotIn('estado', ['cancelada', 'inactiva']);
+            } elseif (!in_array($estado, ['cancelada', 'inactiva'], true)) {
+                $query->whereNotIn('estado', ['cancelada', 'inactiva']);
             }
 
             if ($busqueda !== '') {
@@ -67,10 +74,11 @@ class ReservaModel
             $reservas = $query
                 ->orderByRaw("
                     CASE
-                        WHEN LOWER(reserva.estado) IN ('en_estadia', 'checkout_pendiente', 'ausente') THEN 0
-                        WHEN LOWER(reserva.estado) = 'confirmada' THEN 1
+                        WHEN LOWER(reserva.estado) = 'pendiente' THEN 0
+                        WHEN LOWER(reserva.estado) IN ('en_estadia', 'checkout_pendiente', 'ausente') THEN 1
+                        WHEN LOWER(reserva.estado) = 'confirmada' THEN 2
                         WHEN LOWER(reserva.estado) = 'checkout_realizado' THEN 3
-                        ELSE 2
+                        ELSE 4
                     END ASC
                 ")
                 ->orderByRaw('primer_check_in IS NULL ASC')
@@ -103,6 +111,8 @@ class ReservaModel
     public function obtenerReservasDataTable(array $parametros): array
     {
         try {
+            $this->inactivarPendientesVencidas();
+
             // DataTables envía start/length para pedir solo una "página" de registros.
             // Esto evita traer todas las reservas a PHP cuando solo se mostrarán unas cuantas filas.
             $inicio = max(0, (int) ($parametros['start'] ?? 0));
@@ -156,11 +166,13 @@ class ReservaModel
     {
         $estadosPermitidos = [
             'confirmada',
+            'pendiente',
             'en_estadia',
             'checkout_realizado',
             'checkout_pendiente',
             'ausente',
-            'cancelada'
+            'cancelada',
+            'inactiva'
         ];
 
         $query = Reserva::with([
@@ -172,8 +184,10 @@ class ReservaModel
 
         // Mantenemos la misma regla del listado anterior: las canceladas no salen en "todos";
         // solo aparecen cuando el usuario filtra explícitamente por estado cancelada.
-        if ($estado === '' || $estado !== 'cancelada') {
-            $query->where('estado', '!=', 'cancelada');
+        if ($estado === '') {
+            $query->whereNotIn('estado', ['cancelada', 'inactiva']);
+        } elseif (!in_array($estado, ['cancelada', 'inactiva'], true)) {
+            $query->whereNotIn('estado', ['cancelada', 'inactiva']);
         }
 
         if ($estado !== '' && in_array($estado, $estadosPermitidos, true)) {
@@ -299,7 +313,13 @@ class ReservaModel
         ];
 
         if (isset($columnasOrdenables[$indiceColumna])) {
-            $query->orderBy($columnasOrdenables[$indiceColumna], $direccion)
+            $query->orderByRaw("
+                CASE
+                    WHEN LOWER(reserva.estado) = 'pendiente' THEN 0
+                    ELSE 1
+                END ASC
+            ")
+                ->orderBy($columnasOrdenables[$indiceColumna], $direccion)
                 ->orderByDesc('reserva.id');
             return;
         }
@@ -309,10 +329,11 @@ class ReservaModel
         $query
             ->orderByRaw("
                 CASE
-                    WHEN LOWER(reserva.estado) IN ('en_estadia', 'checkout_pendiente', 'ausente') THEN 0
-                    WHEN LOWER(reserva.estado) = 'confirmada' THEN 1
+                    WHEN LOWER(reserva.estado) = 'pendiente' THEN 0
+                    WHEN LOWER(reserva.estado) IN ('en_estadia', 'checkout_pendiente', 'ausente') THEN 1
+                    WHEN LOWER(reserva.estado) = 'confirmada' THEN 2
                     WHEN LOWER(reserva.estado) = 'checkout_realizado' THEN 3
-                    ELSE 2
+                    ELSE 4
                 END ASC
             ")
             ->orderByRaw('primer_check_in IS NULL ASC')
@@ -382,5 +403,44 @@ class ReservaModel
         }
 
         return $prefijo . str_pad((string) $numero, 6, '0', STR_PAD_LEFT);
+    }
+
+    public function inactivarPendientesVencidas(): int
+    {
+        try {
+            $reservasVencidas = Reserva::with('reservaHabitacion')
+                ->where('estado', 'pendiente')
+                ->whereNotNull('fecha_creacion')
+                ->whereRaw('fecha_creacion <= DATE_SUB(NOW(), INTERVAL 6 HOUR)')
+                ->whereDoesntHave('pagos')
+                ->get();
+
+            if ($reservasVencidas->isEmpty()) {
+                return 0;
+            }
+
+            $idsReserva = $reservasVencidas->pluck('id')->map(fn($id) => (int) $id)->all();
+            $idsHabitacion = $reservasVencidas
+                ->flatMap(fn($reserva) => $reserva->reservaHabitacion->pluck('id_habitacion'))
+                ->filter()
+                ->map(fn($id) => (int) $id)
+                ->unique()
+                ->values()
+                ->all();
+
+            $actualizadas = Reserva::whereIn('id', $idsReserva)
+                ->update(['estado' => 'inactiva']);
+
+            if (!empty($idsHabitacion)) {
+                Habitacion::whereIn('id', $idsHabitacion)
+                    ->where('estado', 'Reservada')
+                    ->update(['estado' => 'Disponible']);
+            }
+
+            return (int) $actualizadas;
+        } catch (\Throwable $e) {
+            error_log('ReservaModel::inactivarPendientesVencidas -> ' . $e->getMessage());
+            return 0;
+        }
     }
 }
