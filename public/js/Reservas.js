@@ -680,4 +680,3 @@ const ejecutarAccionReserva = async (accion, datos) => {
   }
 };
 
-// La inicialización se ejecuta desde main.js para evitar duplicar listeners.

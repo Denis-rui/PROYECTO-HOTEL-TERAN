@@ -37,6 +37,102 @@
     return /^\d{4}-\d{2}-\d{2}$/.test(texto) ? texto : "";
   };
 
+  const fechaMayor = (...fechas) =>
+    fechas.map(fechaAInput).filter(Boolean).sort().pop() || "";
+
+  const fechaMenor = (...fechas) =>
+    fechas.map(fechaAInput).filter(Boolean).sort()[0] || "";
+
+  const obtenerLimitesHabitacion = (habitacion, reserva = {}) => ({
+    desde: fechaAInput(
+      habitacion?.check_in ||
+        reserva.check_in_programado ||
+        reserva.check_in ||
+        reserva.checkin_real ||
+        "",
+    ),
+    hasta: fechaAInput(
+      habitacion?.check_out ||
+        reserva.check_out_programado ||
+        reserva.check_out ||
+        reserva.checkout_real ||
+        "",
+    ),
+  });
+
+  const obtenerHabitacionesSeleccionadas = () =>
+    estado.habitaciones.filter((habitacion) => {
+      const checkbox = document.getElementById(`doc-hab-${habitacion.id}`);
+      return checkbox?.checked;
+    });
+
+  const calcularRangoFacturable = (reserva, habitacionesSeleccionadas) => {
+    const habitaciones = habitacionesSeleccionadas.length
+      ? habitacionesSeleccionadas
+      : estado.habitaciones;
+    const limitesHabitaciones = habitaciones.map((habitacion) =>
+      obtenerLimitesHabitacion(habitacion, reserva),
+    );
+
+    const desde = fechaMayor(
+      reserva?.checkin_real,
+      reserva?.check_in,
+      reserva?.check_in_programado,
+      ...limitesHabitaciones.map((limite) => limite.desde),
+    );
+    const hasta = fechaMenor(
+      reserva?.checkout_real || reserva?.check_out || reserva?.check_out_programado,
+      ...limitesHabitaciones.map((limite) => limite.hasta),
+    );
+
+    return { desde, hasta };
+  };
+
+  const debeIncluirCargoCheckoutTarde = (reserva, fechaHasta) => {
+    const cargo = toNumber(reserva?.cargo_checkout_tarde);
+    if (cargo <= 0 || !fechaHasta) return false;
+
+    const finHabitaciones =
+      estado.habitaciones
+        .map((habitacion) => fechaAInput(habitacion?.check_out))
+        .filter(Boolean)
+        .sort()
+        .pop() || "";
+    const checkoutReal = fechaAInput(reserva?.checkout_real);
+    const limite = [finHabitaciones, checkoutReal].filter(Boolean).sort()[0];
+
+    return Boolean(limite) && fechaHasta >= limite;
+  };
+
+  const actualizarRangoFacturable = () => {
+    const reserva = estado.reserva;
+    if (!reserva) return;
+
+    const fechaDesde = document.getElementById("docElectronicoFechaDesde");
+    const fechaHasta = document.getElementById("docElectronicoFechaHasta");
+    if (!fechaDesde || !fechaHasta) return;
+
+    const rango = calcularRangoFacturable(
+      reserva,
+      obtenerHabitacionesSeleccionadas(),
+    );
+
+    if (!rango.desde || !rango.hasta) return;
+
+    fechaDesde.min = rango.desde;
+    fechaDesde.max = rango.hasta;
+    fechaHasta.min = rango.desde;
+    fechaHasta.max = rango.hasta;
+
+    if (!fechaDesde.value || fechaDesde.value < rango.desde || fechaDesde.value > rango.hasta) {
+      fechaDesde.value = rango.desde;
+    }
+
+    if (!fechaHasta.value || fechaHasta.value < rango.desde || fechaHasta.value > rango.hasta) {
+      fechaHasta.value = rango.hasta;
+    }
+  };
+
   const tipoDocumentoPorNumero = (numeroDocumento = "") => {
     const limpio = String(numeroDocumento || "").replace(/\D/g, "");
     if (limpio.length === 11) return "6";
@@ -113,7 +209,10 @@
     contenedor
       .querySelectorAll('input[type="checkbox"]')
       .forEach((checkbox) => {
-        checkbox.addEventListener("change", actualizarResumen);
+        checkbox.addEventListener("change", () => {
+          actualizarRangoFacturable();
+          actualizarResumen();
+        });
       });
   };
 
@@ -126,12 +225,7 @@
     const fechaHasta =
       document.getElementById("docElectronicoFechaHasta")?.value || "";
     const noches = nochesEntre(fechaDesde, fechaHasta);
-    const habitacionesSeleccionadas = estado.habitaciones.filter(
-      (habitacion) => {
-        const checkbox = document.getElementById(`doc-hab-${habitacion.id}`);
-        return checkbox?.checked;
-      },
-    );
+    const habitacionesSeleccionadas = obtenerHabitacionesSeleccionadas();
 
     const totalReserva =
       toNumber(reserva.total) + toNumber(reserva.cargo_checkout_tarde);
@@ -145,6 +239,10 @@
       );
       totalDocumento += precioBruto * noches;
     });
+
+    if (debeIncluirCargoCheckoutTarde(reserva, fechaHasta)) {
+      totalDocumento += toNumber(reserva.cargo_checkout_tarde);
+    }
 
     return {
       fechaDesde,
@@ -266,12 +364,12 @@
       if (campo) campo.value = valor;
     });
 
-    const checkIn = fechaAInput(
-      reserva.check_in || reserva.check_in_programado || "",
+    const rangoFacturable = calcularRangoFacturable(
+      reserva,
+      obtenerHabitacionesActivas(reserva),
     );
-    const checkOut = fechaAInput(
-      reserva.check_out || reserva.check_out_programado || "",
-    );
+    const checkIn = rangoFacturable.desde;
+    const checkOut = rangoFacturable.hasta;
     const fechaDesde = document.getElementById("docElectronicoFechaDesde");
     const fechaHasta = document.getElementById("docElectronicoFechaHasta");
     if (fechaDesde) {
@@ -308,6 +406,7 @@
     }
 
     renderHabitaciones(reserva);
+    actualizarRangoFacturable();
     actualizarResumen();
   };
 

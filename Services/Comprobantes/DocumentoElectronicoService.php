@@ -56,12 +56,12 @@ class DocumentoElectronicoService
             ];
         }
 
-        $checkInReal = $this->fechaIso((string) ($reserva['checkin_real'] ?? ''));
+        $checkInReal = $this->fechaInicioFacturable($reserva);
 
         if ($checkInReal === '') {
             return [
                 'exito' => false,
-                'mensaje' => 'Solo se puede emitir una boleta o factura después de realizar el check-in del cliente.',
+                'mensaje' => 'Solo se puede emitir una boleta o factura después de realizar el check-in o checkout del cliente.',
             ];
         }
 
@@ -126,12 +126,15 @@ class DocumentoElectronicoService
             return $validacionRangoHabitaciones;
         }
 
+        $documentosEmitidos = $this->documentoElectronicoModel->obtenerPorReserva($idReserva);
+
         $lineas = $this->construirLineas(
             $reserva,
             $habitacionesSeleccionadas,
             (int) ($validacionFechas['noches'] ?? 0),
             $fechaDesde,
-            $fechaHasta
+            $fechaHasta,
+            $documentosEmitidos
         );
 
         if (!($lineas['exito'] ?? false)) {
@@ -193,8 +196,6 @@ class DocumentoElectronicoService
                 'duplicado' => true,
             ];
         }
-
-        $documentosEmitidos = $this->documentoElectronicoModel->obtenerPorReserva($idReserva);
 
         $validacionCruces = $this->validarCrucesConDocumentos(
             $documentosEmitidos,
@@ -280,11 +281,39 @@ class DocumentoElectronicoService
             return $preparado;
         }
         $datosPreparados = $preparado['datos'] ?? [];
-        $payload = $this->payloadBuilder->construirPayload($datosPreparados);
-        $respuestaApi = $this->nubefactClient->enviarComprobante($payload);
+        $numeroInicial = (int) ($datosPreparados['numero'] ?? 1);
+        $payload = [];
+        $respuestaApi = null;
+
+        for ($intento = 0; $intento < 5; $intento++) {
+            $datosPreparados['numero'] = $numeroInicial + $intento;
+            $payload = $this->payloadBuilder->construirPayload($datosPreparados);
+            $respuestaApi = $this->nubefactClient->enviarComprobante($payload);
+
+            if (($respuestaApi['exito'] ?? false)) {
+                break;
+            }
+
+            if (($respuestaApi['codigo_error'] ?? '') !== 'documento_existente') {
+                return $respuestaApi;
+            }
+
+            error_log(
+                'DocumentoElectronicoService::emitir -> numero ya existe en NubeFact: '
+                . (string) ($datosPreparados['serie'] ?? '')
+                . '-'
+                . (string) ($datosPreparados['numero'] ?? '')
+            );
+        }
 
         if (!($respuestaApi['exito'] ?? false)) {
-            return $respuestaApi;
+            return [
+                'exito' => false,
+                'mensaje' => 'NubeFact indica que los últimos números intentados ya existen. Revise o actualice la numeración de la serie '
+                    . (string) ($datosPreparados['serie'] ?? '')
+                    . ' antes de volver a emitir.',
+                'respuesta' => $respuestaApi['respuesta'] ?? null,
+            ];
         }
         $respuesta = $respuestaApi['respuesta'] ?? [];
         $registro = [
@@ -385,6 +414,68 @@ class DocumentoElectronicoService
         return max(0, ReservaHelper::obtenerDiasEstadia($desde, $hasta));
     }
 
+    private function fechaInicioFacturable(array $reserva): string
+    {
+        $checkInReal = $this->fechaIso((string) ($reserva['checkin_real'] ?? ''));
+
+        if ($checkInReal !== '') {
+            return $checkInReal;
+        }
+
+        $estado = strtolower((string) ($reserva['estado'] ?? ''));
+        $tieneCheckout = $this->fechaIso((string) ($reserva['checkout_real'] ?? '')) !== ''
+            || $estado === 'checkout_realizado';
+
+        if (!$tieneCheckout) {
+            return '';
+        }
+
+        $inicioReserva = $this->fechaIso((string) (
+            $reserva['check_in_programado'] ?? ($reserva['check_in'] ?? '')
+        ));
+
+        return $inicioReserva !== ''
+            ? $inicioReserva
+            : $this->fechaExtremaHabitaciones($reserva, 'check_in', 'min');
+    }
+
+    private function fechaFinFacturable(array $reserva): string
+    {
+        $checkout = $this->fechaIso((string) (
+            $reserva['checkout_real']
+            ?? ($reserva['check_out_programado'] ?? ($reserva['check_out'] ?? ''))
+        ));
+
+        return $checkout !== ''
+            ? $checkout
+            : $this->fechaExtremaHabitaciones($reserva, 'check_out', 'max');
+    }
+
+    private function fechaExtremaHabitaciones(array $reserva, string $campo, string $modo): string
+    {
+        $fechas = [];
+
+        foreach ((array) ($reserva['habitaciones'] ?? []) as $habitacion) {
+            if (!is_array($habitacion)) {
+                continue;
+            }
+
+            $fecha = $this->fechaIso((string) ($habitacion[$campo] ?? ''));
+
+            if ($fecha !== '') {
+                $fechas[] = $fecha;
+            }
+        }
+
+        if (empty($fechas)) {
+            return '';
+        }
+
+        sort($fechas);
+
+        return $modo === 'max' ? end($fechas) : $fechas[0];
+    }
+
     private function limpiarTexto(string $texto): string
     {
         $texto = trim($texto);
@@ -419,7 +510,7 @@ class DocumentoElectronicoService
         return sha1(json_encode($datos, JSON_UNESCAPED_UNICODE));
     }
 
-    private function construirLineas(array $reserva,  array $habitaciones,  int $nochesDocumento,  string $fechaDesde, string $fechaHasta): array
+    private function construirLineas(array $reserva,  array $habitaciones,  int $nochesDocumento,  string $fechaDesde, string $fechaHasta, array $documentosEmitidos = []): array
     {
         $items = [];
         $totalGravada = 0.0;
@@ -494,6 +585,33 @@ class DocumentoElectronicoService
             $total += $totalLinea;
         }
 
+        if ($this->debeIncluirCargoCheckoutTarde($reserva, $fechaHasta, $documentosEmitidos)) {
+            $cargoCheckoutTarde = round((float) ($reserva['cargo_checkout_tarde'] ?? 0), 2);
+
+            $items[] = [
+                'unidad_de_medida' => 'ZZ',
+                'codigo' => 'CHECKOUT_TARDE',
+                'descripcion' => $this->limpiarTexto(sprintf(
+                    'Cargo por checkout tarde | Reserva %s | Salida %s',
+                    (string) ($reserva['codigo_reserva'] ?? $reserva['id'] ?? '--'),
+                    $this->fechaIso((string) ($reserva['checkout_real'] ?? $fechaHasta))
+                )),
+                'cantidad' => 1,
+                'valor_unitario' => $cargoCheckoutTarde,
+                'precio_unitario' => $cargoCheckoutTarde,
+                'descuento' => 0,
+                'subtotal' => $cargoCheckoutTarde,
+                'tipo_de_igv' => 8,
+                'igv' => 0,
+                'total' => $cargoCheckoutTarde,
+                'anticipo_regularizacion' => false,
+                'anticipo_documento_serie' => '',
+                'anticipo_documento_numero' => '',
+            ];
+
+            $total += $cargoCheckoutTarde;
+        }
+
         return [
             'exito' => true,
             'items' => $items,
@@ -504,14 +622,57 @@ class DocumentoElectronicoService
         ];
     }
 
+    private function debeIncluirCargoCheckoutTarde(array $reserva, string $fechaHasta, array $documentosEmitidos): bool
+    {
+        $cargoCheckoutTarde = round((float) ($reserva['cargo_checkout_tarde'] ?? 0), 2);
+
+        if ($cargoCheckoutTarde <= 0 || $fechaHasta === '') {
+            return false;
+        }
+
+        if ($this->cargoCheckoutTardeYaDocumentado($documentosEmitidos)) {
+            return false;
+        }
+
+        $finHabitaciones = $this->fechaExtremaHabitaciones($reserva, 'check_out', 'max');
+        $checkoutReal = $this->fechaIso((string) ($reserva['checkout_real'] ?? ''));
+        $limites = array_values(array_filter([$finHabitaciones, $checkoutReal]));
+
+        if (empty($limites)) {
+            return false;
+        }
+
+        sort($limites);
+
+        return $fechaHasta >= $limites[0];
+    }
+
+    private function cargoCheckoutTardeYaDocumentado(array $documentosEmitidos): bool
+    {
+        foreach ($documentosEmitidos as $documento) {
+            $detalle = json_decode((string) ($documento['detalle_json'] ?? ''), true);
+
+            if (!is_array($detalle)) {
+                continue;
+            }
+
+            foreach ((array) ($detalle['items'] ?? []) as $item) {
+                $codigo = strtoupper((string) ($item['codigo'] ?? ''));
+                $descripcion = strtolower((string) ($item['descripcion'] ?? ''));
+
+                if ($codigo === 'CHECKOUT_TARDE' || str_contains($descripcion, 'checkout tarde')) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     private function validarFechas(array $reserva, string $fechaDesde, string $fechaHasta): array
     {
-        $checkIn = $this->fechaIso((string) ($reserva['checkin_real'] ?? ''));
-
-        $checkOut = $this->fechaIso((string) (
-            $reserva['checkout_real']
-            ?? ($reserva['check_out_programado'] ?? ($reserva['check_out'] ?? ''))
-        ));
+        $checkIn = $this->fechaInicioFacturable($reserva);
+        $checkOut = $this->fechaFinFacturable($reserva);
 
         if ($fechaDesde === '' || $fechaHasta === '' || $checkIn === '' || $checkOut === '') {
             return [
