@@ -4,6 +4,7 @@ namespace Models;
 
 use Models\Entities\Reserva;
 use Models\Entities\ReservaHabitacion;
+use Models\Entities\Cliente;
 use Helpers\FormatearReservas as ReservaFormatter;
 
 
@@ -190,6 +191,12 @@ class ReservaModel
         return $query
             ->select('reserva.*')
             ->selectSub(
+                Cliente::select('nombre_completo')
+                    ->whereColumn('cliente.id', 'reserva.id_cliente')
+                    ->limit(1),
+                'cliente_nombre_orden'
+            )
+            ->selectSub(
                 ReservaHabitacion::selectRaw('MIN(reserva_habitacion.check_in)')
                     ->whereColumn('reserva_habitacion.id_reserva', 'reserva.id')
                     ->where(function ($q) {
@@ -208,6 +215,7 @@ class ReservaModel
         // Solo se ordenan columnas seguras que pertenecen directamente a reserva.
         // Para cliente/habitación dejamos el orden por prioridad porque requieren joins adicionales.
         $columnasOrdenables = [
+            0 => 'cliente_nombre_orden',
             2 => 'primer_check_in',
             3 => 'primer_check_in',
             4 => 'estado',

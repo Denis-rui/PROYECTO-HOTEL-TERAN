@@ -22,6 +22,7 @@ const inicializarTablaReservas = () => {
     pageLength: 30,
     lengthMenu: [10, 30, 50, 100],
     searching: false,
+    info: false,
     ajax: {
       url: BASE_URL + "Reserva/datatable",
       type: "POST",
@@ -38,13 +39,30 @@ const inicializarTablaReservas = () => {
     },
     order: [],
     columns: [
-      { data: "cliente", orderable: false, render: renderTextoSeguro },
-      { data: null, orderable: false, render: (_, __, reserva) => renderHabitaciones(reserva) },
+      { data: "cliente", render: renderTextoSeguro },
+      {
+        data: null,
+        orderable: false,
+        render: (_, __, reserva) => renderHabitaciones(reserva),
+      },
       { data: "check_in", render: renderFechaReserva },
-      { data: "check_out", render: (_, __, reserva) => renderCheckOut(reserva) },
+      {
+        data: "check_out",
+        render: (_, __, reserva) => renderCheckOut(reserva),
+      },
       { data: "estado", render: renderEstadoReserva },
-      { data: "porcentaje_pago", orderable: false, searchable: false, render: renderPagoReserva },
-      { data: null, orderable: false, searchable: false, render: (_, __, reserva) => renderAccionesReserva(reserva) },
+      {
+        data: "porcentaje_pago",
+        orderable: false,
+        searchable: false,
+        render: renderPagoReserva,
+      },
+      {
+        data: null,
+        orderable: false,
+        searchable: false,
+        render: (_, __, reserva) => renderAccionesReserva(reserva),
+      },
     ],
     language: {
       processing: "Cargando reservas...",
@@ -71,7 +89,8 @@ const inicializarTablaReservas = () => {
 
   // Permite a los eventos delegados recuperar el objeto completo de la fila.
   // Así evitamos guardar toda la reserva en atributos data-* del HTML.
-  window.obtenerReservaDesdeFila = (fila) => tablaReservas.row(fila).data() || null;
+  window.obtenerReservaDesdeFila = (fila) =>
+    tablaReservas.row(fila).data() || null;
 
   let temporizadorBusqueda;
   inputBusqueda?.addEventListener("input", () => {
@@ -118,7 +137,9 @@ const renderTextoSeguro = (valor) => escaparHtml(valor);
 const formatearFechaReserva = (fecha) => {
   if (!fecha) return "Sin fecha";
   const texto = String(fecha).trim();
-  const coincidencia = texto.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
+  const coincidencia = texto.match(
+    /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/,
+  );
 
   if (!coincidencia) return texto;
 
@@ -142,7 +163,8 @@ const renderHabitaciones = (reserva) => {
       const numero = habitacion?.numero_habitacion || "";
       const piso = habitacion?.piso || "";
       const tipo = habitacion?.tipo_nombre || "";
-      const texto = `Hab. ${numero}${piso !== "" ? ` - Piso ${piso}` : ""}${tipo !== "" ? ` - ${tipo}` : ""}`.trim();
+      const texto =
+        `Hab. ${numero}${piso !== "" ? ` - Piso ${piso}` : ""}${tipo !== "" ? ` - ${tipo}` : ""}`.trim();
       return escaparHtml(texto);
     })
     .filter(Boolean)
@@ -172,7 +194,9 @@ const textoEstadoReserva = (estado) => {
     cancelada: "Cancelada",
   };
 
-  const clave = String(estado || "").trim().toLowerCase();
+  const clave = String(estado || "")
+    .trim()
+    .toLowerCase();
   return mapa[clave] || clave.charAt(0).toUpperCase() + clave.slice(1);
 };
 
@@ -186,7 +210,13 @@ const claseEstadoReserva = (estado) => {
     cancelada: "estado-cancelada",
   };
 
-  return mapa[String(estado || "").trim().toLowerCase()] || "estado-reserva-desconocido";
+  return (
+    mapa[
+      String(estado || "")
+        .trim()
+        .toLowerCase()
+    ] || "estado-reserva-desconocido"
+  );
 };
 
 const renderEstadoReserva = (estado) =>
@@ -208,23 +238,30 @@ const tieneAccionReserva = (reserva, accion) =>
 
 const renderAccionesReserva = (reserva) => {
   const estado = String(reserva?.estado || "").toLowerCase();
-  const editarDisabled = estado === "checkout_realizado"
-    ? ' disabled title="No se puede editar una reserva con checkout realizado"'
-    : "";
+  const editarDisabled =
+    estado === "checkout_realizado"
+      ? ' disabled title="No se puede editar una reserva con checkout realizado"'
+      : "";
   const partes = [
     `<button type="button" class="boton-editar-reserva"${editarDisabled}>✏️</button>`,
   ];
 
   if (tieneAccionReserva(reserva, "checkin")) {
-    partes.push('<button type="button" class="boton-checkin-reserva" title="Confirmar check-in">Check-in</button>');
+    partes.push(
+      '<button type="button" class="boton-checkin-reserva" title="Confirmar check-in">Check-in</button>',
+    );
   }
 
   if (tieneAccionReserva(reserva, "checkout")) {
-    partes.push('<button type="button" class="boton-checkout-reserva" title="Confirmar checkout">Checkout</button>');
+    partes.push(
+      '<button type="button" class="boton-checkout-reserva" title="Confirmar checkout">Checkout</button>',
+    );
   }
 
   if (Number(reserva?.porcentaje_pago || 0) < 100) {
-    partes.push('<button type="button" class="boton-pago-tabla" title="Registrar pago">💳</button>');
+    partes.push(
+      '<button type="button" class="boton-pago-tabla" title="Registrar pago">💳</button>',
+    );
   }
 
   partes.push(renderMenuAccionesReserva(reserva));
@@ -236,23 +273,33 @@ const renderMenuAccionesReserva = (reserva) => {
   const opciones = [];
 
   if (tieneAccionReserva(reserva, "marcar_ausente")) {
-    opciones.push('<button type="button" class="item-menu-opcion accion-marcar-ausente">Marcar ausente</button>');
+    opciones.push(
+      '<button type="button" class="item-menu-opcion accion-marcar-ausente">Marcar ausente</button>',
+    );
   }
 
   if (tieneAccionReserva(reserva, "marcar_regreso")) {
-    opciones.push('<button type="button" class="item-menu-opcion accion-marcar-regreso">Marcar regreso</button>');
+    opciones.push(
+      '<button type="button" class="item-menu-opcion accion-marcar-regreso">Marcar regreso</button>',
+    );
   }
 
   if (tieneAccionReserva(reserva, "emitir_documento")) {
-    opciones.push('<button type="button" class="item-menu-opcion accion-emitir-documento">Emitir boleta / factura</button>');
+    opciones.push(
+      '<button type="button" class="item-menu-opcion accion-emitir-documento">Emitir boleta / factura</button>',
+    );
   }
 
   if (tieneAccionReserva(reserva, "ver_detalles")) {
-    opciones.push('<button type="button" class="item-menu-opcion accion-ver-detalles">Ver detalles</button>');
+    opciones.push(
+      '<button type="button" class="item-menu-opcion accion-ver-detalles">Ver detalles</button>',
+    );
   }
 
   if (tieneAccionReserva(reserva, "cancelar")) {
-    opciones.push('<button type="button" class="item-menu-opcion accion-cancelar-reserva">Cancelar reserva</button>');
+    opciones.push(
+      '<button type="button" class="item-menu-opcion accion-cancelar-reserva">Cancelar reserva</button>',
+    );
   }
 
   return `
@@ -265,7 +312,8 @@ const renderMenuAccionesReserva = (reserva) => {
 
 const obtenerReservaDesdeEvento = (elemento) => {
   const fila = elemento?.closest("tr");
-  if (!fila || typeof window.obtenerReservaDesdeFila !== "function") return null;
+  if (!fila || typeof window.obtenerReservaDesdeFila !== "function")
+    return null;
   return window.obtenerReservaDesdeFila(fila);
 };
 
@@ -399,7 +447,11 @@ const configurarEventosReservas = () => {
           "checkout_pendiente",
           "checkout_realizado",
         ];
-        if (!estadosConCheckIn.includes(String(reserva.estado || "").toLowerCase())) {
+        if (
+          !estadosConCheckIn.includes(
+            String(reserva.estado || "").toLowerCase(),
+          )
+        ) {
           window.Alerta(
             "Solo se puede emitir una boleta o factura después de realizar el check-in del cliente.",
             "error",
@@ -597,7 +649,6 @@ const configurarEventosReservas = () => {
         });
         return;
       }
-
     });
   }
 
@@ -679,4 +730,3 @@ const ejecutarAccionReserva = async (accion, datos) => {
     window.Alerta("Error de conexión con el servidor.", "error");
   }
 };
-
