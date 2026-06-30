@@ -16,6 +16,16 @@ class Router
         $this->routes['POST'][$route] = $action;
     }
 
+    public function put(string $route, array $action): void
+    {
+        $this->routes['PUT'][$route] = $action;
+    }
+
+    public function delete(string $route, array $action): void
+    {
+        $this->routes['DELETE'][$route] = $action;
+    }
+
     public function resolve(): array
     {
         $requestMethod = $_SERVER['REQUEST_METHOD'];

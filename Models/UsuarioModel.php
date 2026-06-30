@@ -27,6 +27,19 @@ class UsuarioModel
             ->get();
     }
 
+    public function buscarPorTermino(string $termino)
+    {
+        $termino = trim($termino);
+
+        return Usuario::with('rol')
+            ->where(function ($query) use ($termino) {
+                $query->where('nombre_completo', 'like', "%{$termino}%")
+                    ->orWhere('nombre_usuario', 'like', "%{$termino}%");
+            })
+            ->orderBy('id', 'asc')
+            ->get();
+    }
+
     public function buscarIdRolPorNombre(string $nombreRol)
     {
         return Rol::where('rol', $nombreRol)->value('id');

@@ -26,7 +26,7 @@ class UsuarioController extends Controller
 
         $data['page_title'] = "Gestión de Usuarios";
         $data['usuarios'] = $respuesta['exito'] ? $respuesta['data'] : [];
-        $data['page_js'] = ['Modal-Usuario.js', 'Usuarios.js'];
+        $data['page_js'] = ['Modal-Usuario.js', 'Usuarios.js', 'Busqueda-Usuarios.js'];
 
         $this->views->render($this, 'index', $data);
     }
@@ -34,6 +34,17 @@ class UsuarioController extends Controller
     public function listar($params = '')
     {
         $respuesta = $this->usuarioService->listarUsuarios();
+        $this->responderJson($respuesta['exito'] ? $respuesta['data'] : []);
+    }
+
+    public function buscar($params = '')
+    {
+        if (!isset($_SESSION['usuario'])) {
+            $this->responderJson(['error' => 'No hay sesión activa'], 401);
+        }
+
+        $termino = $_GET['q'] ?? '';
+        $respuesta = $this->usuarioService->buscarUsuarios($termino);
         $this->responderJson($respuesta['exito'] ? $respuesta['data'] : []);
     }
 
