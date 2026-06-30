@@ -1,3 +1,12 @@
+// Escapa caracteres HTML para prevenir ataques XSS al construir clases o textos.
+const escaparHtmlDashboard = (valor) =>
+  String(valor ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
 const formatearMinutosCheckout = (minutos) => {
   const valor = Math.abs(Number(minutos || 0));
   const horas = Math.floor(valor / 60);
@@ -16,32 +25,65 @@ const renderizarNotificacionesCheckout = (datos) => {
   panel.innerHTML = "";
 
   vencidos.forEach((item) => {
-    panel.innerHTML += `
-      <div class="notificacion-dashboard critica">
-        <strong>Checkout vencido - Hab. ${item.habitacion}</strong>
-        <span>${item.cliente} excedio ${formatearMinutosCheckout(item.minutos_excedidos)}.</span>
-        <button class="boton-checkout-dashboard" data-id="${item.id_reserva}">Confirmar checkout</button>
-      </div>`;
+    const div = document.createElement("div");
+    div.className = "notificacion-dashboard critica";
+
+    const strong = document.createElement("strong");
+    strong.textContent = `Checkout vencido - Hab. ${item.habitacion ?? "---"}`;
+
+    const span = document.createElement("span");
+    span.textContent = `${item.cliente ?? "Cliente"} excedio ${formatearMinutosCheckout(item.minutos_excedidos)}.`;
+
+    const btn = document.createElement("button");
+    btn.className = "boton-checkout-dashboard";
+    btn.dataset.id = item.id_reserva;
+    btn.textContent = "Confirmar checkout";
+
+    div.appendChild(strong);
+    div.appendChild(span);
+    div.appendChild(btn);
+    panel.appendChild(div);
   });
 
   proximos.forEach((item) => {
-    panel.innerHTML += `
-      <div class="notificacion-dashboard media">
-        <strong>Checkout proximo - Hab. ${item.habitacion}</strong>
-        <span>${item.cliente}: faltan ${formatearMinutosCheckout(item.minutos_faltantes)}.</span>
-      </div>`;
+    const div = document.createElement("div");
+    div.className = "notificacion-dashboard media";
+
+    const strong = document.createElement("strong");
+    strong.textContent = `Checkout proximo - Hab. ${item.habitacion ?? "---"}`;
+
+    const span = document.createElement("span");
+    span.textContent = `${item.cliente ?? "Cliente"}: faltan ${formatearMinutosCheckout(item.minutos_faltantes)}.`;
+
+    div.appendChild(strong);
+    div.appendChild(span);
+    panel.appendChild(div);
   });
 
   notificaciones.slice(0, 5).forEach((item) => {
-    panel.innerHTML += `
-      <div class="notificacion-dashboard ${item.prioridad}">
-        <strong>${item.titulo}</strong>
-        <span>${item.mensaje}</span>
-      </div>`;
+    const div = document.createElement("div");
+    div.className = `notificacion-dashboard ${escaparHtmlDashboard(item.prioridad || "baja")}`;
+
+    const strong = document.createElement("strong");
+    strong.textContent = item.titulo || "";
+
+    const span = document.createElement("span");
+    span.textContent = item.mensaje || "";
+
+    div.appendChild(strong);
+    div.appendChild(span);
+    panel.appendChild(div);
   });
 
-  if (!panel.innerHTML) {
-    panel.innerHTML = '<div class="notificacion-dashboard baja"><span>Sin alertas operativas pendientes.</span></div>';
+  if (!panel.children.length) {
+    const div = document.createElement("div");
+    div.className = "notificacion-dashboard baja";
+
+    const span = document.createElement("span");
+    span.textContent = "Sin alertas operativas pendientes.";
+
+    div.appendChild(span);
+    panel.appendChild(div);
   }
 };
 
