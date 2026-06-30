@@ -895,7 +895,7 @@ const prepararResumenReserva = () => {
   };
 };
 
-const validarYContinuarPago = async () => {
+const obtenerDatosReservaDesdeFormulario = () => {
   const estado = obtenerEstadoModalReserva();
   const selectorCliente = estado.elementos?.selectorCliente;
   const idClienteReserva = estado.elementos?.idClienteReserva;
@@ -907,8 +907,6 @@ const validarYContinuarPago = async () => {
   const horaEntrada = estado.elementos?.horaEntrada;
   const fechaSalida = estado.elementos?.fechaSalida;
   const horaSalida = estado.elementos?.horaSalida;
-  const modal = estado.elementos?.modal;
-  const contenedor = estado.elementos?.contenedor;
 
   const cliente = idClienteReserva?.value || selectorCliente?.value || "";
   const nombre = campoNombre?.value.trim() || "";
@@ -917,33 +915,45 @@ const validarYContinuarPago = async () => {
   const procedencia = procedenciaCampo?.value.trim() || "";
   const habitaciones = estado.habitacionesSeleccionadas || [];
 
-  if (!cliente)
-    return window.Alerta("Selecciona un cliente", "advertencia");
-  if (!nombre)
-    return window.Alerta("Nombre y apellido obligatorio", "advertencia");
-  if (!dni) return window.Alerta("DNI obligatorio", "advertencia");
-  if (!email)
-    return window.Alerta("Correo electrónico obligatorio", "advertencia");
+  if (!cliente) {
+    window.Alerta("Selecciona un cliente", "advertencia");
+    return null;
+  }
+  if (!nombre) {
+    window.Alerta("Nombre y apellido obligatorio", "advertencia");
+    return null;
+  }
+  if (!dni) {
+    window.Alerta("DNI obligatorio", "advertencia");
+    return null;
+  }
+  if (!email) {
+    window.Alerta("Correo electrónico obligatorio", "advertencia");
+    return null;
+  }
   if (habitaciones.length === 0)
-    return window.Alerta(
+    {
+    window.Alerta(
       "Selecciona al menos una habitación",
       "advertencia",
     );
+    return null;
+  }
 
-  if (!validarFechasReserva()) return;
+  if (!validarFechasReserva()) return null;
   if (
     !fechaEntrada?.value ||
     !horaEntrada?.value ||
     !fechaSalida?.value ||
     !horaSalida?.value
   )
-    return;
+    return null;
 
   const textoClienteSeleccionado =
     selectorCliente?.options?.[selectorCliente.selectedIndex]?.text || "";
   const resumen = prepararResumenReserva();
 
-  const datosReserva = {
+  return {
     cliente,
     idCliente: cliente,
     clienteTexto: textoClienteSeleccionado,
@@ -961,6 +971,15 @@ const validarYContinuarPago = async () => {
     totalReserva: resumen.totalReserva,
     idReserva: estado.reservaEditandoId || "",
   };
+};
+
+const validarYContinuarPago = async () => {
+  const estado = obtenerEstadoModalReserva();
+  const modal = estado.elementos?.modal;
+  const contenedor = estado.elementos?.contenedor;
+  const datosReserva = obtenerDatosReservaDesdeFormulario();
+
+  if (!datosReserva) return;
 
   if (estado.reservaEditandoId) {
     await confirmarGuardarEdicionReserva(datosReserva);
@@ -972,6 +991,58 @@ const validarYContinuarPago = async () => {
 
   if (modal) modal.style.display = "none";
   if (contenedor) contenedor.style.display = "none";
+};
+
+const registrarReservaPendiente = async () => {
+  const estado = obtenerEstadoModalReserva();
+  const datosReserva = obtenerDatosReservaDesdeFormulario();
+  if (!datosReserva || estado.reservaEditandoId) return;
+
+  const confirmacion = await Swal.fire({
+    title: "Dejar pago pendiente",
+    text: "La reserva quedará pendiente y deberá pagarse en un plazo máximo de 6 horas.",
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonText: "Guardar pendiente",
+    cancelButtonText: "Cancelar",
+  });
+
+  if (!confirmacion.isConfirmed) return;
+
+  try {
+    const respuesta = await fetch(BASE_URL + "Reserva/registrar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...datosReserva,
+        estado: "pendiente",
+        dejar_pago_pendiente: true,
+      }),
+    });
+    const resultado = await respuesta.json();
+
+    if (!resultado.exito) {
+      window.Alerta(resultado.mensaje || "No se pudo registrar la reserva pendiente.", "error");
+      return;
+    }
+
+    await Swal.fire({
+      toast: true,
+      position: "top-end",
+      icon: "success",
+      title: resultado.mensaje || "Reserva pendiente registrada",
+      showConfirmButton: false,
+      timer: 2200,
+      timerProgressBar: true,
+    });
+
+    if (estado.elementos?.modal) estado.elementos.modal.style.display = "none";
+    if (estado.elementos?.contenedor) estado.elementos.contenedor.style.display = "none";
+    window.location.reload();
+  } catch (error) {
+    console.error(error);
+    window.Alerta("Error de conexión al registrar la reserva pendiente.", "error");
+  }
 };
 
 const guardarEdicionReserva = async (datosReserva) => {
@@ -1100,6 +1171,7 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
     form: document.getElementById("formReserva"),
     cerrar: document.getElementById("cerrarModal"),
     btnContinuarPago: document.getElementById("btnContinuarPago"),
+    btnDejarPagoPendiente: document.getElementById("btnDejarPagoPendiente"),
     inputBuscarCliente: document.getElementById("buscarCliente"),
     selectorCliente: document.getElementById("selectorClienteReserva"),
     idClienteReserva: document.getElementById("idClienteReserva"),
@@ -1156,6 +1228,9 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
     if (estado.elementos.btnContinuarPago) {
       estado.elementos.btnContinuarPago.textContent = "Continuar con pago";
     }
+    if (estado.elementos.btnDejarPagoPendiente) {
+      estado.elementos.btnDejarPagoPendiente.style.display = "";
+    }
     const etiquetaDni = document.getElementById("label-dni");
     if (etiquetaDni) etiquetaDni.textContent = "DNI";
     if (estado.elementos?.procedencia) estado.elementos.procedencia.value = "";
@@ -1166,6 +1241,9 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
     if (titulo) titulo.textContent = "Editar Reserva";
     if (estado.elementos.btnContinuarPago) {
       estado.elementos.btnContinuarPago.textContent = "Actualizar";
+    }
+    if (estado.elementos.btnDejarPagoPendiente) {
+      estado.elementos.btnDejarPagoPendiente.style.display = "none";
     }
   }
 
@@ -1294,6 +1372,11 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
     estado.elementos.btnContinuarPago?.addEventListener("click", (e) => {
       e.preventDefault();
       validarYContinuarPago();
+    });
+
+    estado.elementos.btnDejarPagoPendiente?.addEventListener("click", (e) => {
+      e.preventDefault();
+      registrarReservaPendiente();
     });
 
     estado.elementos.form?.addEventListener("submit", (e) => {

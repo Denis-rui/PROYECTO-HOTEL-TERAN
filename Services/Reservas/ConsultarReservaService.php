@@ -42,7 +42,15 @@ class ConsultarReservaService
     private function agregarAccionesDisponibles(array $reserva): array
     {
         $estado = strtolower((string) ($reserva['estado'] ?? ''));
-        $acciones = ['editar', 'pago', 'emitir_documento', 'ver_detalles'];
+        $acciones = ['editar', 'pago', 'ver_detalles'];
+
+        if ($estado !== 'pendiente') {
+            $acciones[] = 'emitir_documento';
+        }
+
+        if ($estado === 'pendiente') {
+            $acciones[] = 'eliminar_pendiente';
+        }
 
         if ($estado === 'confirmada') {
             $acciones[] = 'checkin';
@@ -60,7 +68,7 @@ class ConsultarReservaService
             $acciones[] = 'marcar_regreso';
         }
 
-        if (!in_array($estado, ['cancelada', 'checkout_realizado'], true)) {
+        if (!in_array($estado, ['pendiente', 'cancelada', 'checkout_realizado'], true)) {
             $acciones[] = 'cancelar';
         }
 

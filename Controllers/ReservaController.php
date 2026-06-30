@@ -259,6 +259,20 @@ class ReservaController extends Controller
         $this->responderJson($resultado);
     }
 
+    public function eliminarPendiente($params = '')
+    {
+        $datos = $this->obtenerPayloadJson() ?? [];
+        $idReserva = (int) ($datos['id_reserva'] ?? 0);
+
+        $service = new CancelarReservaService();
+        $resultado = $service->eliminarReservaPendiente(
+            $idReserva,
+            $_SESSION['id_usuario'] ?? null
+        );
+
+        $this->responderJson($resultado);
+    }
+
     public function calcularCancelacion($params = '')
     {
         $datos = $this->obtenerPayloadJson() ?? [];

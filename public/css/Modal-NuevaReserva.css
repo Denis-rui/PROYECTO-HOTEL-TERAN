@@ -159,6 +159,7 @@
 /* BOTÓN GUARDAR */
 #modalReserva .form-actions {
   display: flex;
+  gap: 10px;
   justify-content: flex-end;
   margin-top: 24px;
   padding-top: 18px;
@@ -180,6 +181,14 @@
 
 #modalReserva .form-actions button:hover {
   background: var(--primary-dark);
+}
+
+#modalReserva .form-actions .boton-pago-pendiente {
+  background: #7a6a3a;
+}
+
+#modalReserva .form-actions .boton-pago-pendiente:hover {
+  background: #5f512c;
 }
 
 .btn-registrar {
@@ -458,6 +467,10 @@
 
   #modalReserva .form-actions button {
     width: 100%;
+  }
+
+  #modalReserva .form-actions {
+    flex-direction: column;
   }
 
   .habitaciones-reserva-layout {

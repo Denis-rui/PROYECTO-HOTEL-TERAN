@@ -287,6 +287,11 @@
   color: var(--info);
 }
 
+.estado-pendiente {
+  background: #fff3cd;
+  color: #9a6700;
+}
+
 .estado-en-estadia {
   background: var(--success-bg);
   color: var(--success);

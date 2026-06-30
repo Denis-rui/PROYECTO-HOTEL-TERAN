@@ -130,4 +130,71 @@ class CancelarReservaService
             ];
         }
     }
+
+    public function eliminarReservaPendiente(int $idReserva, ?int $idUsuario = null): array
+    {
+        try {
+            $reservaActual = $this->reservaModel->obtenerReservaConHabitacionesYPagos($idReserva);
+
+            if (!$reservaActual) {
+                return [
+                    'exito' => false,
+                    'mensaje' => 'Reserva no encontrada.'
+                ];
+            }
+
+            if ($reservaActual->estado !== 'pendiente') {
+                return [
+                    'exito' => false,
+                    'mensaje' => 'Solo se puede eliminar una reserva pendiente de pago.'
+                ];
+            }
+
+            if ($reservaActual->pagos && $reservaActual->pagos->count() > 0) {
+                return [
+                    'exito' => false,
+                    'mensaje' => 'La reserva ya tiene pagos registrados.'
+                ];
+            }
+
+            DB::connection()->beginTransaction();
+
+            $reservaActual->estado = 'inactiva';
+            $reservaActual->observaciones = trim(
+                (string) ($reservaActual->observaciones ?? '')
+                    . "\nReserva pendiente eliminada por el usuario."
+            );
+
+            $this->reservaModel->guardar($reservaActual);
+
+            foreach ($reservaActual->reservaHabitacion as $reservaHabitacion) {
+                if (!ReservaHabitacionHelper::esActiva($reservaHabitacion)) {
+                    continue;
+                }
+
+                Habitacion::where('id', (int) $reservaHabitacion->id_habitacion)->update([
+                    'estado' => 'Disponible',
+                ]);
+            }
+
+            DB::connection()->commit();
+
+            return [
+                'exito' => true,
+                'mensaje' => 'Reserva pendiente eliminada correctamente.',
+            ];
+        } catch (\Throwable $e) {
+            error_log('CancelarReservaService::eliminarReservaPendiente -> ' . $e->getMessage());
+            $conexion = DB::connection();
+
+            if ($conexion->getPdo()->inTransaction()) {
+                $conexion->rollBack();
+            }
+
+            return [
+                'exito' => false,
+                'mensaje' => 'No se pudo eliminar la reserva pendiente. Intente nuevamente.'
+            ];
+        }
+    }
 }

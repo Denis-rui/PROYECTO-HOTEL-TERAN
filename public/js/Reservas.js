@@ -202,6 +202,7 @@ const renderCheckOut = (reserva) => {
 
 const textoEstadoReserva = (estado) => {
   const mapa = {
+    pendiente: "Pendiente",
     confirmada: "Confirmada",
     en_estadia: "En estadía",
     ausente: "Ausente",
@@ -218,6 +219,7 @@ const textoEstadoReserva = (estado) => {
 
 const claseEstadoReserva = (estado) => {
   const mapa = {
+    pendiente: "estado-pendiente",
     confirmada: "estado-confirmada",
     en_estadia: "estado-en-estadia",
     ausente: "estado-ausente",
@@ -309,6 +311,12 @@ const renderMenuAccionesReserva = (reserva) => {
   if (tieneAccionReserva(reserva, "ver_detalles")) {
     opciones.push(
       '<button type="button" class="item-menu-opcion accion-ver-detalles">Ver detalles</button>',
+    );
+  }
+
+  if (tieneAccionReserva(reserva, "eliminar_pendiente")) {
+    opciones.push(
+      '<button type="button" class="item-menu-opcion accion-eliminar-pendiente">Eliminar reserva</button>',
     );
   }
 
@@ -484,6 +492,30 @@ const configurarEventosReservas = () => {
           );
         }
 
+        return;
+      }
+
+      const accionEliminarPendiente = e.target.closest(".accion-eliminar-pendiente");
+      if (accionEliminarPendiente) {
+        cerrarMenusOpciones();
+        const reserva = obtenerReservaDesdeEvento(accionEliminarPendiente);
+        if (!reserva) return;
+
+        const confirmado = await Swal.fire({
+          title: "Eliminar reserva pendiente",
+          text: "La reserva pasará a inactiva y las habitaciones quedarán disponibles.",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: "Sí, eliminar",
+          cancelButtonText: "Cancelar",
+          confirmButtonColor: "#8f2f2f",
+        });
+
+        if (!confirmado.isConfirmed) return;
+
+        ejecutarAccionReserva("eliminarPendiente", {
+          id_reserva: reserva.id,
+        });
         return;
       }
 
