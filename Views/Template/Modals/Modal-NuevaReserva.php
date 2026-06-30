@@ -173,6 +173,7 @@
         <!-- BOTÓN -->
         <div class="form-actions">
           <button type="button" id="btnContinuarPago" class="boton-continuar-pago">Continuar con Pago</button>
+          <button type="button" id="btnDejarPagoPendiente" class="boton-continuar-pago boton-pago-pendiente">Dejar pago pendiente</button>
         </div>
       </form>
     </div>

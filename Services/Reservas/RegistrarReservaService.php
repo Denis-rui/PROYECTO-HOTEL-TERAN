@@ -106,13 +106,17 @@ class RegistrarReservaService
                 $totalCalculado += $subtotal;
             }
 
+            $estadoReserva = strtolower(trim((string) ($reserva['estado'] ?? 'confirmada')));
+            $esPagoPendiente = $estadoReserva === 'pendiente'
+                || !empty($reserva['dejar_pago_pendiente']);
+
             $pagoInicial = $reserva['pago'] ?? null;
 
             $montoPagoInicial = is_array($pagoInicial)
                 ? (float) ($pagoInicial['monto'] ?? 0)
                 : 0;
 
-            if ($montoPagoInicial <= 0) {
+            if (!$esPagoPendiente && $montoPagoInicial <= 0) {
                 return [
                     'exito' => false,
                     'mensaje' => 'Debe registrar un pago inicial para realizar la reserva.'
@@ -121,14 +125,14 @@ class RegistrarReservaService
 
             $montoMinimoInicial = round($totalCalculado * 0.5, 2);
 
-            if ($montoPagoInicial < $montoMinimoInicial) {
+            if (!$esPagoPendiente && $montoPagoInicial < $montoMinimoInicial) {
                 return [
                     'exito' => false,
                     'mensaje' => 'El pago inicial debe ser al menos el 50% del total de la reserva. Monto mínimo: S/ ' . number_format($montoMinimoInicial, 2)
                 ];
             }
 
-            if ($montoPagoInicial > $totalCalculado) {
+            if (!$esPagoPendiente && $montoPagoInicial > $totalCalculado) {
                 return [
                     'exito' => false,
                     'mensaje' => 'El pago inicial no puede ser mayor al total de la reserva.'
@@ -140,10 +144,11 @@ class RegistrarReservaService
             $reservaCreada = $this->reservaModel->crear([
                 'id_cliente' => $reserva['cliente'] ?? null,
                 'total' => $totalCalculado,
-                'estado' => $reserva['estado'] ?? 'confirmada',
+                'estado' => $esPagoPendiente ? 'pendiente' : 'confirmada',
                 'codigo_reserva' => $reserva['codigoReserva'] ?? $this->reservaModel->generarCodigoReserva(),
                 'id_usuario' => $idUsuarioActual,
                 'observaciones' => $reserva['observaciones'] ?? null,
+                'fecha_creacion' => FechaHotelHelper::ahora(),
                 'checkin_real' => null,
                 'checkout_real' => null,
             ]);
@@ -165,6 +170,17 @@ class RegistrarReservaService
                     'fecha_movimiento' => FechaHotelHelper::ahora(),
                 ]);
 
+            }
+
+            if ($esPagoPendiente) {
+                DB::connection()->commit();
+
+                return [
+                    'exito' => true,
+                    'mensaje' => 'Reserva registrada como pendiente de pago.',
+                    'id_reserva' => $idReserva,
+                    'estado' => 'pendiente',
+                ];
             }
 
             $pago = $this->pagoModel->crear([

@@ -10,7 +10,6 @@ use Services\Reservas\AusenciaReservaService;
 use Services\Reservas\CancelarReservaService;
 use Services\Reservas\RegistrarReservaService;
 use Services\Reservas\ActualizarReservaService;
-use Services\Reservas\ExtenderEstadiaService;
 use Services\Reservas\CambiarHabitacionService;
 use Services\Reservas\ConsultarReservaService;
 use Services\Pagos\RegistrarPagoService;
@@ -29,41 +28,42 @@ class ReservaController extends Controller
             exit();
         }
 
-        $data['reservas'] = [];
-        $data['error_reservas'] = '';
+        // La vista de reservas ahora solo pinta la estructura de la tabla.
+        // Los registros se cargan aparte desde Reserva/datatable usando Ajax + DataTables server-side.
         $data['filtros'] = [
             'busqueda' => trim((string) ($_GET['busqueda'] ?? '')),
             'estado' => trim((string) ($_GET['estado'] ?? '')),
         ];
-        $data['limite'] = max(30, (int) ($_GET['limite'] ?? 30));
-        $data['hay_mas'] = false;
-        $data['total_reservas'] = 0;
-        $data['mostradas_reservas'] = 0;
-
-        try {
-            $service = new ConsultarReservaService();
-            $resultado = $service->listar($data['filtros'], $data['limite']);
-
-            if (!is_array($resultado)) {
-                throw new \RuntimeException('Resultado no es un array');
-            }
-
-            $items = $resultado['items'] ?? [];
-            if (count($items) === 1 && is_string($items[0])) {
-                $data['error_reservas'] = 'Error al cargar las reservas. Intenta nuevamente en unos minutos.';
-            } else {
-                $data['reservas'] = is_array($items) ? $items : [];
-                $data['hay_mas'] = (bool) ($resultado['hay_mas'] ?? false);
-                $data['total_reservas'] = (int) ($resultado['total'] ?? 0);
-                $data['mostradas_reservas'] = (int) ($resultado['mostrados'] ?? count($data['reservas']));
-            }
-        } catch (\Throwable $e) {
-            error_log('ReservaController::index -> ' . $e->getMessage());
-            $data['error_reservas'] = 'Error al cargar las reservas. Intenta nuevamente en unos minutos.';
-        }
 
         $data['page_js'] = ['Clientes.js', 'Modal-Clientes.js', 'Modal-NuevaReserva.js', 'Pago.js', 'Comprobante.js', 'Modal-VerDetalles.js', 'DocumentoElectronico.js', 'Reservas.js'];
         $this->views->render($this, 'index', $data);
+    }
+
+    public function datatable($params = '')
+    {
+        if (!isset($_SESSION['usuario'])) {
+            $this->responderJson([
+                'draw' => (int) ($_POST['draw'] ?? 0),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => 'Sesión no válida.',
+            ], 401);
+        }
+
+        try {
+            $service = new ConsultarReservaService();
+            $this->responderJson($service->listarParaDataTable($_POST));
+        } catch (\Throwable $e) {
+            error_log('ReservaController::datatable -> ' . $e->getMessage());
+            $this->responderJson([
+                'draw' => (int) ($_POST['draw'] ?? 0),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => 'No se pudieron cargar las reservas.',
+            ], 500);
+        }
     }
 
     public function emitirDocumentoElectronico($params = '')
@@ -241,24 +241,6 @@ class ReservaController extends Controller
         $this->responderJson($resultado);
     }
 
-    public function extenderEstadia($params = '')
-    {
-        $datos = $this->obtenerPayloadJson() ?? [];
-
-        $idReserva = (int) ($datos['id_reserva'] ?? 0);
-        $nuevoCheckOut = (string) ($datos['nuevo_check_out'] ?? $datos['checkOut'] ?? '');
-
-        $service = new ExtenderEstadiaService();
-
-        $resultado = $service->extenderEstadia(
-            $idReserva,
-            $nuevoCheckOut,
-            $_SESSION['id_usuario'] ?? null
-        );
-
-        $this->responderJson($resultado);
-    }
-
     public function cancelar($params = '')
     {
         $datos = $this->obtenerPayloadJson() ?? [];
@@ -271,6 +253,20 @@ class ReservaController extends Controller
         $resultado = $service->cancelarReserva(
             $idReserva,
             $motivo,
+            $_SESSION['id_usuario'] ?? null
+        );
+
+        $this->responderJson($resultado);
+    }
+
+    public function eliminarPendiente($params = '')
+    {
+        $datos = $this->obtenerPayloadJson() ?? [];
+        $idReserva = (int) ($datos['id_reserva'] ?? 0);
+
+        $service = new CancelarReservaService();
+        $resultado = $service->eliminarReservaPendiente(
+            $idReserva,
             $_SESSION['id_usuario'] ?? null
         );
 
@@ -301,4 +297,5 @@ class ReservaController extends Controller
 
         $this->responderJson($resultado);
     }
+
 }

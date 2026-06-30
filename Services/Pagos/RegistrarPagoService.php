@@ -68,6 +68,14 @@ class RegistrarPagoService
                 throw new \RuntimeException('No se pudo registrar el pago.');
             }
 
+            if (strtolower((string) ($reserva['estado'] ?? '')) === 'pendiente') {
+                $reservaEntidad = $this->reservaModel->obtenerReservaSimple($idReserva);
+                if ($reservaEntidad) {
+                    $reservaEntidad->estado = 'confirmada';
+                    $this->reservaModel->guardar($reservaEntidad);
+                }
+            }
+
             $habitaciones = $reserva['habitaciones'] ?? [];
 
             $comprobante = $this->comprobanteService->crearDesdePago(

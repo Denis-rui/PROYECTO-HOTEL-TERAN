@@ -33,6 +33,7 @@
                         $fin = $inicio + 3600;
                         $segundosRestantes = max(0, $fin - time());
                     }
+                    $limpiezaVencida = $esLimpieza && $segundosRestantes <= 0;
                     ?>
                     <div class="tarjeta-habitacion <?= $claseEstado ?>" <?= $esLimpieza ? 'data-limpieza-id="' . (int) $hab['id'] . '" data-segundos="' . $segundosRestantes . '"' : '' ?>>
                         <div class="habitacion-cabecera">
@@ -61,8 +62,8 @@
                         </div>
 
                         <?php if ($esLimpieza): ?>
-                            <div class="limpieza-timer-bloque">
-                                <div class="limpieza-icono">🧹 En Limpieza</div>
+                            <div class="limpieza-timer-bloque <?= $limpiezaVencida ? 'limpieza-vencida' : '' ?>">
+                                <div class="limpieza-icono"><?= $limpiezaVencida ? 'Limpieza vencida' : '🧹 En Limpieza' ?></div>
                                 <div class="limpieza-countdown" id="timer-<?= (int) $hab['id'] ?>">
                                     <?php
                                     $mins = floor($segundosRestantes / 60);
@@ -70,10 +71,21 @@
                                     echo sprintf('%02d:%02d', $mins, $secs);
                                     ?>
                                 </div>
-                                <button class="btn-terminar-limpieza"
-                                    onclick="terminarLimpieza(<?= (int) $hab['id'] ?>, '<?= htmlspecialchars($hab['numero_habitacion'], ENT_QUOTES) ?>')">
-                                    ✅ Terminé antes
-                                </button>
+                                <?php if ($limpiezaVencida): ?>
+                                    <button class="btn-terminar-limpieza"
+                                        onclick="terminarLimpieza(<?= (int) $hab['id'] ?>, '<?= htmlspecialchars($hab['numero_habitacion'], ENT_QUOTES) ?>')">
+                                        Confirmar limpieza
+                                    </button>
+                                    <button class="btn-extender-limpieza"
+                                        onclick="extenderLimpieza(<?= (int) $hab['id'] ?>, '<?= htmlspecialchars($hab['numero_habitacion'], ENT_QUOTES) ?>', 15)">
+                                        Extender 15 min
+                                    </button>
+                                <?php else: ?>
+                                    <button class="btn-terminar-limpieza"
+                                        onclick="terminarLimpieza(<?= (int) $hab['id'] ?>, '<?= htmlspecialchars($hab['numero_habitacion'], ENT_QUOTES) ?>')">
+                                        ✅ Terminé antes
+                                    </button>
+                                <?php endif; ?>
                             </div>
                         <?php else: ?>
                             <div class="habitacion-acciones">
