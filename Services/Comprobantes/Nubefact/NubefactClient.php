@@ -47,11 +47,40 @@ class NubefactClient
         }
 
         if ($codigoHttp >= 400 || isset($datos['errors']) || isset($datos['codigo'])) {
-            $mensaje = (string) ($datos['errors'] ?? 'NubeFact devolvió un error.');
+            $mensaje = $this->extraerMensajeError($datos);
             error_log('NubefactClient::enviarComprobante -> ' . $mensaje);
-            return ['exito' => false, 'mensaje' => 'El servicio de facturación no pudo procesar el comprobante.'];
+            return [
+                'exito' => false,
+                'mensaje' => 'NubeFact no pudo procesar el comprobante: ' . $mensaje,
+                'codigo_error' => $this->esErrorDocumentoExistente($mensaje)
+                    ? 'documento_existente'
+                    : 'nubefact_error',
+                'respuesta' => $datos,
+            ];
         }
 
         return ['exito' => true, 'respuesta' => $datos];
+    }
+
+    private function extraerMensajeError(array $datos): string
+    {
+        $error = $datos['errors']
+            ?? $datos['error']
+            ?? $datos['mensaje']
+            ?? $datos['message']
+            ?? $datos['codigo']
+            ?? 'Error no especificado.';
+
+        if (is_array($error)) {
+            return json_encode($error, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: 'Error no especificado.';
+        }
+
+        return trim((string) $error) !== '' ? trim((string) $error) : 'Error no especificado.';
+    }
+
+    private function esErrorDocumentoExistente(string $mensaje): bool
+    {
+        return stripos($mensaje, 'ya existe') !== false
+            && stripos($mensaje, 'documento') !== false;
     }
 }
