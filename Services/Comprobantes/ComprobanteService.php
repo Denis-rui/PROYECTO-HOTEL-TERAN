@@ -68,8 +68,8 @@ class ComprobanteService
                 ->map(fn($ticket) => self::formatearTicketEmitido($ticket))
                 ->toArray();
 
-            $documentosElectronicos = $this->documentoElectronicoModel
-                ->obtenerPorReserva($idReserva);
+            $documentosElectronicos = (new DocumentoElectronicoService())
+                ->obtenerEmitidosPorReserva($idReserva);
 
             $unificados = array_merge($tickets, $documentosElectronicos);
 

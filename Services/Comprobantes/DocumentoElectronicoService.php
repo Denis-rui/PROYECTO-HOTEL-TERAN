@@ -12,6 +12,7 @@ use Services\Comprobantes\Nubefact\NubefactClient;
 class DocumentoElectronicoService
 {
     private const IGV = 18.0;
+    private const MAX_INTENTOS_NUMERACION_NUBEFACT = 50;
 
     private DocumentoElectronicoModel $documentoElectronicoModel;
     private ReservaModel $reservaModel;
@@ -79,17 +80,15 @@ class DocumentoElectronicoService
         }
 
         $habitacionesReserva = array_values(array_filter(
-            (array) ($reserva['habitaciones'] ?? []),
-            static function ($habitacion) {
-                return is_array($habitacion)
-                    && (($habitacion['estado_asignacion'] ?? 'activa') === 'activa');
-            }
+            (array) ($reserva['habitaciones_historial'] ?? ($reserva['habitaciones'] ?? [])),
+            static fn($habitacion) => is_array($habitacion)
+                && (int) ($habitacion['id'] ?? $habitacion['id_habitacion'] ?? 0) > 0
         ));
 
         if (empty($habitacionesReserva)) {
             return [
                 'exito' => false,
-                'mensaje' => 'No hay habitaciones activas en la reserva.'
+                'mensaje' => 'No hay habitaciones registradas en la reserva.'
             ];
         }
 
@@ -115,17 +114,6 @@ class DocumentoElectronicoService
 
         $habitacionesSeleccionadas = $resultadoHabitaciones['habitaciones'];
 
-        $validacionRangoHabitaciones = $this->validarRangoDentroDeHabitaciones(
-            $habitacionesSeleccionadas,
-            $reserva,
-            $fechaDesde,
-            $fechaHasta
-        );
-
-        if (!($validacionRangoHabitaciones['exito'] ?? false)) {
-            return $validacionRangoHabitaciones;
-        }
-
         $documentosEmitidos = $this->documentoElectronicoModel->obtenerPorReserva($idReserva);
 
         $lineas = $this->construirLineas(
@@ -139,6 +127,14 @@ class DocumentoElectronicoService
 
         if (!($lineas['exito'] ?? false)) {
             return $lineas;
+        }
+
+        $habitacionesFacturadas = $lineas['habitaciones_facturadas'] ?? [];
+        if (empty($habitacionesFacturadas)) {
+            return [
+                'exito' => false,
+                'mensaje' => 'Ninguna de las habitaciones seleccionadas está disponible en el rango de fechas elegido.',
+            ];
         }
 
         $totalDocumento = (float) ($lineas['total'] ?? 0);
@@ -183,7 +179,7 @@ class DocumentoElectronicoService
             'cliente_tipo_documento' => $datosCliente['cliente_tipo_documento'],
             'cliente_numero_documento' => $datosCliente['cliente_numero_documento'],
             'cliente_denominacion' => $datosCliente['cliente_denominacion'],
-            'habitaciones' => $habitacionesSeleccionadas,
+            'habitaciones' => $habitacionesFacturadas,
         ]);
 
         $duplicado = $this->documentoElectronicoModel->obtenerPorCodigoUnico($codigoUnico);
@@ -199,7 +195,7 @@ class DocumentoElectronicoService
 
         $validacionCruces = $this->validarCrucesConDocumentos(
             $documentosEmitidos,
-            $habitacionesSeleccionadas,
+            $habitacionesFacturadas,
             $fechaDesde,
             $fechaHasta
         );
@@ -229,7 +225,7 @@ class DocumentoElectronicoService
             $idReserva,
             $fechaDesde,
             $fechaHasta,
-            $habitacionesSeleccionadas
+            $habitacionesFacturadas
         );
 
         return [
@@ -280,12 +276,25 @@ class DocumentoElectronicoService
         if (!($preparado['exito'] ?? false)) {
             return $preparado;
         }
+
+        if (($preparado['duplicado'] ?? false) === true) {
+            return $preparado;
+        }
+
         $datosPreparados = $preparado['datos'] ?? [];
+
+        if (empty($datosPreparados)) {
+            return [
+                'exito' => false,
+                'mensaje' => 'No se encontraron datos válidos para enviar el documento electrónico.',
+            ];
+        }
+
         $numeroInicial = (int) ($datosPreparados['numero'] ?? 1);
         $payload = [];
         $respuestaApi = null;
 
-        for ($intento = 0; $intento < 5; $intento++) {
+        for ($intento = 0; $intento < self::MAX_INTENTOS_NUMERACION_NUBEFACT; $intento++) {
             $datosPreparados['numero'] = $numeroInicial + $intento;
             $payload = $this->payloadBuilder->construirPayload($datosPreparados);
             $respuestaApi = $this->nubefactClient->enviarComprobante($payload);
@@ -363,7 +372,23 @@ class DocumentoElectronicoService
             'created_at' => FechaHotelHelper::ahora(),
         ];
 
-        $this->documentoElectronicoModel->insertar($registro);
+        $guardado = $this->documentoElectronicoModel->insertar($registro);
+
+        if (!$guardado) {
+            error_log(
+                'DocumentoElectronicoService::emitir -> NubeFact acepto el comprobante, pero no se pudo guardar localmente: '
+                . (string) ($datosPreparados['serie'] ?? '')
+                . '-'
+                . (string) ($datosPreparados['numero'] ?? '')
+            );
+
+            return [
+                'exito' => false,
+                'mensaje' => 'NubeFact aceptó el comprobante, pero no se pudo guardar en la base de datos local. No vuelva a emitirlo sin revisar el registro.',
+                'documento' => $this->formatearRegistro($registro),
+                'respuesta' => $respuesta,
+            ];
+        }
 
         return [
             'exito' => true,
@@ -455,7 +480,7 @@ class DocumentoElectronicoService
     {
         $fechas = [];
 
-        foreach ((array) ($reserva['habitaciones'] ?? []) as $habitacion) {
+        foreach ((array) ($reserva['habitaciones_historial'] ?? ($reserva['habitaciones'] ?? [])) as $habitacion) {
             if (!is_array($habitacion)) {
                 continue;
             }
@@ -513,16 +538,26 @@ class DocumentoElectronicoService
     private function construirLineas(array $reserva,  array $habitaciones,  int $nochesDocumento,  string $fechaDesde, string $fechaHasta, array $documentosEmitidos = []): array
     {
         $items = [];
+        $habitacionesFacturadas = [];
         $totalGravada = 0.0;
         $totalIgv = 0.0;
         $total = 0.0;
 
-        $diasReserva = max(1, $this->noches(
-            (string) ($reserva['check_in_programado'] ?? ($reserva['check_in'] ?? '')),
-            (string) ($reserva['check_out_programado'] ?? ($reserva['check_out'] ?? ''))
-        ));
-
         foreach ($habitaciones as $habitacion) {
+            $rangoHabitacion = $this->rangoFacturableHabitacion($habitacion, $reserva, $fechaDesde, $fechaHasta);
+
+            if ($rangoHabitacion === null) {
+                continue;
+            }
+
+            $desdeLinea = $rangoHabitacion['desde'];
+            $hastaLinea = $rangoHabitacion['hasta'];
+            $nochesLinea = $this->noches($desdeLinea, $hastaLinea);
+
+            if ($nochesLinea <= 0) {
+                continue;
+            }
+
             $precioBruto = (float) ($habitacion['precio_aplicado'] ?? 0);
 
             if ($precioBruto <= 0) {
@@ -531,7 +566,11 @@ class DocumentoElectronicoService
 
             if ($precioBruto <= 0) {
                 $subtotalHabitacion = (float) ($habitacion['subtotal'] ?? 0);
-                $precioBruto = $diasReserva > 0 ? ($subtotalHabitacion / $diasReserva) : 0;
+                $diasHabitacion = max(1, $this->noches(
+                    (string) ($habitacion['check_in'] ?? ($reserva['check_in_programado'] ?? ($reserva['check_in'] ?? ''))),
+                    (string) ($habitacion['check_out'] ?? ($reserva['check_out_programado'] ?? ($reserva['check_out'] ?? '')))
+                ));
+                $precioBruto = $diasHabitacion > 0 ? ($subtotalHabitacion / $diasHabitacion) : 0;
             }
 
             $precioUnitario = round($precioBruto, 2);
@@ -544,8 +583,8 @@ class DocumentoElectronicoService
             }
 
             $valorUnitario = $precioUnitario;
-            $subtotal = round($valorUnitario * $nochesDocumento, 2);
-            $totalLinea = round($precioUnitario * $nochesDocumento, 2);
+            $subtotal = round($valorUnitario * $nochesLinea, 2);
+            $totalLinea = round($precioUnitario * $nochesLinea, 2);
             $igvLinea = 0.0;
 
             if ($subtotal <= 0 || $totalLinea <= 0) {
@@ -563,12 +602,12 @@ class DocumentoElectronicoService
                     (string) ($habitacion['numero_habitacion'] ?? '--'),
                     !empty($habitacion['piso']) ? ' - Piso ' . $habitacion['piso'] : '',
                     !empty($habitacion['tipo_nombre']) ? ' - ' . $habitacion['tipo_nombre'] : '',
-                    $fechaDesde,
-                    $fechaHasta,
-                    $nochesDocumento,
-                    $nochesDocumento === 1 ? '' : 's'
+                    $desdeLinea,
+                    $hastaLinea,
+                    $nochesLinea,
+                    $nochesLinea === 1 ? '' : 's'
                 )),
-                'cantidad' => $nochesDocumento,
+                'cantidad' => $nochesLinea,
                 'valor_unitario' => $valorUnitario,
                 'precio_unitario' => $precioUnitario,
                 'descuento' => 0,
@@ -583,6 +622,19 @@ class DocumentoElectronicoService
 
             $totalIgv += $igvLinea;
             $total += $totalLinea;
+
+            $habitacionesFacturadas[] = array_merge($habitacion, [
+                'fecha_desde_facturada' => $desdeLinea,
+                'fecha_hasta_facturada' => $hastaLinea,
+                'noches_facturadas' => $nochesLinea,
+            ]);
+        }
+
+        if (empty($items)) {
+            return [
+                'exito' => false,
+                'mensaje' => 'Las habitaciones seleccionadas no tienen noches facturables dentro del rango de fechas elegido.',
+            ];
         }
 
         if ($this->debeIncluirCargoCheckoutTarde($reserva, $fechaHasta, $documentosEmitidos)) {
@@ -619,7 +671,29 @@ class DocumentoElectronicoService
             'total_exonerada' => round($total, 2),
             'total_igv' => round($totalIgv, 2),
             'total' => round($total, 2),
+            'habitaciones_facturadas' => $habitacionesFacturadas,
         ];
+    }
+
+    private function rangoFacturableHabitacion(array $habitacion, array $reserva, string $fechaDesde, string $fechaHasta): ?array
+    {
+        $desdeHabitacion = $this->fechaIso((string) (
+            $habitacion['check_in']
+            ?? ($reserva['check_in_programado'] ?? ($reserva['check_in'] ?? ''))
+        ));
+        $hastaHabitacion = $this->fechaIso((string) (
+            $habitacion['check_out']
+            ?? ($reserva['check_out_programado'] ?? ($reserva['check_out'] ?? ''))
+        ));
+
+        if ($desdeHabitacion === '' || $hastaHabitacion === '') {
+            return null;
+        }
+
+        $desde = max($fechaDesde, $desdeHabitacion);
+        $hasta = min($fechaHasta, $hastaHabitacion);
+
+        return $desde < $hasta ? ['desde' => $desde, 'hasta' => $hasta] : null;
     }
 
     private function debeIncluirCargoCheckoutTarde(array $reserva, string $fechaHasta, array $documentosEmitidos): bool
@@ -696,32 +770,47 @@ class DocumentoElectronicoService
 
     private function obtenerHabitacionesSeleccionadas(array $habitacionesReserva, array $habitacionesSolicitadas): array
     {
-        $idsReserva = array_map(
-            static fn($habitacion) => (int) ($habitacion['id'] ?? 0),
-            $habitacionesReserva
-        );
-
         $habitacionesSeleccionadas = [];
 
         foreach ($habitacionesSolicitadas as $habitacionSolicitada) {
+            $idRelacion = (int) (
+                $habitacionSolicitada['reserva_habitacion_id']
+                ?? $habitacionSolicitada['id_reserva_habitacion']
+                ?? 0
+            );
             $idHabitacion = (int) (
                 $habitacionSolicitada['id']
                 ?? $habitacionSolicitada['id_habitacion']
                 ?? 0
             );
 
-            if ($idHabitacion <= 0 || !in_array($idHabitacion, $idsReserva, true)) {
+            if ($idRelacion <= 0 && $idHabitacion <= 0) {
                 return [
                     'exito' => false,
                     'mensaje' => 'Una de las habitaciones seleccionadas no pertenece a la reserva.'
                 ];
             }
 
+            $encontrada = false;
+
             foreach ($habitacionesReserva as $habitacionReserva) {
-                if ((int) ($habitacionReserva['id'] ?? 0) === $idHabitacion) {
+                $mismaRelacion = $idRelacion > 0
+                    && (int) ($habitacionReserva['reserva_habitacion_id'] ?? 0) === $idRelacion;
+                $mismaHabitacion = $idRelacion <= 0
+                    && (int) ($habitacionReserva['id'] ?? $habitacionReserva['id_habitacion'] ?? 0) === $idHabitacion;
+
+                if ($mismaRelacion || $mismaHabitacion) {
                     $habitacionesSeleccionadas[] = $habitacionReserva;
+                    $encontrada = true;
                     break;
                 }
+            }
+
+            if (!$encontrada) {
+                return [
+                    'exito' => false,
+                    'mensaje' => 'Una de las habitaciones seleccionadas no pertenece a la reserva.'
+                ];
             }
         }
 
@@ -785,6 +874,45 @@ class DocumentoElectronicoService
         return array_values(array_unique($ids));
     }
 
+    private function habitacionesDocumentoConRango(array $documento): array
+    {
+        $habitaciones = json_decode((string) ($documento['habitaciones_json'] ?? '[]'), true);
+
+        if (!is_array($habitaciones)) {
+            return [];
+        }
+
+        $desdeDocumento = $this->fechaIso((string) ($documento['fecha_desde'] ?? ''));
+        $hastaDocumento = $this->fechaIso((string) ($documento['fecha_hasta'] ?? ''));
+        $resultado = [];
+
+        foreach ($habitaciones as $habitacion) {
+            if (!is_array($habitacion)) {
+                continue;
+            }
+
+            $id = (int) ($habitacion['id'] ?? $habitacion['id_habitacion'] ?? 0);
+            $desde = $this->fechaIso((string) (
+                $habitacion['fecha_desde_facturada']
+                ?? ($habitacion['check_in'] ?? $desdeDocumento)
+            ));
+            $hasta = $this->fechaIso((string) (
+                $habitacion['fecha_hasta_facturada']
+                ?? ($habitacion['check_out'] ?? $hastaDocumento)
+            ));
+
+            if ($id > 0 && $desde !== '' && $hasta !== '') {
+                $resultado[] = [
+                    'id' => $id,
+                    'desde' => $desde,
+                    'hasta' => $hasta,
+                ];
+            }
+        }
+
+        return $resultado;
+    }
+
     private function rangosSeCruzan(string $inicioA,  string $finA,  string $inicioB, string $finB): bool
     {
         if ($inicioA === $finA) {
@@ -804,11 +932,6 @@ class DocumentoElectronicoService
 
     private function validarCrucesConDocumentos(array $documentos,  array $habitacionesSeleccionadas,  string $fechaDesde,  string $fechaHasta): array
     {
-        $idsSeleccionados = array_values(array_unique(array_map(
-            static fn($habitacion) => (int) ($habitacion['id'] ?? $habitacion['id_habitacion'] ?? 0),
-            $habitacionesSeleccionadas
-        )));
-
         foreach ($documentos as $documento) {
             $desdeEmitido = $this->fechaIso((string) ($documento['fecha_desde'] ?? ''));
             $hastaEmitido = $this->fechaIso((string) ($documento['fecha_hasta'] ?? ''));
@@ -821,22 +944,42 @@ class DocumentoElectronicoService
                 continue;
             }
 
-            $idsEmitidos = $this->idsHabitacionesDocumento($documento);
-            $idsCruzados = array_values(array_intersect($idsSeleccionados, $idsEmitidos));
+            $habitacionesEmitidas = $this->habitacionesDocumentoConRango($documento);
 
-            if (empty($idsCruzados)) {
-                continue;
+            foreach ($habitacionesSeleccionadas as $habitacionSeleccionada) {
+                $idSeleccionado = (int) ($habitacionSeleccionada['id'] ?? $habitacionSeleccionada['id_habitacion'] ?? 0);
+                $desdeSeleccionado = $this->fechaIso((string) (
+                    $habitacionSeleccionada['fecha_desde_facturada']
+                    ?? ($habitacionSeleccionada['check_in'] ?? $fechaDesde)
+                ));
+                $hastaSeleccionado = $this->fechaIso((string) (
+                    $habitacionSeleccionada['fecha_hasta_facturada']
+                    ?? ($habitacionSeleccionada['check_out'] ?? $fechaHasta)
+                ));
+
+                foreach ($habitacionesEmitidas as $habitacionEmitida) {
+                    if (
+                        $idSeleccionado > 0
+                        && $idSeleccionado === (int) ($habitacionEmitida['id'] ?? 0)
+                        && $this->rangosSeCruzan(
+                            $desdeSeleccionado,
+                            $hastaSeleccionado,
+                            (string) ($habitacionEmitida['desde'] ?? ''),
+                            (string) ($habitacionEmitida['hasta'] ?? '')
+                        )
+                    ) {
+                        return [
+                            'exito' => false,
+                            'mensaje' => sprintf(
+                                'Ya existe un documento emitido para una de las habitaciones seleccionadas entre %s y %s. No se puede duplicar o cruzar el mismo periodo.',
+                                (string) ($habitacionEmitida['desde'] ?? $desdeEmitido),
+                                (string) ($habitacionEmitida['hasta'] ?? $hastaEmitido)
+                            ),
+                            'documento_cruzado' => $this->formatearRegistro($documento),
+                        ];
+                    }
+                }
             }
-
-            return [
-                'exito' => false,
-                'mensaje' => sprintf(
-                    'Ya existe un documento emitido para una de las habitaciones seleccionadas entre %s y %s. No se puede duplicar o cruzar el mismo periodo.',
-                    $desdeEmitido,
-                    $hastaEmitido
-                ),
-                'documento_cruzado' => $this->formatearRegistro($documento),
-            ];
         }
 
         return ['exito' => true];

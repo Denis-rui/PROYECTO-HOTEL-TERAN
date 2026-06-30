@@ -235,7 +235,7 @@
           .join(" | ")
       : reserva.habitacion || "---";
 
-    setText("#detalleReservaCodigo", reserva.id || "---");
+    setText("#detalleReservaCodigo", reserva.codigo_reserva || reserva.id || "---");
     setText("#detalleReservaCliente", reserva.cliente || "---");
     setText("#detalleReservaEstado", etiquetaEstado(reserva.estado));
     setText("#detalleReservaPago", `${toNumber(reserva.porcentaje_pago)}%`);

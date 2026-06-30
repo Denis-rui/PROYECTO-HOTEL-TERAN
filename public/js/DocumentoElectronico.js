@@ -2,6 +2,8 @@
   const estado = {
     reserva: null,
     habitaciones: [],
+    documentosElectronicos: [],
+    documentosElectronicosCargados: false,
   };
 
   const toNumber = (valor) => {
@@ -10,6 +12,21 @@
   };
 
   const formatMoney = (valor) => `S/ ${toNumber(valor).toFixed(2)}`;
+
+  const formatDateTime = (valor) => {
+    if (!valor) return "---";
+    const fecha = new Date(String(valor).replace(" ", "T"));
+
+    if (Number.isNaN(fecha.getTime())) return String(valor);
+
+    return new Intl.DateTimeFormat("es-PE", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(fecha);
+  };
 
   const escapeHtml = (valor) =>
     String(valor ?? "")
@@ -43,6 +60,9 @@
   const fechaMenor = (...fechas) =>
     fechas.map(fechaAInput).filter(Boolean).sort()[0] || "";
 
+  const claveHabitacionDocumento = (habitacion) =>
+    String(habitacion?.reserva_habitacion_id || habitacion?.id || "");
+
   const obtenerLimitesHabitacion = (habitacion, reserva = {}) => ({
     desde: fechaAInput(
       habitacion?.check_in ||
@@ -62,30 +82,45 @@
 
   const obtenerHabitacionesSeleccionadas = () =>
     estado.habitaciones.filter((habitacion) => {
-      const checkbox = document.getElementById(`doc-hab-${habitacion.id}`);
+      const checkbox = document.getElementById(
+        `doc-hab-${claveHabitacionDocumento(habitacion)}`,
+      );
       return checkbox?.checked;
     });
 
-  const calcularRangoFacturable = (reserva, habitacionesSeleccionadas) => {
-    const habitaciones = habitacionesSeleccionadas.length
-      ? habitacionesSeleccionadas
-      : estado.habitaciones;
-    const limitesHabitaciones = habitaciones.map((habitacion) =>
-      obtenerLimitesHabitacion(habitacion, reserva),
-    );
+  const textoHabitacion = (habitacion) =>
+    `Hab. ${habitacion?.numero_habitacion || "--"}${habitacion?.piso ? ` - Piso ${habitacion.piso}` : ""}`;
 
+  const calcularRangoFacturable = (reserva) => {
     const desde = fechaMayor(
       reserva?.checkin_real,
       reserva?.check_in,
       reserva?.check_in_programado,
-      ...limitesHabitaciones.map((limite) => limite.desde),
     );
     const hasta = fechaMenor(
       reserva?.checkout_real || reserva?.check_out || reserva?.check_out_programado,
-      ...limitesHabitaciones.map((limite) => limite.hasta),
     );
 
     return { desde, hasta };
+  };
+
+  const obtenerRangoCruzadoHabitacion = (
+    habitacion,
+    reserva,
+    fechaDesde,
+    fechaHasta,
+  ) => {
+    const limites = obtenerLimitesHabitacion(habitacion, reserva);
+    const desde = fechaMayor(fechaDesde, limites.desde);
+    const hasta = fechaMenor(fechaHasta, limites.hasta);
+
+    if (!desde || !hasta || desde >= hasta) return null;
+
+    return {
+      desde,
+      hasta,
+      noches: nochesEntre(desde, hasta),
+    };
   };
 
   const debeIncluirCargoCheckoutTarde = (reserva, fechaHasta) => {
@@ -112,10 +147,7 @@
     const fechaHasta = document.getElementById("docElectronicoFechaHasta");
     if (!fechaDesde || !fechaHasta) return;
 
-    const rango = calcularRangoFacturable(
-      reserva,
-      obtenerHabitacionesSeleccionadas(),
-    );
+    const rango = calcularRangoFacturable(reserva);
 
     if (!rango.desde || !rango.hasta) return;
 
@@ -154,11 +186,119 @@
     if (tipo) elemento.classList.add(tipo);
   };
 
-  const obtenerHabitacionesActivas = (reserva) =>
-    (Array.isArray(reserva?.habitaciones) ? reserva.habitaciones : []).filter(
-      (habitacion) =>
-        String(habitacion?.estado_asignacion || "activa") === "activa",
+  const resetDocumentosElectronicosEmitidos = () => {
+    estado.documentosElectronicos = [];
+    estado.documentosElectronicosCargados = false;
+
+    const contenedor = document.getElementById(
+      "contenedorDocumentosElectronicosEmitidos",
     );
+    const lista = document.getElementById("listaDocumentosElectronicosEmitidos");
+    const boton = document.getElementById("btnToggleDocumentosElectronicos");
+
+    if (contenedor) contenedor.hidden = true;
+    if (lista) lista.innerHTML = "";
+    if (boton) {
+      boton.textContent = "Ver documentos emitidos";
+      boton.setAttribute("aria-expanded", "false");
+    }
+  };
+
+  const renderDocumentosElectronicosEmitidos = (documentos = []) => {
+    const lista = document.getElementById("listaDocumentosElectronicosEmitidos");
+    if (!lista) return;
+
+    if (!documentos.length) {
+      lista.innerHTML =
+        '<div class="documento-electronico-emitido-vacio">No hay boletas o facturas electrónicas emitidas para esta reserva.</div>';
+      return;
+    }
+
+    lista.innerHTML = documentos
+      .map((documento) => {
+        const enlace = documento.enlace_del_pdf || documento.enlace || "";
+        const numero = documento.numero || documento.numero_documento || "---";
+
+        return `
+          <article class="documento-electronico-emitido-item">
+            <div class="documento-electronico-emitido-principal">
+              <strong>${escapeHtml(documento.tipo || "Documento electrónico")} ${escapeHtml(numero)}</strong>
+              <small>${escapeHtml(formatDateTime(documento.fecha))}</small>
+            </div>
+            <span class="documento-electronico-emitido-monto">${escapeHtml(formatMoney(documento.monto || documento.total || 0))}</span>
+            ${
+              enlace
+                ? `<a class="documento-electronico-emitido-pdf" href="${escapeHtml(enlace)}" target="_blank" rel="noopener noreferrer">Ver PDF</a>`
+                : ""
+            }
+          </article>
+        `;
+      })
+      .join("");
+  };
+
+  const cargarDocumentosElectronicosEmitidos = async (idReserva) => {
+    if (!idReserva) return [];
+
+    const respuesta = await fetch(
+      `${BASE_URL}Comprobante/emitidosPorReserva/${encodeURIComponent(idReserva)}`,
+    );
+    const documentos = await respuesta.json().catch(() => []);
+
+    if (!respuesta.ok || !Array.isArray(documentos)) {
+      throw new Error("No se pudieron cargar los documentos emitidos.");
+    }
+
+    return documentos.filter((documento) =>
+      Boolean(documento?.es_documento_electronico),
+    );
+  };
+
+  const toggleDocumentosElectronicosEmitidos = async () => {
+    const reserva = estado.reserva;
+    const contenedor = document.getElementById(
+      "contenedorDocumentosElectronicosEmitidos",
+    );
+    const lista = document.getElementById("listaDocumentosElectronicosEmitidos");
+    const boton = document.getElementById("btnToggleDocumentosElectronicos");
+
+    if (!reserva?.id || !contenedor || !lista || !boton) return;
+
+    const abrir = contenedor.hidden;
+    contenedor.hidden = !abrir;
+    boton.setAttribute("aria-expanded", abrir ? "true" : "false");
+    boton.textContent = abrir ? "Ocultar documentos emitidos" : "Ver documentos emitidos";
+
+    if (!abrir || estado.documentosElectronicosCargados) return;
+
+    lista.innerHTML =
+      '<div class="documento-electronico-emitido-vacio">Cargando documentos emitidos...</div>';
+
+    try {
+      estado.documentosElectronicos = await cargarDocumentosElectronicosEmitidos(
+        reserva.id,
+      );
+      estado.documentosElectronicosCargados = true;
+      renderDocumentosElectronicosEmitidos(estado.documentosElectronicos);
+    } catch (error) {
+      console.error("Error cargando documentos electrónicos emitidos:", error);
+      lista.innerHTML =
+        '<div class="documento-electronico-emitido-vacio">No se pudieron cargar los documentos emitidos.</div>';
+    }
+  };
+
+  const obtenerHabitacionesActivas = (reserva) => {
+    const historial = Array.isArray(reserva?.habitaciones_historial)
+      ? reserva.habitaciones_historial
+      : [];
+    const habitaciones = historial.length
+      ? historial
+      : Array.isArray(reserva?.habitaciones)
+        ? reserva.habitaciones
+        : [];
+
+    return habitaciones.filter((habitacion) => Number(habitacion?.id || 0) > 0);
+  };
 
   const nochesEntre = (inicio, fin) => {
     if (!inicio || !fin) return 0;
@@ -181,26 +321,32 @@
 
     if (!habitaciones.length) {
       contenedor.innerHTML =
-        '<div class="habitacion-documento-item">No hay habitaciones activas en la reserva.</div>';
+        '<div class="habitacion-documento-item">No hay habitaciones registradas en la reserva.</div>';
       return;
     }
 
     contenedor.innerHTML = habitaciones
       .map((habitacion) => {
-        const id = habitacion.id;
+        const id = claveHabitacionDocumento(habitacion);
         const numero = habitacion.numero_habitacion || "--";
         const piso = habitacion.piso || "--";
         const tipo = habitacion.tipo_nombre || "--";
+        const limites = obtenerLimitesHabitacion(habitacion, reserva);
+        const estadoAsignacion = String(
+          habitacion.estado_asignacion || "activa",
+        ).toLowerCase();
+        const etiquetaEstado =
+          estadoAsignacion === "activa" ? "Actual" : "Anterior";
         const precio = formatMoney(
           habitacion.precio_aplicado || habitacion.precio || 0,
         );
         return `
           <label class="habitacion-documento-item" for="doc-hab-${id}">
             <div>
-              <input type="checkbox" id="doc-hab-${id}" data-id="${id}" checked />
+              <input type="checkbox" id="doc-hab-${id}" data-id="${escapeHtml(habitacion.id)}" data-reserva-habitacion-id="${escapeHtml(habitacion.reserva_habitacion_id || "")}" checked />
               <strong>Hab. ${escapeHtml(numero)} - Piso ${escapeHtml(piso)}</strong>
             </div>
-            <small>${escapeHtml(tipo)} | ${precio} por noche</small>
+            <small>${escapeHtml(tipo)} | ${precio} por noche | ${escapeHtml(limites.desde || "--")} al ${escapeHtml(limites.hasta || "--")} | ${escapeHtml(etiquetaEstado)}</small>
           </label>
         `;
       })
@@ -226,6 +372,8 @@
       document.getElementById("docElectronicoFechaHasta")?.value || "";
     const noches = nochesEntre(fechaDesde, fechaHasta);
     const habitacionesSeleccionadas = obtenerHabitacionesSeleccionadas();
+    const habitacionesFacturables = [];
+    const habitacionesFueraDeRango = [];
 
     const totalReserva =
       toNumber(reserva.total) + toNumber(reserva.cargo_checkout_tarde);
@@ -234,10 +382,28 @@
 
     let totalDocumento = 0;
     habitacionesSeleccionadas.forEach((habitacion) => {
+      const rangoHabitacion = obtenerRangoCruzadoHabitacion(
+        habitacion,
+        reserva,
+        fechaDesde,
+        fechaHasta,
+      );
+
+      if (!rangoHabitacion || rangoHabitacion.noches <= 0) {
+        habitacionesFueraDeRango.push(habitacion);
+        return;
+      }
+
       const precioBruto = toNumber(
         habitacion.precio_aplicado || habitacion.precio || 0,
       );
-      totalDocumento += precioBruto * noches;
+      totalDocumento += precioBruto * rangoHabitacion.noches;
+      habitacionesFacturables.push({
+        ...habitacion,
+        fecha_desde_facturada: rangoHabitacion.desde,
+        fecha_hasta_facturada: rangoHabitacion.hasta,
+        noches_facturadas: rangoHabitacion.noches,
+      });
     });
 
     if (debeIncluirCargoCheckoutTarde(reserva, fechaHasta)) {
@@ -253,6 +419,8 @@
       saldo,
       totalDocumento,
       habitacionesSeleccionadas,
+      habitacionesFacturables,
+      habitacionesFueraDeRango,
     };
   };
 
@@ -303,6 +471,14 @@
     const errores = [];
     if (resumen.noches <= 0)
       errores.push("Seleccione un rango de fechas válido.");
+    if (
+      resumen.habitacionesSeleccionadas.length > 0 &&
+      resumen.habitacionesFacturables.length === 0
+    ) {
+      errores.push(
+        "Ninguna habitación seleccionada está disponible en el rango de fechas elegido.",
+      );
+    }
     if (resumen.totalDocumento - 0.01 > resumen.totalPagado) {
       errores.push(
         "El importe seleccionado supera el monto pagado hasta el momento.",
@@ -325,7 +501,15 @@
       estadoEl.textContent = errores.length ? "Revisar" : "Listo para emitir";
     }
 
-    setMensaje(errores.join(" "), errores.length ? "error" : "");
+    const avisoFueraDeRango =
+      !errores.length && resumen.habitacionesFueraDeRango.length
+        ? "Hay habitaciones seleccionadas que no están disponibles en este rango; se pedirá confirmación antes de emitir."
+        : "";
+
+    setMensaje(
+      errores.length ? errores.join(" ") : avisoFueraDeRango,
+      errores.length ? "error" : "",
+    );
     return {
       ...resumen,
       tipoDocumento,
@@ -361,7 +545,13 @@
 
     Object.entries(campos).forEach(([id, valor]) => {
       const campo = document.getElementById(id);
-      if (campo) campo.value = valor;
+      if (!campo) return;
+
+      if ("value" in campo) {
+        campo.value = valor;
+      } else {
+        campo.textContent = valor;
+      }
     });
 
     const rangoFacturable = calcularRangoFacturable(
@@ -449,6 +639,7 @@
     }
 
     estado.reserva = reserva;
+    resetDocumentosElectronicosEmitidos();
     poblarFormulario(reserva);
     overlay.style.display = "flex";
     modal.style.display = "block";
@@ -472,7 +663,8 @@
     if (!resumen) return;
     if (
       resumen.noches <= 0 ||
-      resumen.totalDocumento - 0.01 > resumen.totalPagado
+      resumen.totalDocumento - 0.01 > resumen.totalPagado ||
+      resumen.habitacionesFacturables.length === 0
     ) {
       return;
     }
@@ -480,6 +672,26 @@
     if (!resumen.habitacionesSeleccionadas.length) {
       setMensaje("Debe seleccionar al menos una habitación.", "error");
       return;
+    }
+
+    if (resumen.habitacionesFueraDeRango.length) {
+      const habitacionesFuera = resumen.habitacionesFueraDeRango
+        .map(textoHabitacion)
+        .join(", ");
+      const confirmarRango = await Swal.fire({
+        icon: "warning",
+        title: "Habitaciones fuera del rango",
+        text:
+          `${habitacionesFuera} no está disponible en las fechas seleccionadas. ` +
+          `Si continúas, no se incluirá en la ${resumen.tipoDocumento === "FACTURA" ? "factura" : "boleta"}.`,
+        showCancelButton: true,
+        confirmButtonText: "Continuar",
+        cancelButtonText: "Cancelar",
+        confirmButtonColor: "#185025",
+        cancelButtonColor: "#8f2f2f",
+      });
+
+      if (!confirmarRango.isConfirmed) return;
     }
 
     const payload = {
@@ -503,8 +715,9 @@
         document
           .getElementById("docElectronicoClienteDireccion")
           ?.value?.trim() || "",
-      habitaciones: resumen.habitacionesSeleccionadas.map((habitacion) => ({
+      habitaciones: resumen.habitacionesFacturables.map((habitacion) => ({
         id: habitacion.id,
+        reserva_habitacion_id: habitacion.reserva_habitacion_id || null,
       })),
     };
 
@@ -524,6 +737,17 @@
     setMensaje("Enviando a NubeFact...");
 
     try {
+      Swal.fire({
+        title: "Enviando a NubeFact",
+        text: "Estamos generando el documento electrónico. Por favor espera...",
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
+
       const respuesta = await fetch(
         BASE_URL + "Reserva/emitirDocumentoElectronico",
         {
@@ -535,6 +759,7 @@
       const resultado = await respuesta.json().catch(() => ({}));
 
       if (!respuesta.ok || !resultado.exito) {
+        Swal.close();
         setMensaje(
           resultado.mensaje || "No se pudo emitir el documento.",
           "error",
@@ -548,24 +773,40 @@
       }
 
       const documento = resultado.documento || {};
-      await Swal.fire({
+      const enlaceDocumento = documento.enlace_del_pdf || documento.enlace || "";
+      Swal.close();
+      const avisoDocumento = await Swal.fire({
         icon: "success",
-        title: "Documento emitido",
+        title: resultado.duplicado ? "Documento ya emitido" : "Documento emitido",
         text:
           resultado.mensaje || "Documento electrónico generado correctamente.",
+        showCancelButton: Boolean(enlaceDocumento),
+        confirmButtonText: enlaceDocumento ? "Ver PDF" : "OK",
+        cancelButtonText: "Cancelar",
         confirmButtonColor: "#185025",
+        cancelButtonColor: "#8f2f2f",
       });
 
-      if (documento.enlace_del_pdf) {
-        window.open(documento.enlace_del_pdf, "_blank", "noopener,noreferrer");
-      } else if (documento.enlace) {
-        window.open(documento.enlace, "_blank", "noopener,noreferrer");
+      if (enlaceDocumento && avisoDocumento.isConfirmed) {
+        window.open(enlaceDocumento, "_blank", "noopener,noreferrer");
       }
 
-      cerrarModalDocumentoElectronico();
-      window.location.reload();
+      setMensaje(
+        resultado.duplicado
+          ? "Este documento ya estaba emitido. Puedes revisarlo en documentos emitidos."
+          : "Documento electrónico emitido correctamente.",
+        "success",
+      );
+      if (estado.reserva?.id) {
+        estado.documentosElectronicos = await cargarDocumentosElectronicosEmitidos(
+          estado.reserva.id,
+        );
+        estado.documentosElectronicosCargados = true;
+        renderDocumentosElectronicosEmitidos(estado.documentosElectronicos);
+      }
     } catch (error) {
       console.error(error);
+      Swal.close();
       setMensaje("No se pudo conectar con el servidor.", "error");
       Swal.fire({
         icon: "error",
@@ -601,9 +842,16 @@
     const clienteDireccion = document.getElementById(
       "docElectronicoClienteDireccion",
     );
+    const botonDocumentosEmitidos = document.getElementById(
+      "btnToggleDocumentosElectronicos",
+    );
 
     botonCerrar?.addEventListener("click", cerrarModalDocumentoElectronico);
     botonCancelar?.addEventListener("click", cerrarModalDocumentoElectronico);
+    botonDocumentosEmitidos?.addEventListener(
+      "click",
+      toggleDocumentosElectronicosEmitidos,
+    );
     form?.addEventListener("submit", emitirDocumentoElectronico);
 
     overlay?.addEventListener("click", (evento) => {
