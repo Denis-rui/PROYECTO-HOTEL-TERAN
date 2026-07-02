@@ -76,16 +76,16 @@ $router->get('Reserva/notificaciones', ['Reserva', 'notificaciones']);
 // Operaciones de escritura
 $router->post('Reserva/datatable', ['Reserva', 'datatable']);
 $router->post('Reserva/registrar', ['Reserva', 'registrar']);
-$router->post('Reserva/actualizar', ['Reserva', 'actualizar']);
+$router->put('Reserva/actualizar', ['Reserva', 'actualizar']);
 $router->post('Reserva/pago', ['Reserva', 'pago']);
-$router->post('Reserva/checkin', ['Reserva', 'checkin']);
-$router->post('Reserva/checkout', ['Reserva', 'checkout']);
-$router->post('Reserva/marcarAusente', ['Reserva', 'marcarAusente']);
-$router->post('Reserva/marcarRegreso', ['Reserva', 'marcarRegreso']);
+$router->patch('Reserva/checkin', ['Reserva', 'checkin']);
+$router->patch('Reserva/checkout', ['Reserva', 'checkout']);
+$router->patch('Reserva/marcarAusente', ['Reserva', 'marcarAusente']);
+$router->patch('Reserva/marcarRegreso', ['Reserva', 'marcarRegreso']);
 $router->post('Reserva/calcularTotal', ['Reserva', 'calcularTotal']);
 $router->post('Reserva/cancelar', ['Reserva', 'cancelar']);
 $router->post('Reserva/calcularCancelacion', ['Reserva', 'calcularCancelacion']);
-$router->post('Reserva/cambiarHabitacion', ['Reserva', 'cambiarHabitacion']);
+$router->patch('Reserva/cambiarHabitacion', ['Reserva', 'cambiarHabitacion']);
 $router->post('Reserva/emitirDocumentoElectronico', ['Reserva', 'emitirDocumentoElectronico']);
 
 // =====================

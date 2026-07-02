@@ -715,9 +715,16 @@ const configurarEventosReservas = () => {
 };
 
 const ejecutarAccionReserva = async (accion, datos) => {
+  const metodosPorAccion = {
+    checkin: "PATCH",
+    checkout: "PATCH",
+    marcarAusente: "PATCH",
+    marcarRegreso: "PATCH",
+  };
+
   try {
     const res = await fetch(BASE_URL + "Reserva/" + accion, {
-      method: "POST",
+      method: metodosPorAccion[accion] || "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(datos),
     });

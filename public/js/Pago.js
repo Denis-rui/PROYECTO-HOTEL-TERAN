@@ -398,7 +398,7 @@ const configurarEventosPago = () => {
         let checkoutConfirmadoDespuesPago = false;
         if (confirmarCheckoutDespuesPago && formPago.dataset.idReserva) {
           const checkoutRes = await fetch(BASE_URL + "Reserva/checkout", {
-            method: "POST",
+            method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               id_reserva: formPago.dataset.idReserva,
