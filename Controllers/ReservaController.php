@@ -16,6 +16,7 @@ use Services\Pagos\RegistrarPagoService;
 use Services\Comprobantes\DocumentoElectronicoService;
 use Services\Devoluciones\CalculoDevolucionService;
 use Services\NotificacionService;
+use Helpers\CodigoHTTP;
 
 
 
@@ -70,7 +71,11 @@ class ReservaController extends Controller
     {
         $datos = $this->obtenerPayloadJson() ?? [];
         $modelo = new DocumentoElectronicoService();
-        $this->responderJson($modelo->emitir($datos, $_SESSION['id_usuario'] ?? null));
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva(
+            $modelo->emitir($datos, $_SESSION['id_usuario'] ?? null),
+            201
+        );
+        $this->responderJson($payload, $codigoHttp);
     }
 
 
@@ -91,7 +96,8 @@ class ReservaController extends Controller
             $_SESSION['id_usuario'] ?? null
         );
 
-        $this->responderJson($resultado);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado, 201);
+        $this->responderJson($payload, $codigoHttp);
     }
 
 
@@ -114,7 +120,8 @@ class ReservaController extends Controller
             $_SESSION['id_usuario'] ?? null
         );
 
-        $this->responderJson($resultado);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado);
+        $this->responderJson($payload, $codigoHttp);
     }
 
     public function pago($params = '')
@@ -139,7 +146,8 @@ class ReservaController extends Controller
             $_SESSION['id_usuario'] ?? null
         );
 
-        $this->responderJson($resultado);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado, 201);
+        $this->responderJson($payload, $codigoHttp);
     }
 
     public function checkin($params = '')
@@ -154,7 +162,8 @@ class ReservaController extends Controller
             $_SESSION['id_usuario'] ?? null
         );
 
-        $this->responderJson($resultado);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado);
+        $this->responderJson($payload, $codigoHttp);
     }
 
     public function checkout($params = '')
@@ -174,7 +183,8 @@ class ReservaController extends Controller
             $motivoAutorizacion
         );
 
-        $this->responderJson($resultado);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado);
+        $this->responderJson($payload, $codigoHttp);
     }
 
     public function marcarAusente($params = '')
@@ -189,7 +199,8 @@ class ReservaController extends Controller
             $_SESSION['id_usuario'] ?? null
         );
 
-        $this->responderJson($resultado);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado);
+        $this->responderJson($payload, $codigoHttp);
     }
 
     public function marcarRegreso($params = '')
@@ -204,14 +215,24 @@ class ReservaController extends Controller
             $_SESSION['id_usuario'] ?? null
         );
 
-        $this->responderJson($resultado);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado);
+        $this->responderJson($payload, $codigoHttp);
     }
 
     public function obtener($params = '')
     {
         $id = (int) ($params ?? 0);
         $service = new ConsultarReservaService();
-        $this->responderJson($service->obtenerPorId($id));
+        $reserva = $service->obtenerPorId($id);
+
+        if (!$reserva) {
+            $this->responderJson([
+                'exito' => false,
+                'mensaje' => 'Reserva no encontrada.'
+            ], 404);
+        }
+
+        $this->responderJson($reserva);
     }
 
     public function dashboard($params = '')
@@ -256,7 +277,8 @@ class ReservaController extends Controller
             $_SESSION['id_usuario'] ?? null
         );
 
-        $this->responderJson($resultado);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado);
+        $this->responderJson($payload, $codigoHttp);
     }
 
     public function eliminarPendiente($params = '')
@@ -270,14 +292,18 @@ class ReservaController extends Controller
             $_SESSION['id_usuario'] ?? null
         );
 
-        $this->responderJson($resultado);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado);
+        $this->responderJson($payload, $codigoHttp);
     }
 
     public function calcularCancelacion($params = '')
     {
         $datos = $this->obtenerPayloadJson() ?? [];
         $modelo = new CalculoDevolucionService();
-        $this->responderJson($modelo->calcular((int) ($datos['id_reserva'] ?? 0)));
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva(
+            $modelo->calcular((int) ($datos['id_reserva'] ?? 0))
+        );
+        $this->responderJson($payload, $codigoHttp);
     }
 
     public function cambiarHabitacion($params = '')
@@ -295,7 +321,8 @@ class ReservaController extends Controller
             $_SESSION['id_usuario'] ?? null
         );
 
-        $this->responderJson($resultado);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado);
+        $this->responderJson($payload, $codigoHttp);
     }
 
 }

@@ -295,10 +295,10 @@ document.addEventListener("click", (e) => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id_reserva: btn.dataset.id }),
   })
-    .then((res) => res.json())
-    .then((resultado) => {
-      Notificar(resultado.mensaje || "Checkout procesado", resultado.exito ? "exito" : "error");
-      if (resultado.exito) window.inicializarDashboard?.();
+    .then(async (res) => ({ ok: res.ok, resultado: await res.json() }))
+    .then(({ ok, resultado }) => {
+      Notificar(resultado.mensaje || "Checkout procesado", ok && resultado.exito ? "exito" : "error");
+      if (ok && resultado.exito) window.inicializarDashboard?.();
     });
 });
 
