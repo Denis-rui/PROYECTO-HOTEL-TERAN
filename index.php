@@ -30,10 +30,7 @@ $router->get('Login/salir', ['Login', 'salir']);
 
 $router->get('Dashboard/index', ['Dashboard', 'index']);
 
-
-// =====================
 // CLIENTES
-// =====================
 $router->get('Cliente/index', ['Cliente', 'index']);
 $router->get('Cliente/listar', ['Cliente', 'listar']);
 $router->get('Cliente/buscar', ['Cliente', 'buscar']);
@@ -44,10 +41,8 @@ $router->put('Cliente/actualizar', ['Cliente', 'actualizar']);
 $router->delete('Cliente/eliminar', ['Cliente', 'eliminar']);
 $router->put('Cliente/habilitar', ['Cliente', 'habilitar']);
 
-// =====================
-// HABITACIONES
-// =====================
 
+// HABITACIONES
 
 $router->get('Habitacion/index', ['Habitacion', 'index']);
 $router->get('Habitacion/buscar', ['Habitacion', 'buscar']);
@@ -63,9 +58,7 @@ $router->post('Habitacion/extenderLimpieza', ['Habitacion', 'extenderLimpieza'])
 $router->get('Habitacion/disponiblesPorRango', ['Habitacion', 'disponiblesPorRango']);
 $router->get('Habitacion/obtenerFiltros', ['Habitacion', 'obtenerFiltros']);
 
-// =====================
 // RESERVAS
-// =====================
 
 // Vistas y consultas
 $router->get('Reserva/index', ['Reserva', 'index']);
@@ -82,24 +75,22 @@ $router->patch('Reserva/checkin', ['Reserva', 'checkin']);
 $router->patch('Reserva/checkout', ['Reserva', 'checkout']);
 $router->patch('Reserva/marcarAusente', ['Reserva', 'marcarAusente']);
 $router->patch('Reserva/marcarRegreso', ['Reserva', 'marcarRegreso']);
-$router->post('Reserva/calcularTotal', ['Reserva', 'calcularTotal']);
 $router->post('Reserva/cancelar', ['Reserva', 'cancelar']);
 $router->post('Reserva/calcularCancelacion', ['Reserva', 'calcularCancelacion']);
 $router->patch('Reserva/cambiarHabitacion', ['Reserva', 'cambiarHabitacion']);
 $router->post('Reserva/emitirDocumentoElectronico', ['Reserva', 'emitirDocumentoElectronico']);
 
-// =====================
 // COMPROBANTES
-// =====================
+
 
 $router->get('Comprobante/obtenerPorPago', ['Comprobante', 'obtenerPorPago']);
 
 $router->get('Comprobante/emitidosPorReserva', ['Comprobante', 'emitidosPorReserva']);
 
 
-// =====================
+
 // DEVOLUCIONES
-// =====================
+
 
 $router->get('Devolucion/index', ['Devolucion', 'index']);
 
@@ -108,9 +99,9 @@ $router->put('Devolucion/actualizar', ['Devolucion', 'actualizar']);
 $router->delete('Devolucion/eliminar', ['Devolucion', 'eliminar']);
 
 
-// =====================
+
 // USUARIOS
-// =====================
+
 
 $router->get('Usuario/index', ['Usuario', 'index']);
 $router->get('Usuario/listar', ['Usuario', 'listar']);
@@ -122,9 +113,9 @@ $router->put('Usuario/actualizar', ['Usuario', 'actualizar']);
 $router->put('Usuario/actualizarAdmin', ['Usuario', 'actualizarAdmin']);
 $router->delete('Usuario/eliminar', ['Usuario', 'eliminar']);
 
-// =====================
+
 // CONFIGURACION
-// =====================
+
 
 
 $router->get('Configuracion/index', ['Configuracion', 'index']);
@@ -134,15 +125,15 @@ $router->post('Configuracion/actualizar', ['Configuracion', 'actualizar']);
 $router->post('Configuracion/guardarTipo', ['Configuracion', 'guardarTipo']);
 
 
-// =====================
+
 // PERFIL
-// =====================
+
 
 $router->get('Perfil/index', ['Perfil', 'index']);
 
 $router->post('Perfil/actualizarPerfil', ['Perfil', 'actualizarPerfil']);
 $router->post('Perfil/cambiarClave', ['Perfil', 'cambiarClave']);
-
+$router->post('Reserva/calcularTotal', ['Reserva', 'calcularTotal']);
 $route = $router->resolve();
 
 $controller = $route['controller'];
