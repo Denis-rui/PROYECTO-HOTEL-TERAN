@@ -1087,7 +1087,7 @@ const registrarReservaPendiente = async () => {
 
 const guardarEdicionReserva = async (datosReserva) => {
   const respuesta = await fetch(BASE_URL + "Reserva/actualizar", {
-    method: "POST",
+    method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       ...datosReserva,
@@ -1106,7 +1106,7 @@ const aplicarCambioHabitacionPendiente = async () => {
   }
 
   const respuesta = await fetch(BASE_URL + "Reserva/cambiarHabitacion", {
-    method: "POST",
+    method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       id_reserva: estado.reservaEditandoId,
