@@ -545,6 +545,9 @@ const configurarEventosReservas = () => {
             },
           );
           calculoCancelacion = await respuestaCalculo.json();
+          if (!respuestaCalculo.ok) {
+            calculoCancelacion.exito = false;
+          }
         } catch (error) {
           console.error(error);
           await Swal.fire({
@@ -615,7 +618,7 @@ const configurarEventosReservas = () => {
             });
             const resultado = await res.json();
 
-            if (resultado.exito) {
+            if (res.ok && resultado.exito) {
               await Swal.fire({
                 toast: true,
                 position: "top-end",
@@ -730,7 +733,7 @@ const ejecutarAccionReserva = async (accion, datos) => {
     });
     const resultado = await res.json();
 
-    if (resultado.exito) {
+    if (res.ok && resultado.exito) {
       await Swal.fire({
         toast: true,
         position: "top-end",

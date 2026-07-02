@@ -1054,7 +1054,7 @@ const registrarReservaPendiente = async () => {
     });
     const resultado = await respuesta.json();
 
-    if (!resultado.exito) {
+    if (!respuesta.ok || !resultado.exito) {
       window.Alerta(
         resultado.mensaje || "No se pudo registrar la reserva pendiente.",
         "error",
@@ -1095,7 +1095,8 @@ const guardarEdicionReserva = async (datosReserva) => {
     }),
   });
 
-  return respuesta.json();
+  const resultado = await respuesta.json();
+  return respuesta.ok ? resultado : { ...resultado, exito: false };
 };
 
 const aplicarCambioHabitacionPendiente = async () => {
@@ -1117,7 +1118,8 @@ const aplicarCambioHabitacionPendiente = async () => {
     }),
   });
 
-  return respuesta.json();
+  const resultado = await respuesta.json();
+  return respuesta.ok ? resultado : { ...resultado, exito: false };
 };
 
 const confirmarGuardarEdicionReserva = async (datosReserva) => {

@@ -387,7 +387,7 @@ const configurarEventosPago = () => {
         });
         const resultado = await res.json();
 
-        if (!resultado.exito) {
+        if (!res.ok || !resultado.exito) {
           window.Alerta(
             resultado.mensaje || "No se pudo registrar.",
             "error",
@@ -406,7 +406,7 @@ const configurarEventosPago = () => {
           });
           const resultadoCheckout = await checkoutRes.json();
 
-          if (!resultadoCheckout.exito) {
+          if (!checkoutRes.ok || !resultadoCheckout.exito) {
             window.Alerta(
               resultadoCheckout.mensaje ||
                 "El pago se registró, pero no se pudo confirmar el checkout.",
