@@ -24,7 +24,9 @@ class Csrf {
 
     public static function validar(string $nombreParametro = 'csrf_token'): bool
     {
-        if (strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+        $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+
+        if (!in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
             return true;
         }
 
