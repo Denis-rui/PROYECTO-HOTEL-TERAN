@@ -31,7 +31,7 @@ class DashboardController extends Controller
 
         $respuestaNotificaciones = $notificacionService->obtenerNotificacionesCheckout();
         $data['notificaciones'] = $respuestaNotificaciones['data'];
-        $data['page_js'] = ['Clientes.js', 'Modal-Clientes.js', 'Modal-NuevaReserva.js', 'Pago.js', 'Comprobante.js', 'Dashboard.js'];
+        $data['page_js'] = ['Clientes.js', 'Modal-Clientes.js', 'ReservaAcciones.js', 'Modal-NuevaReserva.js', 'Pago.js', 'Comprobante.js', 'Dashboard.js'];
 
         // 5. Renderizamos la vista
         $this->views->render($this, 'index', $data);
