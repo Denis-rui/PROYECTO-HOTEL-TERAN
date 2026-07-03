@@ -2,7 +2,7 @@
 
 namespace Controllers;
 
-use Libraries\Core\Controller;
+use Libraries\Core\ApiController;
 use Services\DashboardService;
 use Services\Reservas\CheckInReservaService;
 use Services\Reservas\CheckOutReservaService;
@@ -20,7 +20,7 @@ use Helpers\CodigoHTTP;
 
 
 
-class ReservaController extends Controller
+class ReservaController extends ApiController
 {
     public function index($params = '')
     {
@@ -82,20 +82,11 @@ class ReservaController extends Controller
     public function registrar($params = '')
     {
         $datos = $this->obtenerPayloadJson();
-
         if (!is_array($datos)) {
-            $this->responderJson([
-                'exito' => false,
-                'mensaje' => 'Datos inválidos.'
-            ], 400);
+            $this->responderJson(['exito' => false, 'mensaje' => 'Datos inválidos.'], 400);
         }
         $service = new RegistrarReservaService();
-
-        $resultado = $service->registrarReserva(
-            $datos,
-            $_SESSION['id_usuario'] ?? null
-        );
-
+        $resultado = $service->registrarReserva($datos, $_SESSION['id_usuario'] ?? null);
         [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado, 201);
         $this->responderJson($payload, $codigoHttp);
     }
@@ -324,5 +315,4 @@ class ReservaController extends Controller
         [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado);
         $this->responderJson($payload, $codigoHttp);
     }
-
 }
