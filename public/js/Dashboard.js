@@ -290,15 +290,14 @@ document.addEventListener("click", (e) => {
   const btn = e.target.closest(".boton-checkout-dashboard");
   if (!btn) return;
 
-  fetch(BASE_URL + "Reserva/checkout", {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id_reserva: btn.dataset.id }),
-  })
-    .then(async (res) => ({ ok: res.ok, resultado: await res.json() }))
-    .then(({ ok, resultado }) => {
-      Notificar(resultado.mensaje || "Checkout procesado", ok && resultado.exito ? "exito" : "error");
-      if (ok && resultado.exito) window.inicializarDashboard?.();
+  window
+    .ejecutarAccionReservaApi("checkout", { id_reserva: btn.dataset.id })
+    .then(({ exito, resultado }) => {
+      Notificar(
+        resultado.mensaje || "Checkout procesado",
+        exito ? "exito" : "error",
+      );
+      if (exito) window.recargarVistaReservas?.();
     });
 });
 

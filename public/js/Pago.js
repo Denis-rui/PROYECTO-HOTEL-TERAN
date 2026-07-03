@@ -397,22 +397,20 @@ const configurarEventosPago = () => {
 
         let checkoutConfirmadoDespuesPago = false;
         if (confirmarCheckoutDespuesPago && formPago.dataset.idReserva) {
-          const checkoutRes = await fetch(BASE_URL + "Reserva/checkout", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
+          const {
+            exito: checkoutExitoso,
+            resultado: resultadoCheckout,
+          } = await window.ejecutarAccionReservaApi("checkout", {
               id_reserva: formPago.dataset.idReserva,
-            }),
           });
-          const resultadoCheckout = await checkoutRes.json();
 
-          if (!checkoutRes.ok || !resultadoCheckout.exito) {
+          if (!checkoutExitoso) {
             window.Alerta(
               resultadoCheckout.mensaje ||
                 "El pago se registró, pero no se pudo confirmar el checkout.",
               "error",
             );
-            window.location.reload();
+            window.recargarVistaReservas?.();
             return;
           }
 
@@ -558,7 +556,7 @@ window.cerrarModalPago = () => {
 
     // Si se guardaron cambios a la reserva o checkout, recargar para actualizar la tabla
     if (debeRecargar) {
-      window.location.reload();
+      window.recargarVistaReservas?.();
     }
   }
 };

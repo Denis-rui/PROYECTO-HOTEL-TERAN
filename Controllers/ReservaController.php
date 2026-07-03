@@ -36,7 +36,7 @@ class ReservaController extends ApiController
             'estado' => trim((string) ($_GET['estado'] ?? '')),
         ];
 
-        $data['page_js'] = ['Clientes.js', 'Modal-Clientes.js', 'Modal-NuevaReserva.js', 'Pago.js', 'Comprobante.js', 'Modal-VerDetalles.js', 'DocumentoElectronico.js', 'Reservas.js'];
+        $data['page_js'] = ['Clientes.js', 'Modal-Clientes.js', 'ReservaAcciones.js', 'Modal-NuevaReserva.js', 'Pago.js', 'Comprobante.js', 'Modal-VerDetalles.js', 'DocumentoElectronico.js', 'Reservas.js'];
         $this->views->render($this, 'index', $data);
     }
 

@@ -718,22 +718,13 @@ const configurarEventosReservas = () => {
 };
 
 const ejecutarAccionReserva = async (accion, datos) => {
-  const metodosPorAccion = {
-    checkin: "PATCH",
-    checkout: "PATCH",
-    marcarAusente: "PATCH",
-    marcarRegreso: "PATCH",
-  };
-
   try {
-    const res = await fetch(BASE_URL + "Reserva/" + accion, {
-      method: metodosPorAccion[accion] || "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(datos),
-    });
-    const resultado = await res.json();
+    const { exito, resultado } = await window.ejecutarAccionReservaApi(
+      accion,
+      datos,
+    );
 
-    if (res.ok && resultado.exito) {
+    if (exito) {
       await Swal.fire({
         toast: true,
         position: "top-end",
