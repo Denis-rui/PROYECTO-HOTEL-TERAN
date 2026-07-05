@@ -134,7 +134,9 @@ class ReservaController extends ApiController
             (int) ($datos['id_metodo_pago'] ?? 0),
             (string) ($datos['descripcion'] ?? ''),
             $datos['fecha_pago'] ?? null,
-            $_SESSION['id_usuario'] ?? null
+            $_SESSION['id_usuario'] ?? null,
+            (string) ($datos['cliente'] ?? ''),
+
         );
 
         [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado, 201);

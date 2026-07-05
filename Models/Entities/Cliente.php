@@ -1,4 +1,5 @@
 <?php
+
 namespace Models\Entities;
 
 use Illuminate\Database\Eloquent\Model as Eloquent;
@@ -8,8 +9,20 @@ class Cliente extends Eloquent
     protected $table = 'cliente';
     public $timestamps = false;
     protected $fillable = [
-        'nombre_completo','id_tipo_documento', 'documento', 'correo_electronico', 'procedencia', 'telefono',
-        'reservaciones', 'observaciones', 'activo','fecha_creacion'
+        'nombres',
+        'apellido_paterno',
+        'apellido_materno',
+        'id_tipo_documento',
+        'documento',
+        'ruc',
+        'correo_electronico',
+        'telefono',
+        'procedencia',
+        'reservaciones',
+        'activo',
+        'observaciones',
+        'fecha_creacion',
+        'alerta_interna'
     ];
 
     public function reservas()

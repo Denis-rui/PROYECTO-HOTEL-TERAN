@@ -4,12 +4,11 @@
 
     <form id="form-nuevo-editar-cliente" class="formulario-modal" novalidate>
       <input type="hidden" id="id-cliente" name="id-cliente" />
-      <input type="hidden" id="tipo-documento-cliente" value="1" />
 
       <div class="label-input-modal campo-ancho-completo fila-documento">
-        <label for="dni-cliente">Documento <span class="campo-requerido">*</span></label>
+        <label for="dni-cliente">Buscar por Documento</label>
         <div class="documento-busqueda">
-          <input type="text" id="dni-cliente" class="input-modal" required placeholder="Ingrese el número de documento" />
+          <input type="text" id="dni-cliente" class="input-modal" placeholder="Escriba DNI o CE para buscar..." />
           <button type="button" id="btn-buscar-datos-cliente" class="btn-buscar-datos">Buscar datos</button>
         </div>
         <span class="error-validation" id="error-dni-cliente"></span>
@@ -17,9 +16,42 @@
       </div>
 
       <div class="label-input-modal">
-        <label for="nombre-cliente">Nombre <span class="campo-requerido">*</span></label>
-        <input type="text" id="nombre-cliente" class="input-modal" required />
-        <span class="error-validation" id="error-nombre-cliente"></span>
+        <label for="tipo-documento-cliente">Tipo de Documento <span class="campo-requerido">*</span></label>
+        <select id="tipo-documento-cliente" class="input-modal" required>
+          <option value="1">DNI</option>
+          <option value="4">Carnet de Extranjería</option>
+        </select>
+        <span class="error-validation" id="error-tipo-documento-cliente"></span>
+      </div>
+
+      <div class="label-input-modal">
+        <label for="documento-cliente">Número de Documento <span class="campo-requerido">*</span></label>
+        <input type="text" id="documento-cliente" class="input-modal" required placeholder="Número de documento final" />
+        <span class="error-validation" id="error-documento-cliente"></span>
+      </div>
+
+      <div class="label-input-modal">
+        <label for="ruc-cliente">RUC</label>
+        <input type="text" id="ruc-cliente" class="input-modal" maxlength="11" placeholder="Ingrese el RUC si aplica" />
+        <span class="error-validation" id="error-ruc-cliente"></span>
+      </div>
+
+      <div class="label-input-modal">
+        <label for="nombres-cliente">Nombres <span class="campo-requerido">*</span></label>
+        <input type="text" id="nombres-cliente" class="input-modal" required />
+        <span class="error-validation" id="error-nombres-cliente"></span>
+      </div>
+
+      <div class="label-input-modal">
+        <label for="apellido-paterno-cliente">Apellido Paterno <span class="campo-requerido">*</span></label>
+        <input type="text" id="apellido-paterno-cliente" class="input-modal" required />
+        <span class="error-validation" id="error-apellido-paterno-cliente"></span>
+      </div>
+
+      <div class="label-input-modal">
+        <label for="apellido-materno-cliente">Apellido Materno <span class="campo-requerido">*</span></label>
+        <input type="text" id="apellido-materno-cliente" class="input-modal" required />
+        <span class="error-validation" id="error-apellido-materno-cliente"></span>
       </div>
 
       <div class="label-input-modal">
@@ -45,7 +77,6 @@
         <textarea id="observaciones-cliente" class="input-modal" rows="3" style="resize: vertical;"></textarea>
       </div>
 
-      <!-- Campo Reservaciones oculto: Se calcula automáticamente según check-ins -->
       <input type="hidden" id="reservaciones-cliente" name="reservaciones-cliente" />
 
       <div id="error-exito-modal-cliente" class="div-mensaje-exito-error campo-ancho-completo"></div>
