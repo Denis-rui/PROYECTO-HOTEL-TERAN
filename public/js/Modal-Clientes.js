@@ -86,13 +86,18 @@ const establecerMensajeBusquedaCliente = (mensaje, tipo = "") => {
 const limpiarFormularioCliente = () => {
   const campos = [
     "id-cliente",
-    "nombre-cliente",
     "tipo-documento-cliente",
-    "dni-cliente",
+    "dni-cliente", // El input del buscador
+    "documento-cliente", // El input real de persistencia
+    "ruc-cliente",
+    "nombres-cliente",
+    "apellido-paterno-cliente",
+    "apellido-materno-cliente",
     "gmail-cliente",
     "telefono-cliente",
     "procedencia-cliente",
     "observaciones-cliente",
+    "reservaciones-cliente", // Input oculto de control
   ];
 
   campos.forEach((idCampo) => {
@@ -101,9 +106,17 @@ const limpiarFormularioCliente = () => {
 
     if (idCampo === "tipo-documento-cliente") {
       campo.value = "1";
+      campo.dispatchEvent(new Event("change"));
       return;
     }
 
+    // Para el input oculto de reservaciones, lo reseteamos a string "0"
+    if (idCampo === "reservaciones-cliente") {
+      campo.value = "0";
+      return;
+    }
+
+    // Limpia el resto de inputs convencionales y textareas
     campo.value = "";
   });
 };
@@ -111,13 +124,18 @@ const limpiarFormularioCliente = () => {
 const aplicarDatosClienteFormulario = (datos = {}) => {
   const mapeo = {
     "id-cliente": datos.id || "",
-    "nombre-cliente": datos.nombre || "",
     "tipo-documento-cliente": datos.id_tipo_documento || "1",
-    "dni-cliente": datos.documento || "",
-    "gmail-cliente": datos.gmail || "",
+    "dni-cliente": datos.documento_busqueda || datos.documento || "",
+    "documento-cliente": datos.documento || "",
+    "ruc-cliente": datos.ruc || "",
+    "nombres-cliente": datos.nombres || "",
+    "apellido-paterno-cliente": datos.apellido_paterno || "",
+    "apellido-materno-cliente": datos.apellido_materno || "",
+    "gmail-cliente": datos.correo_electronico || datos.gmail || "",
     "telefono-cliente": datos.telefono || "",
     "procedencia-cliente": datos.procedencia || "",
     "observaciones-cliente": datos.observaciones || "",
+    "reservaciones-cliente": datos.reservaciones || "0",
   };
 
   Object.entries(mapeo).forEach(([idCampo, valor]) => {
@@ -127,7 +145,6 @@ const aplicarDatosClienteFormulario = (datos = {}) => {
     }
   });
 };
-
 const manejarEnterBusquedaCliente = (evento) => {
   if (evento.key === "Enter") {
     evento.preventDefault();
@@ -192,36 +209,81 @@ const validarCampoEnTiempoReal = (idCampo, validador) => {
 const obtenerDatosFormularioCliente = () => ({
   id: document.getElementById("id-cliente").value.trim(),
   id_tipo_documento:
-    parseInt(document.getElementById("tipo-documento-cliente").value, 10) || "",
-  nombre: document.getElementById("nombre-cliente").value.trim(),
-  documento: document.getElementById("dni-cliente").value.trim(),
-  gmail: document.getElementById("gmail-cliente").value.trim(),
+    parseInt(document.getElementById("tipo-documento-cliente").value, 10) || 1,
+
+  documento: document.getElementById("documento-cliente").value.trim(),
+  ruc: document.getElementById("ruc-cliente").value.trim() || null,
+
+  nombres: document.getElementById("nombres-cliente").value.trim(),
+  apellido_paterno: document
+    .getElementById("apellido-paterno-cliente")
+    .value.trim(),
+  apellido_materno: document
+    .getElementById("apellido-materno-cliente")
+    .value.trim(),
+
+  correo_electronico: document.getElementById("gmail-cliente").value.trim(),
+
   telefono: document.getElementById("telefono-cliente").value.trim(),
   procedencia: document.getElementById("procedencia-cliente").value.trim(),
   observaciones: document.getElementById("observaciones-cliente").value.trim(),
+
   reservaciones: 0,
 });
-
 const validarFormularioCliente = (datos) => {
   limpiarErroresValidacion();
   let tieneErrores = false;
 
-  // Validar nombre
-  if (!datos.nombre || datos.nombre.length < 3) {
+  const tipoDoc = parseInt(datos.id_tipo_documento, 10);
+  const esEmpresaRuc = tipoDoc === 6;
+
+  // 1. Validar Nombres (Persona Natural Estricto)
+  if (!datos.nombres || datos.nombres.trim().length < 3) {
     mostrarErrorValidacion(
-      "nombre-cliente",
+      "nombres-cliente",
       "El nombre es obligatorio y debe tener al menos 3 caracteres",
     );
     tieneErrores = true;
-  } else if (/\d/.test(datos.nombre)) {
+  } else if (/\d/.test(datos.nombres)) {
     mostrarErrorValidacion(
-      "nombre-cliente",
+      "nombres-cliente",
       "El nombre no puede contener números",
     );
     tieneErrores = true;
   }
 
-  // Validar tipo de documento
+  // 2. Validar Apellidos (Solo si NO es RUC/Empresa)
+  if (!esEmpresaRuc) {
+    if (!datos.apellido_paterno || datos.apellido_paterno.trim().length === 0) {
+      mostrarErrorValidacion(
+        "apellido-paterno-cliente",
+        "El apellido paterno es obligatorio",
+      );
+      tieneErrores = true;
+    } else if (/\d/.test(datos.apellido_paterno)) {
+      mostrarErrorValidacion(
+        "apellido-paterno-cliente",
+        "El apellido paterno no puede contener números",
+      );
+      tieneErrores = true;
+    }
+
+    if (!datos.apellido_materno || datos.apellido_materno.trim().length === 0) {
+      mostrarErrorValidacion(
+        "apellido-materno-cliente",
+        "El apellido materno es obligatorio",
+      );
+      tieneErrores = true;
+    } else if (/\d/.test(datos.apellido_materno)) {
+      mostrarErrorValidacion(
+        "apellido-materno-cliente",
+        "El apellido materno no puede contener números",
+      );
+      tieneErrores = true;
+    }
+  }
+
+  // 3. Validar Tipo de Documento
   if (!datos.id_tipo_documento) {
     mostrarErrorValidacion(
       "tipo-documento-cliente",
@@ -230,29 +292,61 @@ const validarFormularioCliente = (datos) => {
     tieneErrores = true;
   }
 
-  // Validar documento
-  if (!datos.documento || datos.documento.length === 0) {
-    mostrarErrorValidacion("dni-cliente", "El documento es obligatorio");
-    tieneErrores = true;
-  } else if (!/^\d+$/.test(datos.documento)) {
-    mostrarErrorValidacion(
-      "dni-cliente",
-      "El documento solo puede contener números",
-    );
-    tieneErrores = true;
+  // 4. Validar Número de Documento Principal (Obligatorio siempre, excepto si es netamente RUC y se prefiere dejar vacío, pero para consistencia lo validamos según el tipo)
+  if (!esEmpresaRuc) {
+    if (!datos.documento || datos.documento.trim().length === 0) {
+      mostrarErrorValidacion(
+        "documento-cliente",
+        "El número de documento es obligatorio",
+      );
+      tieneErrores = true;
+    } else if (!/^\d+$/.test(datos.documento)) {
+      mostrarErrorValidacion(
+        "documento-cliente",
+        "El documento solo puede contener números",
+      );
+      tieneErrores = true;
+    } else if (tipoDoc === 1 && datos.documento.trim().length !== 8) {
+      mostrarErrorValidacion(
+        "documento-cliente",
+        "El DNI debe tener exactamente 8 dígitos",
+      );
+      tieneErrores = true;
+    }
   }
 
-  // Validar correo electrónico
-  if (!datos.gmail) {
-    mostrarErrorValidacion("gmail-cliente", "El correo electrónico es obligatorio");
+  // 5. Validar Campo RUC (Obligatorio si tipo de documento es RUC, o validación de formato si se añade como opcional)
+  if (esEmpresaRuc || (datos.ruc && datos.ruc.trim().length > 0)) {
+    const rucValor = datos.ruc ? datos.ruc.trim() : "";
+    if (rucValor.length === 0) {
+      mostrarErrorValidacion(
+        "ruc-cliente",
+        "El número de RUC es obligatorio para este tipo de documento",
+      );
+      tieneErrores = true;
+    } else if (!/^\d{11}$/.test(rucValor)) {
+      mostrarErrorValidacion(
+        "ruc-cliente",
+        "El RUC debe ser un número válido de exactamente 11 dígitos",
+      );
+      tieneErrores = true;
+    }
+  }
+
+  // 6. Validar Correo Electrónico
+  if (!datos.correo_electronico) {
+    mostrarErrorValidacion(
+      "gmail-cliente",
+      "El correo electrónico es obligatorio",
+    );
     tieneErrores = true;
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datos.gmail)) {
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datos.correo_electronico)) {
     mostrarErrorValidacion("gmail-cliente", "Correo electrónico no válido");
     tieneErrores = true;
   }
 
-  // Validar teléfono
-  if (!datos.telefono || datos.telefono.length === 0) {
+  // 7. Validar Teléfono
+  if (!datos.telefono || datos.telefono.trim().length === 0) {
     mostrarErrorValidacion("telefono-cliente", "El teléfono es obligatorio");
     tieneErrores = true;
   } else if (!/^\d+$/.test(datos.telefono)) {
@@ -261,7 +355,10 @@ const validarFormularioCliente = (datos) => {
       "El teléfono solo puede contener números",
     );
     tieneErrores = true;
-  } else if (datos.telefono.length < 7 || datos.telefono.length > 15) {
+  } else if (
+    datos.telefono.trim().length < 7 ||
+    datos.telefono.trim().length > 15
+  ) {
     mostrarErrorValidacion(
       "telefono-cliente",
       "El teléfono debe tener entre 7 y 15 dígitos",
@@ -269,8 +366,8 @@ const validarFormularioCliente = (datos) => {
     tieneErrores = true;
   }
 
-  // Validar procedencia
-  if (!datos.procedencia || datos.procedencia.length === 0) {
+  // 8. Validar Procedencia
+  if (!datos.procedencia || datos.procedencia.trim().length === 0) {
     mostrarErrorValidacion(
       "procedencia-cliente",
       "La procedencia es obligatoria",
@@ -348,19 +445,31 @@ const buscarDatosClientePorDocumento = async () => {
       BASE_URL + `Cliente/buscar&q=${encodeURIComponent(documento)}`,
     );
     const data = await respuesta.json();
+    console.log(data);
     const clientes = Array.isArray(data.clientes) ? data.clientes : [];
     const cliente =
-      clientes.find((item) => String(item.documento || "") === documento) ||
-      null;
+      clientes.find((item) => {
+        const docLocal = String(item.documento || "").trim();
+        const rucLocal = String(item.ruc || "").trim();
+
+        // El cliente existe si coincide con su Documento principal O con su RUC
+        return docLocal === documento || rucLocal === documento;
+      }) || null;
 
     if (cliente) {
+      // Personalizamos el mensaje si se encontró específicamente por RUC o por DNI
+      const esRucEncontrado =
+        String(cliente.ruc || "").trim() === documento;
+      const tipoMensaje = esRucEncontrado ? "con el RUC" : "con el documento";
+
       await mostrarAlertaCliente(
         "Cliente existente",
-        "El cliente ya existe en la base de datos.",
+        `El cliente ya existe en la base de datos ${tipoMensaje} proporcionado.`,
         "info",
       );
+
       establecerMensajeBusquedaCliente(
-        "El cliente ya existe en la base de datos.",
+        `El cliente ya existe en la base de datos (${esRucEncontrado ? "RUC" : "Doc"}: ${documento}).`,
         "error",
       );
       return;
@@ -399,7 +508,6 @@ const buscarDatosClientePorDocumento = async () => {
           "error",
         );
       }
-
       return;
     }
 
@@ -418,17 +526,56 @@ const buscarDatosClientePorDocumento = async () => {
       return;
     }
 
-    const esDni = tieneDatosDni || esDniCliente(documento);
-    const tipoDocumentoApi = esDni ? "DNI" : "RUC";
-    const nombreCompleto = esDni
-      ? formatearNombreDni(datosApi)
-      : String(datosApi.razonSocial || "").trim();
-    const procedencia = esDni ? "" : formatearProcedenciaRuc(datosApi);
-    const telefono = Array.isArray(datosApi.telefonos)
-      ? String(datosApi.telefonos[0] || "").trim()
-      : "";
-    const observaciones = formatearObservacionesApi(datosApi, tipoDocumentoApi);
+    // Variables preparadas para la hidratación del formulario
+    let datosParaFormulario = {
+      id: "",
+      id_tipo_documento: "1", // Por defecto DNI
+      documento_busqueda: documento, // Para dejar rastro en el input buscador
+      documento: "",
+      ruc: "",
+      nombres: "",
+      apellido_paterno: "",
+      apellido_materno: "",
+      procedencia: "",
+      telefono: "",
+      observaciones: "",
+    };
 
+    if (tieneDatosDni) {
+      datosParaFormulario.id_tipo_documento = "1";
+      datosParaFormulario.documento = String(datosApi.dni).trim();
+      datosParaFormulario.nombres = String(datosApi.nombres || "").trim();
+      datosParaFormulario.apellido_paterno = String(
+        datosApi.apellidoPaterno || "",
+      ).trim();
+      datosParaFormulario.apellido_materno = String(
+        datosApi.apellidoMaterno || "",
+      ).trim();
+      datosParaFormulario.observaciones = "Cliente verificado por DNI.";
+    } else if (tieneDatosRuc) {
+      datosParaFormulario.id_tipo_documento = "6"; // Carnet de extranjería o el id que manejes para empresas/RUC si aplica
+      datosParaFormulario.documento = ""; // Queda vacío para obligar a poner un DNI/CE si es persona, o rellenar manualmente
+      datosParaFormulario.ruc = String(datosApi.ruc).trim();
+      datosParaFormulario.nombres = ""; // La razón social va al campo principal
+      datosParaFormulario.apellido_paterno = ""; // No aplica para RUC
+      datosParaFormulario.apellido_materno = ""; // No aplica para RUC
+
+      // Extrae departamento, provincia, distrito si existen
+      datosParaFormulario.procedencia = datosApi.direccion;
+
+      datosParaFormulario.observaciones = `RUC: ${datosApi.condicion || "HABIDO"} - ${datosApi.estado || "ACTIVO"}.`;
+    }
+
+    // Procesamiento común de teléfonos si vienen en la respuesta del RUC
+    if (
+      datosApi.telefonos &&
+      Array.isArray(datosApi.telefonos) &&
+      datosApi.telefonos.length > 0
+    ) {
+      datosParaFormulario.telefono = String(datosApi.telefonos[0]).trim();
+    }
+
+    // Cambiar comportamiento visual de la UI
     modoFormularioCliente = "nuevo";
     const titulo = document.getElementById("titulo-modal-cliente");
     if (titulo) {
@@ -436,21 +583,9 @@ const buscarDatosClientePorDocumento = async () => {
     }
 
     limpiarFormularioCliente();
-    aplicarDatosClienteFormulario({
-      id: "",
-      id_tipo_documento: obtenerTipoDocumentoPorLongitud(documento),
-      nombre: nombreCompleto,
-      documento,
-      gmail: "",
-      telefono,
-      procedencia,
-      observaciones,
-    });
 
-    const campoDocumento = document.getElementById("dni-cliente");
-    if (campoDocumento) {
-      campoDocumento.value = documento;
-    }
+    // Inyectamos el objeto estructurado directamente a tu helper actualizado
+    aplicarDatosClienteFormulario(datosParaFormulario);
 
     limpiarErroresValidacion();
     establecerMensajeBusquedaCliente(
@@ -463,6 +598,7 @@ const buscarDatosClientePorDocumento = async () => {
       "success",
     );
   } catch (error) {
+    console.error(error);
     establecerMensajeBusquedaCliente(
       "No se pudieron cargar los datos del cliente.",
       "error",
@@ -507,33 +643,107 @@ const manejarEnvioFormularioCliente = async (e) => {
 };
 
 const configurarValidacionesTiempoReal = () => {
-  validarCampoEnTiempoReal("nombre-cliente", (valor) => {
-    if (!valor || valor.length < 3) {
-      return "El nombre es obligatorio y debe tener al menos 3 caracteres";
+  // 1. Validar Nombres / Razón Social
+  validarCampoEnTiempoReal("nombres-cliente", (valor) => {
+    const tipoDoc = document.getElementById("tipo-documento-cliente")?.value;
+    const esRuc = tipoDoc === "6";
+
+    if (!valor || valor.trim().length < 3) {
+      return esRuc
+        ? "La razón social es obligatoria y debe tener al menos 3 caracteres"
+        : "El nombre es obligatorio y debe tener al menos 3 caracteres";
+    }
+
+    // Si NO es RUC, bloqueamos números. Si SÍ es RUC, permitimos números (ej: Alimentos 247 S.A.)
+    if (!esRuc && /\d/.test(valor)) {
+      return "El nombre no puede contener números";
+    }
+
+    return "";
+  });
+
+  // 2. Validar Apellido Paterno
+  validarCampoEnTiempoReal("apellido-paterno-cliente", (valor) => {
+    const tipoDoc = document.getElementById("tipo-documento-cliente")?.value;
+    if (tipoDoc === "6") return ""; // Omitir si es RUC
+
+    if (!valor || valor.trim().length === 0) {
+      return "El apellido p_aterno es obligatorio";
     }
     if (/\d/.test(valor)) {
-      return "El nombre no puede contener números";
+      return "El apellido paterno no puede contener números";
     }
     return "";
   });
 
+  // 3. Validar Apellido Materno
+  validarCampoEnTiempoReal("apellido-materno-cliente", (valor) => {
+    const tipoDoc = document.getElementById("tipo-documento-cliente")?.value;
+    if (tipoDoc === "6") return ""; // Omitir si es RUC
+
+    if (!valor || valor.trim().length === 0) {
+      return "El apellido materno es obligatorio";
+    }
+    if (/\d/.test(valor)) {
+      return "El apellido materno no puede contener números";
+    }
+    return "";
+  });
+
+  // 4. Validar Tipo de Documento
   validarCampoEnTiempoReal("tipo-documento-cliente", (valor) => {
     if (!valor) {
       return "Seleccione un tipo de documento válido";
     }
+
+    // Comportamiento extra: Forzar re-validación de los campos que dependen del tipo de documento
+    const inputsAEvaluar = [
+      "nombres-cliente",
+      "apellido-paterno-cliente",
+      "apellido-materno-cliente",
+      "documento-cliente",
+      "ruc-cliente",
+    ];
+    inputsAEvaluar.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.dispatchEvent(new Event("input"));
+    });
+
     return "";
   });
 
-  validarCampoEnTiempoReal("dni-cliente", (valor) => {
-    if (!valor) {
-      return "El documento es obligatorio";
+  // 5. Validar Número de Documento Final
+  validarCampoEnTiempoReal("documento-cliente", (valor) => {
+    const tipoDoc = document.getElementById("tipo-documento-cliente")?.value;
+    if (tipoDoc === "6") return ""; // Si es netamente RUC, este campo no es obligatorio obligatoriamente
+
+    if (!valor || valor.trim().length === 0) {
+      return "El número de documento es obligatorio";
     }
     if (!/^\d+$/.test(valor)) {
       return "El documento solo puede contener números";
     }
+    if (tipoDoc === "1" && valor.trim().length !== 8) {
+      return "El DNI debe tener exactamente 8 dígitos";
+    }
     return "";
   });
 
+  // 6. Validar RUC
+  validarCampoEnTiempoReal("ruc-cliente", (valor) => {
+    const tipoDoc = document.getElementById("tipo-documento-cliente")?.value;
+    const esRucObligatorio = tipoDoc === "6";
+
+    if (esRucObligatorio && (!valor || valor.trim().length === 0)) {
+      return "El número de RUC es obligatorio";
+    }
+    if (valor && valor.trim().length > 0 && !/^\d{11}$/.test(valor)) {
+      return "El RUC debe tener exactamente 11 dígitos numéricos";
+    }
+    return "";
+  });
+
+  // 7. Validar Correo Electrónico
   validarCampoEnTiempoReal("gmail-cliente", (valor) => {
     if (!valor) {
       return "El correo electrónico es obligatorio";
@@ -544,6 +754,7 @@ const configurarValidacionesTiempoReal = () => {
     return "";
   });
 
+  // 8. Validar Teléfono
   validarCampoEnTiempoReal("telefono-cliente", (valor) => {
     if (!valor) {
       return "El teléfono es obligatorio";
@@ -551,12 +762,13 @@ const configurarValidacionesTiempoReal = () => {
     if (!/^\d+$/.test(valor)) {
       return "El teléfono solo puede contener números";
     }
-    if (valor.length < 7 || valor.length > 15) {
+    if (valor.trim().length < 7 || valor.trim().length > 15) {
       return "El teléfono debe tener entre 7 y 15 dígitos";
     }
     return "";
   });
 
+  // 9. Validar Procedencia
   validarCampoEnTiempoReal("procedencia-cliente", (valor) => {
     if (!valor) {
       return "La procedencia es obligatoria";

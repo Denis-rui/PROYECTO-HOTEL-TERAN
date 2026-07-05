@@ -16,16 +16,35 @@ class DevolucionModel
             $query->where(function ($q) use ($busqueda) {
                 $q->where('id_reserva', 'like', "%$busqueda%")
                     ->orWhereHas('reserva.cliente', function ($q2) use ($busqueda) {
-                        $q2->where('nombre_completo', 'like', "%$busqueda%");
+                        $q2->whereRaw(
+                            "CONCAT(COALESCE(nombres, ''), ' ', COALESCE(apellido_paterno, ''), ' ', COALESCE(apellido_materno, '')) LIKE ?",
+                            ['%' . $busqueda . '%']
+                        );
                     });
             });
         }
 
         return $query->get()->map(function ($d) {
+
+            $cliente = $d->reserva?->cliente;
+
+            // Construimos el string del nombre del cliente sobre la marcha
+            $nombreCliente = '—';
+            if ($cliente) {
+                $nombreCliente = trim(
+                    ($cliente->nombres ?? '') . ' ' .
+                        ($cliente->apellido_paterno ?? '') . ' ' .
+                        ($cliente->apellido_materno ?? '')
+                );
+                // Por si acaso el registro vino puramente con espacios vacíos
+                if (empty($nombreCliente)) {
+                    $nombreCliente = '—';
+                }
+            }
             return [
                 'id' => $d->id,
                 'id_reserva' => $d->id_reserva,
-                'cliente' => $d->reserva?->cliente?->nombre_completo ?? '—',
+                'cliente' => $nombreCliente,
                 'fecha_cancelacion' => $d->fecha_cancelacion,
                 'fecha_inicio' => $d->fecha_inicio,
                 'fecha_prevista' => $d->fecha_prevista,

@@ -25,7 +25,9 @@ const poblarCamposOcultosReserva = (datos = {}) => {
 
     if (datos.confirmarCheckoutDespuesPago) {
       formPago.dataset.confirmarCheckoutDespuesPago = "true";
-      formPago.dataset.saldoCheckout = Number(datos.saldoPendiente || 0).toFixed(2);
+      formPago.dataset.saldoCheckout = Number(
+        datos.saldoPendiente || 0,
+      ).toFixed(2);
     } else {
       delete formPago.dataset.confirmarCheckoutDespuesPago;
       delete formPago.dataset.saldoCheckout;
@@ -98,9 +100,10 @@ const poblarCamposOcultosReserva = (datos = {}) => {
   if (infoSugerido && datos.totalReserva) {
     const total = parseFloat(datos.totalReserva);
     const pagado = parseFloat(datos.totalPagado || 0);
-    const saldo = datos.saldoPendiente !== undefined && datos.saldoPendiente !== null
-      ? Number(datos.saldoPendiente || 0)
-      : total - pagado;
+    const saldo =
+      datos.saldoPendiente !== undefined && datos.saldoPendiente !== null
+        ? Number(datos.saldoPendiente || 0)
+        : total - pagado;
 
     let sugerido = 0;
     if (!esReservaNueva) {
@@ -119,7 +122,9 @@ const poblarCamposOcultosReserva = (datos = {}) => {
 
     infoSugerido.textContent = `S/ ${sugerido.toFixed(2)}`;
     if (inputMonto) {
-      const montoAutomatico = Number(datos.montoAutomatico || datos.montoSugerido || 0);
+      const montoAutomatico = Number(
+        datos.montoAutomatico || datos.montoSugerido || 0,
+      );
       if (montoAutomatico > 0) {
         inputMonto.value = montoAutomatico.toFixed(2);
       } else if (!inputMonto.value) {
@@ -242,10 +247,7 @@ const configurarEventosPago = () => {
       }
 
       if (!metodoPago) {
-        window.Alerta(
-          "Debe seleccionar un método de pago",
-          "advertencia",
-        );
+        window.Alerta("Debe seleccionar un método de pago", "advertencia");
         return;
       }
 
@@ -341,8 +343,7 @@ const configurarEventosPago = () => {
         }
 
         const url =
-          BASE_URL +
-          (esReservaNueva ? "Reserva/registrar" : "Reserva/pago");
+          BASE_URL + (esReservaNueva ? "Reserva/registrar" : "Reserva/pago");
 
         const fetchPayload = esReservaNueva
           ? {
@@ -373,6 +374,8 @@ const configurarEventosPago = () => {
               },
             }
           : {
+              cliente:
+                document.getElementById("pagoCliente")?.value.trim() || "",
               id_reserva: formPago.dataset.idReserva,
               monto: montoPago,
               id_metodo_pago: metodoPago,
@@ -388,21 +391,16 @@ const configurarEventosPago = () => {
         const resultado = await res.json();
 
         if (!res.ok || !resultado.exito) {
-          window.Alerta(
-            resultado.mensaje || "No se pudo registrar.",
-            "error",
-          );
+          window.Alerta(resultado.mensaje || "No se pudo registrar.", "error");
           return;
         }
 
         let checkoutConfirmadoDespuesPago = false;
         if (confirmarCheckoutDespuesPago && formPago.dataset.idReserva) {
-          const {
-            exito: checkoutExitoso,
-            resultado: resultadoCheckout,
-          } = await window.ejecutarAccionReservaApi("checkout", {
+          const { exito: checkoutExitoso, resultado: resultadoCheckout } =
+            await window.ejecutarAccionReservaApi("checkout", {
               id_reserva: formPago.dataset.idReserva,
-          });
+            });
 
           if (!checkoutExitoso) {
             window.Alerta(

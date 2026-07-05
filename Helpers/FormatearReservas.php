@@ -10,6 +10,19 @@ class FormatearReservas
     public static function formatear($reserva): array
     {
         $cliente = $reserva->cliente;
+
+        $nombreCompleto = '—';
+        if ($cliente) {
+            $nombreCompleto = trim(
+                ($cliente->nombres ?? '') . ' ' .
+                    ($cliente->apellido_paterno ?? '') . ' ' .
+                    ($cliente->apellido_materno ?? '')
+            );
+
+            if (empty($nombreCompleto)) {
+                $nombreCompleto = '—';
+            }
+        }
         $usuario = $reserva->usuario ?? null;
         $reservaHabitacion = $reserva->reservaHabitacion;
         $habitacionesRelacionadas = is_iterable($reservaHabitacion) ? $reservaHabitacion : [$reservaHabitacion];
@@ -80,7 +93,7 @@ class FormatearReservas
             'codigo_reserva' => $reserva->codigo_reserva,
             'fecha_creacion' => $reserva->fecha_creacion ?? null,
             'id_cliente' => $reserva->id_cliente,
-            'cliente' => $cliente->nombre_completo ?? '',
+            'cliente' => $nombreCompleto,
             'documento' => $cliente->documento ?? '',
             'id_tipo_documento' => $cliente->id_tipo_documento ?? null,
             'documento_tipo_nombre' => self::obtenerNombreTipoDocumento($cliente),

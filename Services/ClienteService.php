@@ -102,18 +102,35 @@ class ClienteService
 
     public function registrarCliente(array $datos): array
     {
-        $v = new Validator($datos);
-        $v->requerido('nombre', 'Nombre')
-            ->requerido('documento', 'Documento')
-            ->requerido('gmail', 'Correo electrónico')
-            ->requerido('telefono', 'Teléfono')
-            ->requerido('procedencia', 'Procedencia')
-            ->numerico('documento', 'Documento')
-            ->numerico('telefono', 'Teléfono')
-            ->email('gmail', 'Correo electrónico');
-
+        // Validar tipo de documento de forma temprana
         if (empty($datos['id_tipo_documento']) || !is_numeric($datos['id_tipo_documento']) || (int)$datos['id_tipo_documento'] <= 0) {
             return ['exito' => false, 'mensaje' => 'Seleccione un tipo de documento válido', 'code' => 422];
+        }
+
+        $tipoDoc = (int)$datos['id_tipo_documento'];
+        $esRuc = ($tipoDoc === 6);
+
+        $v = new Validator($datos);
+
+        // Validaciones comunes a cualquier tipo de cliente
+        $v->requerido('nombres', 'Nombres')
+            ->requerido('correo_electronico', 'Correo electrónico')
+            ->requerido('telefono', 'Teléfono')
+            ->requerido('procedencia', 'Procedencia')
+            ->numerico('telefono', 'Teléfono')
+            ->email('correo_electronico', 'Correo electrónico');
+
+        // Validación condicional basada en el tipo de documento
+        if ($esRuc) {
+            // Si es RUC, se vuelve obligatorio el campo 'ruc' y debe ser numérico
+            $v->requerido('ruc', 'RUC')
+                ->numerico('ruc', 'RUC');
+        } else {
+            // Si es DNI o Carnet de Extranjería, se exigen los apellidos y el número de documento
+            $v->requerido('apellido_paterno', 'Apellido paterno')
+                ->requerido('apellido_materno', 'Apellido materno')
+                ->requerido('documento', 'Número de documento')
+                ->numerico('documento', 'Número de documento');
         }
 
         if ($v->falla()) {
@@ -121,44 +138,64 @@ class ClienteService
         }
 
         try {
+            // Limpieza y preparación de la estructura de persistencia
             $datosGuardar = [
-                'nombre_completo' => $datos['nombre_completo'] ?? $datos['nombre'] ?? '',
-                'id_tipo_documento' => $datos['id_tipo_documento'] ?? '',
-                'documento' => $datos['documento'] ?? '',
-                'correo_electronico' => $datos['correo_electronico'] ?? $datos['gmail'] ?? '',
-                'procedencia' => $datos['procedencia'] ?? '',
-                'telefono' => $datos['telefono'] ?? '',
-                'observaciones' => $datos['observaciones'] ?? '',
-                'reservaciones' => 0,
-                'activo' => 1
+                'id_tipo_documento'  => $tipoDoc,
+                'documento'          => !$esRuc ? trim($datos['documento']) : null,
+                'ruc'                => $esRuc ? trim($datos['ruc']) : (!empty($datos['ruc']) ? trim($datos['ruc']) : null),
+                'nombres'            => trim($datos['nombres'] ?? ''),
+                'apellido_paterno'   => !$esRuc ? trim($datos['apellido_paterno'] ?? '') : null,
+                'apellido_materno'   => !$esRuc ? trim($datos['apellido_materno'] ?? '') : null,
+                'correo_electronico' => trim($datos['correo_electronico'] ?? ''),
+                'procedencia'        => trim($datos['procedencia'] ?? ''),
+                'telefono'           => trim($datos['telefono'] ?? ''),
+                'observaciones'      => trim($datos['observaciones'] ?? ''),
+                'reservaciones'      => isset($datos['reservaciones']) ? (int)$datos['reservaciones'] : 0,
+                'activo'             => 1
             ];
 
             $this->clienteModel->crear($datosGuardar);
             return ['exito' => true, 'mensaje' => 'Cliente creado correctamente', 'code' => 200];
         } catch (Exception $e) {
-            error_log('Error crearCliente: ' . $e->getMessage());
-            return ['exito' => false, 'mensaje' => 'No se pudo crear el cliente. Verifica si el documento ya existe.', 'code' => 500];
+            error_log('Error registrarCliente: ' . $e->getMessage());
+            return ['exito' => false, 'mensaje' => 'No se pudo crear el cliente. Verifica si el documento o RUC ya existe.', 'code' => 500];
         }
     }
 
     public function actualizarCliente(array $datos): array
     {
+        // Validar ID de forma temprana
         if (empty($datos['id'])) {
             return ['exito' => false, 'mensaje' => 'ID requerido', 'code' => 422];
         }
 
-        $v = new Validator($datos);
-        $v->requerido('nombre', 'Nombre')
-            ->requerido('documento', 'Documento')
-            ->numerico('documento', 'Documento')
-            ->requerido('gmail', 'Correo electrónico')
-            ->email('gmail', 'Correo electrónico')
-            ->requerido('telefono', 'Teléfono')
-            ->numerico('telefono', 'Teléfono')
-            ->requerido('procedencia', 'Procedencia');
-
+        // Validar tipo de documento de forma temprana
         if (empty($datos['id_tipo_documento']) || !is_numeric($datos['id_tipo_documento']) || (int)$datos['id_tipo_documento'] <= 0) {
             return ['exito' => false, 'mensaje' => 'Seleccione un tipo de documento válido', 'code' => 422];
+        }
+
+        $tipoDoc = (int)$datos['id_tipo_documento'];
+        $esRuc = ($tipoDoc === 6);
+
+        $v = new Validator($datos);
+
+        // Validaciones comunes a cualquier tipo de cliente al actualizar
+        $v->requerido('nombres', 'Nombres')
+            ->requerido('correo_electronico', 'Correo electrónico')
+            ->requerido('telefono', 'Teléfono')
+            ->requerido('procedencia', 'Procedencia')
+            ->numerico('telefono', 'Teléfono')
+            ->email('correo_electronico', 'Correo electrónico');
+
+        // Validación condicional basada en el tipo de documento
+        if ($esRuc) {
+            $v->requerido('ruc', 'RUC')
+                ->numerico('ruc', 'RUC');
+        } else {
+            $v->requerido('apellido_paterno', 'Apellido p_aterno')
+                ->requerido('apellido_materno', 'Apellido materno')
+                ->requerido('documento', 'Número de documento')
+                ->numerico('documento', 'Número de documento');
         }
 
         if ($v->falla()) {
@@ -166,21 +203,26 @@ class ClienteService
         }
 
         try {
+            // Limpieza y preparación de la estructura para actualización
             $datosActualizar = [
-                'nombre_completo' => $datos['nombre_completo'] ?? $datos['nombre'] ?? '',
-                'id_tipo_documento' => $datos['id_tipo_documento'] ?? '',
-                'documento' => $datos['documento'] ?? '',
-                'correo_electronico' => $datos['correo_electronico'] ?? $datos['gmail'] ?? '',
-                'procedencia' => $datos['procedencia'] ?? '',
-                'telefono' => $datos['telefono'] ?? '',
-                'observaciones' => $datos['observaciones'] ?? ''
+                'id_tipo_documento'  => $tipoDoc,
+                'documento'          => !$esRuc ? trim($datos['documento']) : null,
+                'ruc'                => $esRuc ? trim($datos['ruc']) : (!empty($datos['ruc']) ? trim($datos['ruc']) : null),
+                'nombres'            => trim($datos['nombres'] ?? ''),
+                'apellido_paterno'   => !$esRuc ? trim($datos['apellido_paterno'] ?? '') : null,
+                'apellido_materno'   => !$esRuc ? trim($datos['apellido_materno'] ?? '') : null,
+                'correo_electronico' => trim($datos['correo_electronico'] ?? ''),
+                'procedencia'        => trim($datos['procedencia'] ?? ''),
+                'telefono'           => trim($datos['telefono'] ?? ''),
+                'observaciones'      => trim($datos['observaciones'] ?? '')
+                // Nota: No incluimos 'reservaciones' ni 'activo' a menos que tu lógica de negocio permita alterarlos aquí
             ];
 
             $this->clienteModel->actualizar((int)$datos['id'], $datosActualizar);
-            return ['exito' => true, 'mensaje' => 'Cliente actualizado', 'code' => 200];
+            return ['exito' => true, 'mensaje' => 'Cliente actualizado correctamente', 'code' => 200];
         } catch (Exception $e) {
             error_log('Error actualizarCliente: ' . $e->getMessage());
-            return ['exito' => false, 'mensaje' => 'No se pudo actualizar el cliente.', 'code' => 500];
+            return ['exito' => false, 'mensaje' => 'No se pudo actualizar el cliente. Verifica si el documento o RUC ya existe en otro registro.', 'code' => 500];
         }
     }
 
