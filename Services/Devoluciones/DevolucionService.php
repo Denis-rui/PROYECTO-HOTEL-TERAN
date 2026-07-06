@@ -34,47 +34,71 @@ class DevolucionService
     {
         try {
             $idReserva = (int) ($data['id_reserva'] ?? 0);
+            if ($idReserva <= 0) {
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'Seleccione una reserva válida.', null, [
+                    'id_reserva' => 'La reserva es obligatoria.',
+                ]);
+            }
+
             $reservaModel = new ReservaModel();
             $reserva = $reservaModel->obtenerReservaSimple($idReserva);
 
             // 1. Validaciones de Negocio
-            if (!$reserva || $reserva->estado !== 'cancelada') {
-                return ['exito' => false, 'mensaje' => 'Solo corresponde a reservas canceladas.'];
+            if (!$reserva) {
+                return $this->respuesta(false, 'NO_ENCONTRADO', 'Reserva no encontrada.');
+            }
+
+            if ($reserva->estado !== 'cancelada') {
+                return $this->respuesta(false, 'CONFLICTO', 'Solo corresponde a reservas canceladas.');
             }
             if (!empty($reserva->checkout_real) || $reserva->estado === 'checkout_realizado') {
-                return ['exito' => false, 'mensaje' => 'La reserva ya tiene un checkout realizado.'];
+                return $this->respuesta(false, 'CONFLICTO', 'La reserva ya tiene un checkout realizado.');
             }
 
             // 2. Llamar al otro servicio para el cálculo
             $calculo = $this->calculoService->calcular($idReserva, $data['fecha_cancelacion'] ?? null);
 
             if (!($calculo['exito'] ?? false)) {
-                return ['exito' => false, 'mensaje' => 'Error en el cálculo: ' . ($calculo['mensaje'] ?? 'Cálculo fallido.')];
+                return $this->respuesta(
+                    false,
+                    (string) ($calculo['codigo'] ?? 'ERROR_INTERNO'),
+                    'Error en el cálculo: ' . ($calculo['mensaje'] ?? 'Cálculo fallido.')
+                );
+            }
+
+            $datosCalculo = $calculo['data'] ?? [];
+            if (!$this->calculoTieneDatosRequeridos($datosCalculo)) {
+                return $this->respuesta(false, 'ERROR_INTERNO', 'El cálculo de devolución no devolvió datos completos.');
             }
 
             // 3. Preparar datos y guardar en BD
             $datosGuardar = [
                 'id_reserva' => $idReserva,
-                'fecha_cancelacion' => $calculo['fecha_cancelacion'],
-                'fecha_inicio' => $calculo['fecha_inicio'],
-                'fecha_prevista' => $calculo['fecha_prevista'],
-                'dias_usados' => $calculo['dias_usados'],
-                'dias_no_usados' => $calculo['dias_no_usados'],
-                'total_no_ocupado' => $calculo['total_no_ocupado'],
-                'porcentaje_penalidad' => $calculo['porcentaje_penalidad'],
-                'monto_penalidad' => $calculo['monto_penalidad'],
-                'monto_devuelto' => $calculo['monto_devuelto'],
+                'fecha_cancelacion' => $datosCalculo['fecha_cancelacion'],
+                'fecha_inicio' => $datosCalculo['fecha_inicio'],
+                'fecha_prevista' => $datosCalculo['fecha_prevista'],
+                'dias_usados' => $datosCalculo['dias_usados'],
+                'dias_no_usados' => $datosCalculo['dias_no_usados'],
+                'total_no_ocupado' => $datosCalculo['total_no_ocupado'],
+                'porcentaje_penalidad' => $datosCalculo['porcentaje_penalidad'],
+                'monto_penalidad' => $datosCalculo['monto_penalidad'],
+                'monto_devuelto' => $datosCalculo['monto_devuelto'],
                 'id_usuario' => $idUsuario,
             ];
 
             $guardado = $this->devolucionModel->guardar($idReserva, $datosGuardar);
 
-            return $guardado
-                ? ['exito' => true, 'mensaje' => 'Devolución registrada con el cálculo vigente.']
-                : ['exito' => false, 'mensaje' => 'No se pudo guardar la devolución en la base de datos.'];
+            if (!$guardado) {
+                return $this->respuesta(false, 'ERROR_GUARDADO', 'No se pudo guardar la devolución en la base de datos.');
+            }
+
+            return $this->respuesta(true, 'CREADO', 'Devolución registrada con el cálculo vigente.', [
+                'id_reserva' => $idReserva,
+                'calculo' => $datosCalculo,
+            ]);
         } catch (Exception $e) {
             error_log('Error al registrar devolución: ' . $e->getMessage());
-            return ['exito' => false, 'mensaje' => 'Error inesperado al registrar la devolución.'];
+            return $this->respuesta(false, 'ERROR_INTERNO', 'Error inesperado al registrar la devolución.');
         }
     }
 
@@ -82,10 +106,16 @@ class DevolucionService
     {
         try {
             $id = (int) ($data['id'] ?? 0);
+            if ($id <= 0) {
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'Seleccione una devolución válida.', null, [
+                    'id' => 'La devolución es obligatoria.',
+                ]);
+            }
+
             $devolucion = $this->devolucionModel->obtenerDevolucion($id);
 
             if (!$devolucion) {
-                return ['exito' => false, 'mensaje' => 'No se encontró la devolución a actualizar.'];
+                return $this->respuesta(false, 'NO_ENCONTRADO', 'No se encontró la devolución a actualizar.');
             }
 
             $calculo = $this->calculoService->calcular(
@@ -94,41 +124,96 @@ class DevolucionService
             );
 
             if (!($calculo['exito'] ?? false)) {
-                return ['exito' => false, 'mensaje' => 'Error en el cálculo: ' . ($calculo['mensaje'] ?? 'Cálculo fallido.')];
+                return $this->respuesta(
+                    false,
+                    (string) ($calculo['codigo'] ?? 'ERROR_INTERNO'),
+                    'Error en el cálculo: ' . ($calculo['mensaje'] ?? 'Cálculo fallido.')
+                );
+            }
+
+            $datosCalculo = $calculo['data'] ?? [];
+            if (!$this->calculoTieneDatosRequeridos($datosCalculo)) {
+                return $this->respuesta(false, 'ERROR_INTERNO', 'El cálculo de devolución no devolvió datos completos.');
             }
 
             $datosActualizar = [
-                'fecha_cancelacion' => $calculo['fecha_cancelacion'],
-                'dias_usados' => $calculo['dias_usados'],
-                'dias_no_usados' => $calculo['dias_no_usados'],
-                'total_no_ocupado' => $calculo['total_no_ocupado'],
-                'porcentaje_penalidad' => $calculo['porcentaje_penalidad'],
-                'monto_penalidad' => $calculo['monto_penalidad'],
-                'monto_devuelto' => $calculo['monto_devuelto'],
+                'fecha_cancelacion' => $datosCalculo['fecha_cancelacion'],
+                'dias_usados' => $datosCalculo['dias_usados'],
+                'dias_no_usados' => $datosCalculo['dias_no_usados'],
+                'total_no_ocupado' => $datosCalculo['total_no_ocupado'],
+                'porcentaje_penalidad' => $datosCalculo['porcentaje_penalidad'],
+                'monto_penalidad' => $datosCalculo['monto_penalidad'],
+                'monto_devuelto' => $datosCalculo['monto_devuelto'],
                 'id_usuario' => $idUsuario,
             ];
 
             $actualizado = $this->devolucionModel->actualizar($id, $datosActualizar);
 
-            return $actualizado
-                ? ['exito' => true, 'mensaje' => 'Devolución recalculada correctamente.']
-                : ['exito' => false, 'mensaje' => 'No se pudo actualizar la devolución.'];
+            if (!$actualizado) {
+                return $this->respuesta(false, 'ERROR_GUARDADO', 'No se pudo actualizar la devolución.');
+            }
+
+            return $this->respuesta(true, 'ACTUALIZADO', 'Devolución recalculada correctamente.', [
+                'id' => $id,
+                'id_reserva' => (int) $devolucion->id_reserva,
+                'calculo' => $datosCalculo,
+            ]);
         } catch (Exception $e) {
             error_log('Error al actualizar devolución: ' . $e->getMessage());
-            return ['exito' => false, 'mensaje' => 'Error inesperado al actualizar la devolución.'];
+            return $this->respuesta(false, 'ERROR_INTERNO', 'Error inesperado al actualizar la devolución.');
         }
     }
 
     public function eliminarDevolucion(int $id): array
     {
         try {
+            if ($id <= 0) {
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'Seleccione una devolución válida.', null, [
+                    'id' => 'La devolución es obligatoria.',
+                ]);
+            }
+
             $exito = $this->devolucionModel->eliminar($id);
             return $exito
-                ? ['exito' => true, 'mensaje' => 'Devolución eliminada.']
-                : ['exito' => false, 'mensaje' => 'No se pudo eliminar la devolución.'];
+                ? $this->respuesta(true, 'ELIMINADO', 'Devolución eliminada.', ['id' => $id])
+                : $this->respuesta(false, 'NO_ENCONTRADO', 'No se encontró la devolución a eliminar.');
         } catch (Exception $e) {
             error_log('Error al eliminar devolución: ' . $e->getMessage());
-            return ['exito' => false, 'mensaje' => 'Error inesperado al eliminar.'];
+            return $this->respuesta(false, 'ERROR_INTERNO', 'Error inesperado al eliminar.');
         }
+    }
+
+    private function respuesta(bool $exito, string $codigo, string $mensaje, mixed $data = null, array $errores = []): array
+    {
+        return [
+            'exito' => $exito,
+            'codigo' => $codigo,
+            'mensaje' => $mensaje,
+            'data' => $data,
+            'errores' => array_filter($errores, fn($error) => $error !== null),
+        ];
+    }
+
+    private function calculoTieneDatosRequeridos(array $calculo): bool
+    {
+        $campos = [
+            'fecha_cancelacion',
+            'fecha_inicio',
+            'fecha_prevista',
+            'dias_usados',
+            'dias_no_usados',
+            'total_no_ocupado',
+            'porcentaje_penalidad',
+            'monto_penalidad',
+            'monto_devuelto',
+        ];
+
+        foreach ($campos as $campo) {
+            if (!array_key_exists($campo, $calculo)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

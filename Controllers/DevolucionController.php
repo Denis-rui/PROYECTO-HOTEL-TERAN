@@ -3,6 +3,7 @@
 namespace Controllers;
 
 use Libraries\Core\ApiController;
+use Helpers\CodigoHTTP;
 use Services\Devoluciones\DevolucionService; // Asegúrate de que la ruta coincida con tu namespace
 
 class DevolucionController extends ApiController
@@ -61,10 +62,9 @@ class DevolucionController extends ApiController
         $datos = $this->obtenerPayloadJson() ?? [];
         $idUsuario = $_SESSION['id_usuario'] ?? null;
 
-        // El servicio ya devuelve el arreglo ['exito' => ..., 'mensaje' => ...]
-        // Así que podemos imprimirlo directamente en el json_encode
         $respuesta = $this->devolucionService->registrarDevolucion($datos, $idUsuario);
-        $this->responderJson($respuesta);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($respuesta);
+        $this->responderJson($payload, $codigoHttp);
     }
 
     public function actualizar($params = '')
@@ -74,7 +74,8 @@ class DevolucionController extends ApiController
         $idUsuario = $_SESSION['id_usuario'] ?? null;
 
         $respuesta = $this->devolucionService->actualizarDevolucion($datos, $idUsuario);
-        $this->responderJson($respuesta);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($respuesta);
+        $this->responderJson($payload, $codigoHttp);
     }
 
     public function eliminar($params = '')
@@ -83,6 +84,7 @@ class DevolucionController extends ApiController
         $datos = $this->obtenerPayloadJson() ?? [];
 
         $respuesta = $this->devolucionService->eliminarDevolucion((int) ($datos['id'] ?? 0));
-        $this->responderJson($respuesta);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($respuesta);
+        $this->responderJson($payload, $codigoHttp);
     }
 }
