@@ -23,10 +23,17 @@ class HabitacionService
     public function registrar(array $datos): array
     {
         try {
+            $numeroHabitacion = trim((string) ($datos['numero_habitacion'] ?? ''));
+            if ($numeroHabitacion === '') {
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'Ingrese el número de habitación.', null, [
+                    'numero_habitacion' => 'El número de habitación es obligatorio.',
+                ]);
+            }
+
             $estadoNorm = $this->normalizarEstado($datos['estado'] ?? 'Disponible');
 
             $datosGuardar = [
-                'numero_habitacion' => $datos['numero_habitacion'] ?? '',
+                'numero_habitacion' => $numeroHabitacion,
                 'piso' => (int) ($datos['piso'] ?? 1),
                 'id_tipo_habitacion' => $datos['id_tipo_habitacion'] ?? null,
                 'estado' => $estadoNorm,
@@ -36,14 +43,14 @@ class HabitacionService
             ];
 
             $habitacion = $this->habitacionModel->crear($datosGuardar);
-            return ['exito' => true, 'mensaje' => 'Habitación registrada correctamente.', 'data' => $habitacion];
+            return $this->respuesta(true, 'CREADO', 'Habitación registrada correctamente.', $habitacion);
         } catch (Exception $e) {
             // Manejo de número duplicado (Error 1062 en SQL)
             if ($e->getCode() == 23000 || strpos($e->getMessage(), '1062') !== false) {
-                return ['exito' => false, 'mensaje' => "La habitación número " . ($datos['numero_habitacion'] ?? '') . " ya está registrada."];
+                return $this->respuesta(false, 'CONFLICTO', "La habitación número " . ($datos['numero_habitacion'] ?? '') . " ya está registrada.");
             }
             error_log("Error al registrar habitación: " . $e->getMessage());
-            return ['exito' => false, 'mensaje' => 'Error inesperado al registrar la habitación.'];
+            return $this->respuesta(false, 'ERROR_INTERNO', 'Error inesperado al registrar la habitación.');
         }
     }
 
@@ -51,18 +58,24 @@ class HabitacionService
     {
         try {
             $id = (int) ($datos['id'] ?? 0);
+            if ($id <= 0) {
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'Seleccione una habitación válida.', null, [
+                    'id' => 'La habitación es obligatoria.',
+                ]);
+            }
+
             $habitacion = $this->habitacionModel->find($id);
 
-            if (!$habitacion) return ['exito' => false, 'mensaje' => 'Habitación no encontrada.'];
+            if (!$habitacion) return $this->respuesta(false, 'NO_ENCONTRADO', 'Habitación no encontrada.');
 
             // 1. Bloquear si tiene reservas activas
             if ($this->habitacionModel->obtenerReservaActiva($id)) {
-                return ['exito' => false, 'mensaje' => 'No se puede editar la habitación porque está reservada.'];
+                return $this->respuesta(false, 'CONFLICTO', 'No se puede editar la habitación porque está reservada.');
             }
 
             // 2. Bloquear si está en mantenimiento
             if (strtolower($habitacion->estado) === 'mantenimiento') {
-                return ['exito' => false, 'mensaje' => 'No se puede editar porque está en mantenimiento.'];
+                return $this->respuesta(false, 'CONFLICTO', 'No se puede editar porque está en mantenimiento.');
             }
 
             $datosActualizar = [
@@ -75,35 +88,41 @@ class HabitacionService
             ];
 
             $this->habitacionModel->actualizar($id, $datosActualizar);
-            return ['exito' => true, 'mensaje' => 'Habitación actualizada correctamente.'];
+            return $this->respuesta(true, 'ACTUALIZADO', 'Habitación actualizada correctamente.', ['id' => $id]);
         } catch (Exception $e) {
             if ($e->getCode() == 23000 || strpos($e->getMessage(), '1062') !== false) {
-                return ['exito' => false, 'mensaje' => 'El número de habitación ya está en uso.'];
+                return $this->respuesta(false, 'CONFLICTO', 'El número de habitación ya está en uso.');
             }
             error_log("Error al editar habitación: " . $e->getMessage());
-            return ['exito' => false, 'mensaje' => 'Error al actualizar la habitación.'];
+            return $this->respuesta(false, 'ERROR_INTERNO', 'Error al actualizar la habitación.');
         }
     }
 
     public function eliminar(int $id): array
     {
         try {
+            if ($id <= 0) {
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'Seleccione una habitación válida.', null, [
+                    'id' => 'La habitación es obligatoria.',
+                ]);
+            }
+
             $habitacion = $this->habitacionModel->find($id);
-            if (!$habitacion) return ['exito' => false, 'mensaje' => 'Habitación no encontrada.'];
+            if (!$habitacion) return $this->respuesta(false, 'NO_ENCONTRADO', 'Habitación no encontrada.');
 
             if ($this->habitacionModel->obtenerReservaActiva($id)) {
-                return ['exito' => false, 'mensaje' => 'No se puede eliminar la habitación porque está reservada. Primero cambia su estado.'];
+                return $this->respuesta(false, 'CONFLICTO', 'No se puede eliminar la habitación porque está reservada. Primero cambia su estado.');
             }
 
             if (strtolower($habitacion->estado) === 'mantenimiento') {
-                return ['exito' => false, 'mensaje' => 'No se puede eliminar porque está en mantenimiento.'];
+                return $this->respuesta(false, 'CONFLICTO', 'No se puede eliminar porque está en mantenimiento.');
             }
 
             $this->habitacionModel->darDeBaja($id);
-            return ['exito' => true, 'mensaje' => 'Habitación eliminada correctamente.'];
+            return $this->respuesta(true, 'ELIMINADO', 'Habitación eliminada correctamente.', ['id' => $id]);
         } catch (Exception $e) {
             error_log("Error al eliminar habitación: " . $e->getMessage());
-            return ['exito' => false, 'mensaje' => 'Error al intentar eliminar.'];
+            return $this->respuesta(false, 'ERROR_INTERNO', 'Error al intentar eliminar.');
         }
     }
 
@@ -113,7 +132,7 @@ class HabitacionService
             $nuevoEstado = $this->normalizarEstado($estado);
             $habitacion = $this->habitacionModel->find($id);
 
-            if (!$habitacion) return ['exito' => false, 'mensaje' => 'Habitación no encontrada.'];
+            if (!$habitacion) return $this->respuesta(false, 'NO_ENCONTRADO', 'Habitación no encontrada.');
 
             if ($nuevoEstado === 'Disponible') {
                 $bloqueante = $this->habitacionModel->obtenerBloqueante($id);
@@ -123,7 +142,9 @@ class HabitacionService
                         $checkOutTs = strtotime($detalle['check_out']);
                         $detalle['minutos_faltantes'] = $checkOutTs > time() ? (int) floor(($checkOutTs - time()) / 60) : 0;
                     }
-                    return ['exito' => false, 'mensaje' => 'Existe una reserva bloqueante.', 'reserva_bloqueante' => $detalle];
+                    return $this->respuesta(false, 'CONFLICTO', 'Existe una reserva bloqueante.', null, [], [
+                        'reserva_bloqueante' => $detalle,
+                    ]);
                 }
             }
 
@@ -139,10 +160,13 @@ class HabitacionService
                 $this->notificacionModel->marcarLimpiezaLeidaPorHabitacion($id);
             }
 
-            return ['exito' => true, 'mensaje' => 'Estado actualizado correctamente.'];
+            return $this->respuesta(true, 'ACTUALIZADO', 'Estado actualizado correctamente.', [
+                'id' => $id,
+                'estado' => $nuevoEstado,
+            ]);
         } catch (Exception $e) {
             error_log("Error actualizar estado: " . $e->getMessage());
-            return ['exito' => false, 'mensaje' => 'Error al actualizar estado.'];
+            return $this->respuesta(false, 'ERROR_INTERNO', 'Error al actualizar estado.');
         }
     }
 
@@ -151,20 +175,20 @@ class HabitacionService
         try {
             $estadoNorm = $estado ? $this->normalizarEstado($estado) : '';
             $datos = $this->habitacionModel->buscar($numero, $tipo, $estadoNorm, $piso);
-            return ['exito' => true, 'data' => $datos];
+            return $this->respuesta(true, 'OK', 'Habitaciones cargadas correctamente.', $datos);
         } catch (Exception $e) {
             error_log("Error en buscar: " . $e->getMessage());
-            return ['exito' => false, 'data' => []];
+            return $this->respuesta(false, 'ERROR_INTERNO', 'No se pudieron cargar las habitaciones.', []);
         }
     }
 
     public function obtenerFiltros(): array
     {
         try {
-            return ['exito' => true, 'data' => $this->habitacionModel->obtenerFiltros()];
+            return $this->respuesta(true, 'OK', 'Filtros cargados correctamente.', $this->habitacionModel->obtenerFiltros());
         } catch (Exception $e) {
             error_log("Error al obtener filtros de habitaciones: " . $e->getMessage());
-            return ['exito' => false, 'data' => []];
+            return $this->respuesta(false, 'ERROR_INTERNO', 'No se pudieron cargar los filtros de habitaciones.', []);
         }
     }
 
@@ -176,19 +200,21 @@ class HabitacionService
         array $referencia = []
     ): array {
         try {
-            return [
-                'exito' => true,
-                'data' => $this->reporteOcupacionModel->obtenerDisponiblesPorRango(
+            return $this->respuesta(
+                true,
+                'OK',
+                'Habitaciones disponibles cargadas correctamente.',
+                $this->reporteOcupacionModel->obtenerDisponiblesPorRango(
                     $checkIn,
                     $checkOut,
                     $tipo,
                     $piso,
                     $referencia
-                ),
-            ];
+                )
+            );
         } catch (Exception $e) {
             error_log("Error al obtener habitaciones disponibles: " . $e->getMessage());
-            return ['exito' => false, 'data' => [], 'mensaje' => 'No se pudo consultar la disponibilidad.'];
+            return $this->respuesta(false, 'ERROR_INTERNO', 'No se pudo consultar la disponibilidad.', []);
         }
     }
 
@@ -196,11 +222,11 @@ class HabitacionService
     {
         try {
             $habitacion = $this->habitacionModel->find($id);
-            if (!$habitacion) return ['exito' => false, 'mensaje' => 'Habitación no encontrada.'];
+            if (!$habitacion) return $this->respuesta(false, 'NO_ENCONTRADO', 'Habitación no encontrada.');
 
             $estadoActual = strtolower($habitacion->estado);
             if ($estadoActual !== 'mantenimiento' && $estadoActual !== 'en limpieza') {
-                return ['exito' => false, 'mensaje' => 'La habitación no está en Mantenimiento o Limpieza.'];
+                return $this->respuesta(false, 'CONFLICTO', 'La habitación no está en Mantenimiento o Limpieza.');
             }
 
             $this->habitacionModel->actualizar($id, [
@@ -214,9 +240,9 @@ class HabitacionService
             $this->notificacionModel->marcarCheckoutLeidoPorHabitacion($id);
             $this->notificacionModel->marcarLimpiezaLeidaPorHabitacion($id);
 
-            return ['exito' => true, 'mensaje' => 'Limpieza finalizada. Habitación disponible.'];
+            return $this->respuesta(true, 'ACTUALIZADO', 'Limpieza finalizada. Habitación disponible.', ['id' => $id]);
         } catch (Exception $e) {
-            return ['exito' => false, 'mensaje' => 'Error al finalizar limpieza.'];
+            return $this->respuesta(false, 'ERROR_INTERNO', 'Error al finalizar limpieza.');
         }
     }
 
@@ -224,10 +250,10 @@ class HabitacionService
     {
         try {
             $habitacion = $this->habitacionModel->find($id);
-            if (!$habitacion) return ['exito' => false, 'mensaje' => 'Habitacion no encontrada.'];
+            if (!$habitacion) return $this->respuesta(false, 'NO_ENCONTRADO', 'Habitación no encontrada.');
 
             if (strtolower((string) $habitacion->estado) !== 'en limpieza') {
-                return ['exito' => false, 'mensaje' => 'La habitacion no esta en limpieza.'];
+                return $this->respuesta(false, 'CONFLICTO', 'La habitación no está en limpieza.');
             }
 
             $numero = $habitacion->numero_habitacion ?? $id;
@@ -250,13 +276,12 @@ class HabitacionService
                 ]
             );
 
-            return [
-                'exito' => (bool) $guardado,
-                'mensaje' => $guardado ? 'Alerta de limpieza vencida registrada.' : 'No se pudo registrar la alerta de limpieza.',
-            ];
+            return $guardado
+                ? $this->respuesta(true, 'CREADO', 'Alerta de limpieza vencida registrada.', ['id_habitacion' => $id])
+                : $this->respuesta(false, 'ERROR_GUARDADO', 'No se pudo registrar la alerta de limpieza.');
         } catch (Exception $e) {
             error_log("Error al notificar limpieza vencida: " . $e->getMessage());
-            return ['exito' => false, 'mensaje' => 'Error al registrar la alerta de limpieza.'];
+            return $this->respuesta(false, 'ERROR_INTERNO', 'Error al registrar la alerta de limpieza.');
         }
     }
 
@@ -264,10 +289,10 @@ class HabitacionService
     {
         try {
             $habitacion = $this->habitacionModel->find($id);
-            if (!$habitacion) return ['exito' => false, 'mensaje' => 'Habitacion no encontrada.'];
+            if (!$habitacion) return $this->respuesta(false, 'NO_ENCONTRADO', 'Habitación no encontrada.');
 
             if (strtolower((string) $habitacion->estado) !== 'en limpieza') {
-                return ['exito' => false, 'mensaje' => 'La habitacion no esta en limpieza.'];
+                return $this->respuesta(false, 'CONFLICTO', 'La habitación no está en limpieza.');
             }
 
             $minutos = max(5, min(120, $minutos));
@@ -278,11 +303,31 @@ class HabitacionService
             ]);
             $this->notificacionModel->marcarLimpiezaLeidaPorHabitacion($id);
 
-            return ['exito' => true, 'mensaje' => 'Limpieza extendida por ' . $minutos . ' minutos.'];
+            return $this->respuesta(true, 'ACTUALIZADO', 'Limpieza extendida por ' . $minutos . ' minutos.', [
+                'id' => $id,
+                'minutos' => $minutos,
+            ]);
         } catch (Exception $e) {
             error_log("Error al extender limpieza: " . $e->getMessage());
-            return ['exito' => false, 'mensaje' => 'Error al extender la limpieza.'];
+            return $this->respuesta(false, 'ERROR_INTERNO', 'Error al extender la limpieza.');
         }
+    }
+
+    private function respuesta(
+        bool $exito,
+        string $codigo,
+        string $mensaje,
+        mixed $data = null,
+        array $errores = [],
+        array $extra = []
+    ): array {
+        return array_merge([
+            'exito' => $exito,
+            'codigo' => $codigo,
+            'mensaje' => $mensaje,
+            'data' => $data,
+            'errores' => array_filter($errores, fn($error) => $error !== null),
+        ], $extra);
     }
 
     // El normalizador se vino al servicio porque es lógica de formateo

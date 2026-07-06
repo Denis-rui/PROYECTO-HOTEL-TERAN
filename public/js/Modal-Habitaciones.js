@@ -98,7 +98,7 @@ window.eliminarHabitacion = async (id, numero) => {
 
   try {
     const res = await fetch(BASE_URL + "Habitacion/eliminar", {
-      method: "POST",
+      method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
@@ -139,6 +139,7 @@ document.addEventListener("click", async (e) => {
   const dataObj   = Object.fromEntries(new FormData(form).entries());
   const esEdicion = dataObj.id && dataObj.id !== "";
   const url       = BASE_URL + (esEdicion ? "Habitacion/editar" : "Habitacion/registrar");
+  const metodo    = esEdicion ? "PUT" : "POST";
 
   // Feedback visual en el botón
   const btn = e.target;
@@ -147,7 +148,7 @@ document.addEventListener("click", async (e) => {
 
   try {
     const res  = await fetch(url, {
-      method:  "POST",
+      method:  metodo,
       headers: { "Content-Type": "application/json" },
       body:    JSON.stringify(dataObj),
     });
