@@ -3,6 +3,7 @@
 namespace Controllers;
 
 use Libraries\Core\ApiController;
+use Helpers\CodigoHTTP;
 use Services\UsuarioService;
 
 class UsuarioController extends ApiController
@@ -40,7 +41,7 @@ class UsuarioController extends ApiController
     public function buscar($params = '')
     {
         if (!isset($_SESSION['usuario'])) {
-            $this->responderJson(['error' => 'No hay sesión activa'], 401);
+            $this->responderJson($this->respuestaSesionInvalida(), 401);
         }
 
         $termino = $_GET['q'] ?? '';
@@ -53,7 +54,7 @@ class UsuarioController extends ApiController
         $nombreUsuario = $_SESSION['usuario'] ?? $_SESSION['nombreUsuario'] ?? ''; // Cubrimos ambas variables por seguridad
 
         if (empty($nombreUsuario)) {
-            $this->responderJson(['error' => 'No hay sesión activa'], 401);
+            $this->responderJson($this->respuestaSesionInvalida(), 401);
         }
 
         $respuesta = $this->usuarioService->obtenerPerfil($nombreUsuario);
@@ -63,7 +64,7 @@ class UsuarioController extends ApiController
     public function crear($params = '')
     {
         $datos = $this->obtenerPayloadJson() ?? [];
-        $this->responderJson($this->usuarioService->crearUsuario($datos));
+        $this->responderServicio($this->usuarioService->crearUsuario($datos));
     }
 
     public function actualizar($params = '')
@@ -72,7 +73,7 @@ class UsuarioController extends ApiController
         $nombreUsuario = $_SESSION['usuario'] ?? $_SESSION['nombreUsuario'] ?? '';
 
         if (empty($nombreUsuario)) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'No hay sesión activa'], 401);
+            $this->responderJson($this->respuestaSesionInvalida(), 401);
         }
 
         $respuesta = $this->usuarioService->actualizarPerfilPropio($nombreUsuario, $datos);
@@ -83,18 +84,36 @@ class UsuarioController extends ApiController
             $_SESSION['nombreUsuario'] = $respuesta['nuevo_usuario'];
         }
 
-        $this->responderJson($respuesta);
+        $this->responderServicio($respuesta);
     }
 
     public function actualizarAdmin($params = '')
     {
         $datos = $this->obtenerPayloadJson() ?? [];
-        $this->responderJson($this->usuarioService->actualizarUsuarioAdmin((int)($datos['id'] ?? 0), $datos));
+        $this->responderServicio($this->usuarioService->actualizarUsuarioAdmin((int)($datos['id'] ?? 0), $datos));
     }
 
     public function eliminar($params = '')
     {
         $datos = $this->obtenerPayloadJson() ?? [];
-        $this->responderJson($this->usuarioService->eliminarUsuario((int)($datos['id'] ?? 0)));
+        $this->responderServicio($this->usuarioService->eliminarUsuario((int)($datos['id'] ?? 0)));
+    }
+
+    private function responderServicio(array $respuesta): void
+    {
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($respuesta);
+        $this->responderJson($payload, $codigoHttp);
+    }
+
+    private function respuestaSesionInvalida(): array
+    {
+        return [
+            'exito' => false,
+            'codigo' => 'NO_AUTENTICADO',
+            'mensaje' => 'No hay sesión activa',
+            'data' => null,
+            'errores' => [],
+            'error' => 'No hay sesión activa',
+        ];
     }
 }

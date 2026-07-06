@@ -24,10 +24,10 @@ class UsuarioService
                 ->map(fn($user) => $this->mapearUsuario($user))
                 ->toArray();
 
-            return ['exito' => true, 'data' => $usuarios];
+            return $this->respuesta(true, 'OK', 'Usuarios cargados correctamente.', $usuarios);
         } catch (Exception $e) {
             error_log('Error listarUsuarios: ' . $e->getMessage());
-            return ['exito' => false, 'mensaje' => 'Error al cargar los usuarios.', 'data' => []];
+            return $this->respuesta(false, 'ERROR_INTERNO', 'Error al cargar los usuarios.', []);
         }
     }
 
@@ -44,10 +44,10 @@ class UsuarioService
                 ->map(fn($user) => $this->mapearUsuario($user))
                 ->toArray();
 
-            return ['exito' => true, 'data' => $usuarios];
+            return $this->respuesta(true, 'OK', 'Usuarios cargados correctamente.', $usuarios);
         } catch (Exception $e) {
             error_log('Error buscarUsuarios: ' . $e->getMessage());
-            return ['exito' => false, 'mensaje' => 'Error al buscar usuarios.', 'data' => []];
+            return $this->respuesta(false, 'ERROR_INTERNO', 'Error al buscar usuarios.', []);
         }
     }
 
@@ -70,7 +70,7 @@ class UsuarioService
     {
         try {
             $user = $this->usuarioModel->obtenerPorNombreUsuario($nombreUsuario);
-            if (!$user) return ['exito' => false, 'mensaje' => 'Usuario no encontrado.'];
+            if (!$user) return $this->respuesta(false, 'NO_ENCONTRADO', 'Usuario no encontrado.');
 
             $perfil = [
                 'nombre_completo' => $user->nombre_completo,
@@ -79,9 +79,10 @@ class UsuarioService
                 'telefono'        => $user->telefono,
                 'rol'             => $user->rol->rol ?? '',
             ];
-            return ['exito' => true, 'data' => $perfil];
+            return $this->respuesta(true, 'OK', 'Perfil cargado correctamente.', $perfil);
         } catch (Exception $e) {
-            return ['exito' => false, 'mensaje' => 'Error al cargar perfil.'];
+            error_log('Error obtenerPerfil: ' . $e->getMessage());
+            return $this->respuesta(false, 'ERROR_INTERNO', 'Error al cargar perfil.');
         }
     }
 
@@ -91,10 +92,12 @@ class UsuarioService
     {
         try {
             $rolId = $this->usuarioModel->buscarIdRolPorNombre($datos['rol'] ?? '');
-            if (!$rolId) return ['exito' => false, 'mensaje' => 'El rol seleccionado no es válido.'];
+            if (!$rolId) return $this->respuesta(false, 'VALIDACION_ERROR', 'El rol seleccionado no es válido.', null, [
+                'rol' => 'El rol seleccionado no es válido.',
+            ]);
 
             $errorValidacion = $this->validarReglasNegocio($datos);
-            if ($errorValidacion) return ['exito' => false, 'mensaje' => $errorValidacion];
+            if ($errorValidacion) return $this->respuesta(false, 'VALIDACION_ERROR', $errorValidacion);
 
             $datosGuardar = [
                 'nombre_completo'  => $datos['nombre_completo'] ?? '',
@@ -108,8 +111,8 @@ class UsuarioService
                 'id_rol'           => $rolId,
             ];
 
-            $this->usuarioModel->crear($datosGuardar);
-            return ['exito' => true, 'mensaje' => 'Usuario creado correctamente.'];
+            $usuario = $this->usuarioModel->crear($datosGuardar);
+            return $this->respuesta(true, 'CREADO', 'Usuario creado correctamente.', $usuario);
         } catch (Exception $e) {
             return $this->manejarExcepcion($e, 'crear usuario');
         }
@@ -119,10 +122,10 @@ class UsuarioService
     {
         try {
             $user = $this->usuarioModel->obtenerPorNombreUsuario($nombreUsuarioActual);
-            if (!$user) return ['exito' => false, 'mensaje' => 'Usuario no encontrado.'];
+            if (!$user) return $this->respuesta(false, 'NO_ENCONTRADO', 'Usuario no encontrado.');
 
             $errorValidacion = $this->validarReglasNegocio($datos, $user->id);
-            if ($errorValidacion) return ['exito' => false, 'mensaje' => $errorValidacion];
+            if ($errorValidacion) return $this->respuesta(false, 'VALIDACION_ERROR', $errorValidacion);
 
             $datosActualizar = [
                 'nombre_completo' => $datos['nombre_completo'] ?? $user->nombre_completo,
@@ -137,11 +140,11 @@ class UsuarioService
 
             $this->usuarioModel->actualizar($user->id, $datosActualizar);
 
-            return [
-                'exito' => true,
-                'mensaje' => 'Perfil actualizado correctamente.',
-                'nuevo_usuario' => $datosActualizar['nombre_usuario'] // Para actualizar la sesión
-            ];
+            return $this->respuesta(true, 'ACTUALIZADO', 'Perfil actualizado correctamente.', [
+                'id' => (int) $user->id,
+            ], [], [
+                'nuevo_usuario' => $datosActualizar['nombre_usuario'],
+            ]);
         } catch (Exception $e) {
             return $this->manejarExcepcion($e, 'actualizar perfil');
         }
@@ -151,17 +154,19 @@ class UsuarioService
     {
         try {
             $user = $this->usuarioModel->obtenerPorId($id);
-            if (!$user) return ['exito' => false, 'mensaje' => 'Usuario no encontrado.'];
+            if (!$user) return $this->respuesta(false, 'NO_ENCONTRADO', 'Usuario no encontrado.');
 
             $rolId = $this->usuarioModel->buscarIdRolPorNombre($datos['rol'] ?? '');
-            if (!$rolId) return ['exito' => false, 'mensaje' => 'El rol seleccionado no es válido.'];
+            if (!$rolId) return $this->respuesta(false, 'VALIDACION_ERROR', 'El rol seleccionado no es válido.', null, [
+                'rol' => 'El rol seleccionado no es válido.',
+            ]);
 
             // Combinar con la fecha antigua por si no la envían
             $datosParaValidar = $datos;
             $datosParaValidar['fecha_nacimiento'] = $datos['fecha_nacimiento'] ?? $user->fecha_nacimiento;
 
             $errorValidacion = $this->validarReglasNegocio($datosParaValidar, $id);
-            if ($errorValidacion) return ['exito' => false, 'mensaje' => $errorValidacion];
+            if ($errorValidacion) return $this->respuesta(false, 'VALIDACION_ERROR', $errorValidacion);
 
             $datosActualizar = [
                 'nombre_completo'  => $datos['nombre_completo'] ?? $user->nombre_completo,
@@ -177,7 +182,7 @@ class UsuarioService
             if ($nuevaClave) $datosActualizar['contrasenia'] = $nuevaClave;
 
             $this->usuarioModel->actualizar($id, $datosActualizar);
-            return ['exito' => true, 'mensaje' => 'Usuario actualizado correctamente.'];
+            return $this->respuesta(true, 'ACTUALIZADO', 'Usuario actualizado correctamente.', ['id' => $id]);
         } catch (Exception $e) {
             return $this->manejarExcepcion($e, 'actualizar usuario');
         }
@@ -186,11 +191,13 @@ class UsuarioService
     public function cambiarContrasenia(string $nombreUsuario, string $claveActual, string $claveNueva, string $confirmar): array
     {
         if ($claveNueva !== $confirmar) {
-            return ['exito' => false, 'mensaje' => 'Las contraseñas nuevas no coinciden.'];
+            return $this->respuesta(false, 'VALIDACION_ERROR', 'Las contraseñas nuevas no coinciden.', null, [
+                'confirmar_clave' => 'Las contraseñas nuevas no coinciden.',
+            ]);
         }
 
         $user = $this->usuarioModel->obtenerPorNombreUsuario($nombreUsuario);
-        if (!$user) return ['exito' => false, 'mensaje' => 'Usuario no encontrado.'];
+        if (!$user) return $this->respuesta(false, 'NO_ENCONTRADO', 'Usuario no encontrado.');
 
         // Lógica de verificación segura centralizada
         $claveValida = is_string($user->contrasenia) && (
@@ -199,25 +206,33 @@ class UsuarioService
             hash_equals($user->contrasenia, $claveActual)
         );
 
-        if (!$claveValida) return ['exito' => false, 'mensaje' => 'La contraseña actual es incorrecta.'];
+        if (!$claveValida) return $this->respuesta(false, 'VALIDACION_ERROR', 'La contraseña actual es incorrecta.', null, [
+            'clave_actual' => 'La contraseña actual es incorrecta.',
+        ]);
 
         $this->usuarioModel->actualizar($user->id, [
             'contrasenia' => md5($claveNueva) // Mantenemos tu estándar de encriptación
         ]);
 
-        return ['exito' => true, 'mensaje' => 'Contraseña actualizada correctamente.'];
+        return $this->respuesta(true, 'ACTUALIZADO', 'Contraseña actualizada correctamente.', ['id' => (int) $user->id]);
     }
 
     public function eliminarUsuario(int $id): array
     {
         try {
+            if ($id <= 0) {
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'Seleccione un usuario válido.', null, [
+                    'id' => 'El usuario es obligatorio.',
+                ]);
+            }
+
             $exito = $this->usuarioModel->desactivar($id);
-            return [
-                'exito' => $exito,
-                'mensaje' => $exito ? 'Usuario eliminado.' : 'No se pudo eliminar el usuario.'
-            ];
+            return $exito
+                ? $this->respuesta(true, 'ELIMINADO', 'Usuario eliminado.', ['id' => $id])
+                : $this->respuesta(false, 'NO_ENCONTRADO', 'Usuario no encontrado.');
         } catch (Exception $e) {
-            return ['exito' => false, 'mensaje' => 'Error al intentar eliminar.'];
+            error_log('Error eliminarUsuario: ' . $e->getMessage());
+            return $this->respuesta(false, 'ERROR_INTERNO', 'Error al intentar eliminar.');
         }
     }
 
@@ -262,9 +277,26 @@ class UsuarioService
 
         // Si fallan las reglas de unicidad a nivel base de datos
         if (stripos($mensaje, 'Duplicate entry') !== false || stripos($mensaje, 'Integrity constraint violation') !== false) {
-            return ['exito' => false, 'mensaje' => 'Ya existe un usuario con ese Usuario, Correo o DNI.'];
+            return $this->respuesta(false, 'CONFLICTO', 'Ya existe un usuario con ese Usuario, Correo o DNI.');
         }
 
-        return ['exito' => false, 'mensaje' => 'Ocurrió un error inesperado al procesar la solicitud.'];
+        return $this->respuesta(false, 'ERROR_INTERNO', 'Ocurrió un error inesperado al procesar la solicitud.');
+    }
+
+    private function respuesta(
+        bool $exito,
+        string $codigo,
+        string $mensaje,
+        mixed $data = null,
+        array $errores = [],
+        array $extra = []
+    ): array {
+        return array_merge([
+            'exito' => $exito,
+            'codigo' => $codigo,
+            'mensaje' => $mensaje,
+            'data' => $data,
+            'errores' => array_filter($errores, fn($error) => $error !== null),
+        ], $extra);
     }
 }

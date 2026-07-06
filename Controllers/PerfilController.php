@@ -3,6 +3,7 @@
 namespace Controllers;
 
 use Libraries\Core\ApiController;
+use Helpers\CodigoHTTP;
 use Services\UsuarioService;
 
 class PerfilController extends ApiController
@@ -39,7 +40,13 @@ class PerfilController extends ApiController
     public function actualizarPerfil($params = '')
     {
         if (!isset($_SESSION['usuario'])) {
-            $this->responderJson(['success' => false, 'message' => 'No autenticado'], 401);
+            $this->responderJson($this->adaptarRespuestaPerfil([
+                'exito' => false,
+                'codigo' => 'NO_AUTENTICADO',
+                'mensaje' => 'No autenticado',
+                'data' => null,
+                'errores' => [],
+            ]), 401);
         }
         $this->validarCsrf();
         $datos = [
@@ -55,17 +62,19 @@ class PerfilController extends ApiController
             $_SESSION['usuario'] = $respuesta['nuevo_usuario'];
         }
 
-        // Adaptamos la respuesta al formato que esperaba tu JS en este módulo específico
-        $this->responderJson([
-            'success' => $respuesta['exito'],
-            'message' => $respuesta['mensaje']
-        ]);
+        $this->responderPerfil($respuesta);
     }
 
     public function cambiarClave($params = '')
     {
         if (!isset($_SESSION['usuario'])) {
-            $this->responderJson(['success' => false, 'message' => 'No autenticado'], 401);
+            $this->responderJson($this->adaptarRespuestaPerfil([
+                'exito' => false,
+                'codigo' => 'NO_AUTENTICADO',
+                'mensaje' => 'No autenticado',
+                'data' => null,
+                'errores' => [],
+            ]), 401);
         }
         $this->validarCsrf();
         $claveActual = $_POST['clave_actual']    ?? '';
@@ -74,9 +83,20 @@ class PerfilController extends ApiController
 
         $respuesta = $this->usuarioService->cambiarContrasenia($_SESSION['usuario'], $claveActual, $claveNueva, $confirmar);
 
-        $this->responderJson([
-            'success' => $respuesta['exito'],
-            'message' => $respuesta['mensaje']
+        $this->responderPerfil($respuesta);
+    }
+
+    private function responderPerfil(array $respuesta): void
+    {
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($respuesta);
+        $this->responderJson($this->adaptarRespuestaPerfil($payload), $codigoHttp);
+    }
+
+    private function adaptarRespuestaPerfil(array $respuesta): array
+    {
+        return array_merge($respuesta, [
+            'success' => (bool) ($respuesta['exito'] ?? false),
+            'message' => (string) ($respuesta['mensaje'] ?? ''),
         ]);
     }
 }
