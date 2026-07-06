@@ -2,10 +2,10 @@
 
 namespace Controllers;
 
-use Libraries\Core\Controller;
+use Libraries\Core\ApiController;
 use Services\ClienteService;
 
-class ClienteController extends Controller
+class ClienteController extends ApiController
 {
     private ClienteService $clienteService;
 

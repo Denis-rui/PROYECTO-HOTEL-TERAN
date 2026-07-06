@@ -2,10 +2,10 @@
 
 namespace Controllers;
 
-use Libraries\Core\Controller;
+use Libraries\Core\ApiController;
 use Services\ConfiguracionService;
 
-class ConfiguracionController extends Controller
+class ConfiguracionController extends ApiController
 {
     public function index($params = '')
     {

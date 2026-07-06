@@ -2,10 +2,10 @@
 
 namespace Controllers;
 
-use Libraries\Core\Controller;
+use Libraries\Core\ApiController;
 use Services\UsuarioService;
 
-class PerfilController extends Controller
+class PerfilController extends ApiController
 {
     private UsuarioService $usuarioService;
 

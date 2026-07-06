@@ -2,10 +2,10 @@
 
 namespace Controllers;
 
-use Libraries\Core\Controller;
+use Libraries\Core\ApiController;
 use Services\Devoluciones\DevolucionService; // Asegúrate de que la ruta coincida con tu namespace
 
-class DevolucionController extends Controller
+class DevolucionController extends ApiController
 {
     private DevolucionService $devolucionService;
 

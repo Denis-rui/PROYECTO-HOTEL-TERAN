@@ -2,10 +2,10 @@
 
 namespace Controllers;
 
-use Libraries\Core\Controller;
+use Libraries\Core\ApiController;
 use Services\HabitacionService;
 
-class HabitacionController extends Controller
+class HabitacionController extends ApiController
 {
     private HabitacionService $habitacionService;
 
