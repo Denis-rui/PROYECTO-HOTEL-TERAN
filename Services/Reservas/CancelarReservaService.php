@@ -29,29 +29,20 @@ class CancelarReservaService
             $reservaActual = $this->reservaModel->obtenerReservaConHabitacionesYPagos($idReserva);
 
             if (!$reservaActual) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'Reserva no encontrada.'
-                ];
+                return $this->respuesta(false, 'NO_ENCONTRADO', 'Reserva no encontrada.');
             }
 
             if (
                 in_array($reservaActual->estado, ['cancelada', 'checkout_realizado'], true)
                 || !empty($reservaActual->checkout_real)
             ) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'No se puede cancelar una reserva en este estado.'
-                ];
+                return $this->respuesta(false, 'CONFLICTO', 'No se puede cancelar una reserva en este estado.');
             }
 
             $resultadoCalculo = $this->calculoDevolucionService->calcular($idReserva);
 
             if (!($resultadoCalculo['exito'] ?? false)) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'Error al calcular devolucion: ' . ($resultadoCalculo['mensaje'] ?? 'Desconocido')
-                ];
+                return $this->respuesta(false, $resultadoCalculo['codigo'] ?? 'ERROR_INTERNO', 'Error al calcular devolucion: ' . ($resultadoCalculo['mensaje'] ?? 'Desconocido'));
             }
 
             $calculo = $resultadoCalculo['data'] ?? [];
@@ -110,12 +101,10 @@ class CancelarReservaService
 
             DB::connection()->commit();
 
-            return [
-                'exito' => true,
-                'mensaje' => 'Reserva cancelada. Devolucion: S/ ' . number_format((float) $calculo['monto_devuelto'], 2)
-                    . '. Monto no reembolsable: S/ ' . number_format((float) $calculo['monto_no_reembolsable'], 2) . '.',
+            return $this->respuesta(true, 'ACTUALIZADO', 'Reserva cancelada. Devolucion: S/ ' . number_format((float) $calculo['monto_devuelto'], 2)
+                . '. Monto no reembolsable: S/ ' . number_format((float) $calculo['monto_no_reembolsable'], 2) . '.', [
                 'devolucion' => $calculo,
-            ];
+            ]);
         } catch (\Throwable $e) {
             error_log('CancelarReservaService::cancelarReserva -> ' . $e->getMessage());
             $conexion = DB::connection();
@@ -124,10 +113,7 @@ class CancelarReservaService
                 $conexion->rollBack();
             }
 
-            return [
-                'exito' => false,
-                'mensaje' => 'No se pudo cancelar la reserva. Intente nuevamente.'
-            ];
+            return $this->respuesta(false, 'EXCEPCION', 'No se pudo cancelar la reserva. Intente nuevamente.');
         }
     }
 
@@ -137,24 +123,15 @@ class CancelarReservaService
             $reservaActual = $this->reservaModel->obtenerReservaConHabitacionesYPagos($idReserva);
 
             if (!$reservaActual) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'Reserva no encontrada.'
-                ];
+                return $this->respuesta(false, 'NO_ENCONTRADO', 'Reserva no encontrada.');
             }
 
             if ($reservaActual->estado !== 'pendiente') {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'Solo se puede eliminar una reserva pendiente de pago.'
-                ];
+                return $this->respuesta(false, 'CONFLICTO', 'Solo se puede eliminar una reserva pendiente de pago.');
             }
 
             if ($reservaActual->pagos && $reservaActual->pagos->count() > 0) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'La reserva ya tiene pagos registrados.'
-                ];
+                return $this->respuesta(false, 'CONFLICTO', 'La reserva ya tiene pagos registrados.');
             }
 
             DB::connection()->beginTransaction();
@@ -179,10 +156,7 @@ class CancelarReservaService
 
             DB::connection()->commit();
 
-            return [
-                'exito' => true,
-                'mensaje' => 'Reserva pendiente eliminada correctamente.',
-            ];
+            return $this->respuesta(true, 'ELIMINADO', 'Reserva pendiente eliminada correctamente.');
         } catch (\Throwable $e) {
             error_log('CancelarReservaService::eliminarReservaPendiente -> ' . $e->getMessage());
             $conexion = DB::connection();
@@ -191,10 +165,20 @@ class CancelarReservaService
                 $conexion->rollBack();
             }
 
-            return [
-                'exito' => false,
-                'mensaje' => 'No se pudo eliminar la reserva pendiente. Intente nuevamente.'
-            ];
+            return $this->respuesta(false, 'EXCEPCION', 'No se pudo eliminar la reserva pendiente. Intente nuevamente.');
         }
+    }
+
+    private function respuesta(bool $exito, string $codigo, string $mensaje, mixed $data = null, array $errores = []): array
+    {
+        $respuesta = [
+            'exito' => $exito,
+            'codigo' => $codigo,
+            'mensaje' => $mensaje,
+            'data' => $data,
+            'errores' => $errores,
+        ];
+
+        return is_array($data) ? array_merge($respuesta, $data) : $respuesta;
     }
 }

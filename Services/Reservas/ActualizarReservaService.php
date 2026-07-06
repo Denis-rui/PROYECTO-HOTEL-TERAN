@@ -36,19 +36,13 @@ class ActualizarReservaService
             $idReserva = (int) ($datos['id_reserva'] ?? 0);
 
             if ($idReserva <= 0) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'No se recibió el ID de la reserva.'
-                ];
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'No se recibió el ID de la reserva.');
             }
 
             $reservaActual = $this->reservaModel->obtenerReservaConHabitacionesYPagos($idReserva);
 
             if (!$reservaActual) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'Reserva no encontrada.'
-                ];
+                return $this->respuesta(false, 'NO_ENCONTRADO', 'Reserva no encontrada.');
             }
 
             $estadoReserva = strtolower(trim((string) $reservaActual->estado));
@@ -62,10 +56,7 @@ class ActualizarReservaService
             }
 
             if ($estadoReserva !== 'confirmada') {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'Solo se puede editar una reserva confirmada o una estadía activa.'
-                ];
+                return $this->respuesta(false, 'CONFLICTO', 'Solo se puede editar una reserva confirmada o una estadía activa.');
             }
 
             $checkIn = ReservaHelper::combinarFechaHora(
@@ -81,10 +72,7 @@ class ActualizarReservaService
             $dias = ReservaHelper::obtenerDiasEstadia($checkIn, $checkOut);
 
             if ($dias <= 0) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'Rango de fechas inválido.'
-                ];
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'Rango de fechas inválido.');
             }
 
             $idsHabitacionesActuales = $this->obtenerIdsHabitacionesActuales($reservaActual);
@@ -109,20 +97,14 @@ class ActualizarReservaService
                     );
 
                     if (!$disponibilidad['disponible']) {
-                        return [
-                            'exito' => false,
-                            'mensaje' => $disponibilidad['mensaje']
-                        ];
+                        return $this->respuesta(false, 'CONFLICTO', $disponibilidad['mensaje']);
                     }
                 }
 
                 $habitacionActual = $this->habitacionModel->obtenerPorId($idHabitacion);
 
                 if (!$habitacionActual) {
-                    return [
-                        'exito' => false,
-                        'mensaje' => 'No se encontró una de las habitaciones seleccionadas.'
-                    ];
+                    return $this->respuesta(false, 'NO_ENCONTRADO', 'No se encontró una de las habitaciones seleccionadas.');
                 }
 
                 $precioHabitacion = (float) ($habitacionActual['precio'] ?? 0);
@@ -139,19 +121,13 @@ class ActualizarReservaService
             }
 
             if (empty($habitacionesNormalizadas)) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'Debe seleccionar al menos una habitación válida.'
-                ];
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'Debe seleccionar al menos una habitación válida.');
             }
 
             $totalPagado = (float) ($reservaActual->pagos->sum('monto') ?? 0);
 
             if ($totalPagado > $totalCalculado + 0.00001) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'No se puede dejar un total menor al monto ya pagado. Total pagado: S/ ' . number_format($totalPagado, 2)
-                ];
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'No se puede dejar un total menor al monto ya pagado. Total pagado: S/ ' . number_format($totalPagado, 2));
             }
 
             $habitacionesAnteriores = $reservaActual->reservaHabitacion ?? [];
@@ -190,12 +166,10 @@ class ActualizarReservaService
 
             DB::connection()->commit();
 
-            return [
-                'exito' => true,
-                'mensaje' => 'Reserva actualizada correctamente.',
+            return $this->respuesta(true, 'ACTUALIZADO', 'Reserva actualizada correctamente.', [
                 'id_reserva' => $idReserva,
                 'reserva' => $this->reservaModel->obtenerReservaPorId($idReserva),
-            ];
+            ]);
         } catch (\Throwable $e) {
             error_log('ActualizarReservaService::actualizarReserva -> ' . $e->getMessage());
             $conexion = DB::connection();
@@ -204,10 +178,7 @@ class ActualizarReservaService
                 $conexion->rollBack();
             }
 
-            return [
-                'exito' => false,
-                'mensaje' => 'No se pudo actualizar la reserva. Intente nuevamente.'
-            ];
+            return $this->respuesta(false, 'EXCEPCION', 'No se pudo actualizar la reserva. Intente nuevamente.');
         }
     }
 
@@ -223,19 +194,13 @@ class ActualizarReservaService
             );
 
             if (!$checkOut) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'Debe indicar la fecha de salida.'
-                ];
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'Debe indicar la fecha de salida.');
             }
 
             $clienteNuevo = (int) ($datos['cliente'] ?? $datos['id_cliente'] ?? $reservaActual->id_cliente);
 
             if ($clienteNuevo !== (int) $reservaActual->id_cliente) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'No se puede cambiar el cliente cuando la reserva está en estadía.'
-                ];
+                return $this->respuesta(false, 'CONFLICTO', 'No se puede cambiar el cliente cuando la reserva está en estadía.');
             }
 
             $idsSolicitados = HabitacionInputHelper::obtenerIdsDesdeRequest($datos);
@@ -252,10 +217,7 @@ class ActualizarReservaService
 
             foreach ($idsActivos as $idActivo) {
                 if (!in_array($idActivo, $idsSolicitados, true)) {
-                    return [
-                        'exito' => false,
-                        'mensaje' => 'No se puede quitar habitaciones durante una estadía. Use Cambiar habitación.'
-                    ];
+                    return $this->respuesta(false, 'CONFLICTO', 'No se puede quitar habitaciones durante una estadía. Use Cambiar habitación.');
                 }
             }
 
@@ -276,10 +238,7 @@ class ActualizarReservaService
                 if (!$disponibilidad['disponible']) {
                     DB::connection()->rollBack();
 
-                    return [
-                        'exito' => false,
-                        'mensaje' => $disponibilidad['mensaje']
-                    ];
+                    return $this->respuesta(false, 'CONFLICTO', $disponibilidad['mensaje']);
                 }
 
                 $precioAplicado = (float) ($relacion->precio_aplicado ?: 0);
@@ -319,10 +278,7 @@ class ActualizarReservaService
                 if (!$disponibilidad['disponible']) {
                     DB::connection()->rollBack();
 
-                    return [
-                        'exito' => false,
-                        'mensaje' => $disponibilidad['mensaje']
-                    ];
+                    return $this->respuesta(false, 'CONFLICTO', $disponibilidad['mensaje']);
                 }
 
                 $habitacionNueva = $this->habitacionModel->obtenerPorId($idHabitacionNueva);
@@ -330,10 +286,7 @@ class ActualizarReservaService
                 if (!$habitacionNueva) {
                     DB::connection()->rollBack();
 
-                    return [
-                        'exito' => false,
-                        'mensaje' => 'No se encontró una de las habitaciones seleccionadas.'
-                    ];
+                    return $this->respuesta(false, 'NO_ENCONTRADO', 'No se encontró una de las habitaciones seleccionadas.');
                 }
 
                 $precio = (float) ($habitacionNueva['precio'] ?? 0);
@@ -369,12 +322,10 @@ class ActualizarReservaService
 
             DB::connection()->commit();
 
-            return [
-                'exito' => true,
-                'mensaje' => 'Estadía actualizada correctamente.',
+            return $this->respuesta(true, 'ACTUALIZADO', 'Estadía actualizada correctamente.', [
                 'id_reserva' => $idReserva,
                 'reserva' => $this->reservaModel->obtenerReservaPorId($idReserva),
-            ];
+            ]);
         } catch (\Throwable $e) {
             error_log('ActualizarReservaService::actualizarEstadiaActiva -> ' . $e->getMessage());
             $conexion = DB::connection();
@@ -383,10 +334,7 @@ class ActualizarReservaService
                 $conexion->rollBack();
             }
 
-            return [
-                'exito' => false,
-                'mensaje' => 'No se pudo actualizar la estadía. Intente nuevamente.'
-            ];
+            return $this->respuesta(false, 'EXCEPCION', 'No se pudo actualizar la estadía. Intente nuevamente.');
         }
     }
 
@@ -446,5 +394,18 @@ class ActualizarReservaService
 
             }
         }
+    }
+
+    private function respuesta(bool $exito, string $codigo, string $mensaje, mixed $data = null, array $errores = []): array
+    {
+        $respuesta = [
+            'exito' => $exito,
+            'codigo' => $codigo,
+            'mensaje' => $mensaje,
+            'data' => $data,
+            'errores' => $errores,
+        ];
+
+        return is_array($data) ? array_merge($respuesta, $data) : $respuesta;
     }
 }

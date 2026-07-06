@@ -51,19 +51,13 @@ class RegistrarReservaService
             $dias = ReservaHelper::obtenerDiasEstadia($checkIn, $checkOut);
 
             if ($dias <= 0) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'Rango de fechas inválido.'
-                ];
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'Rango de fechas inválido.');
             }
 
             $idsHabitaciones = HabitacionInputHelper::obtenerIdsDesdeRequest($reserva);
 
             if (empty($idsHabitaciones)) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'Debe seleccionar al menos una habitación válida.'
-                ];
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'Debe seleccionar al menos una habitación válida.');
             }
 
             $habitacionesNormalizadas = [];
@@ -77,19 +71,13 @@ class RegistrarReservaService
                 );
 
                 if (!$disponibilidad['disponible']) {
-                    return [
-                        'exito' => false,
-                        'mensaje' => $disponibilidad['mensaje']
-                    ];
+                    return $this->respuesta(false, 'CONFLICTO', $disponibilidad['mensaje']);
                 }
 
                 $habitacionActual = $this->habitacionModel->obtenerPorId($idHabitacion);
 
                 if (!$habitacionActual) {
-                    return [
-                        'exito' => false,
-                        'mensaje' => 'No se encontró una de las habitaciones seleccionadas.'
-                    ];
+                    return $this->respuesta(false, 'NO_ENCONTRADO', 'No se encontró una de las habitaciones seleccionadas.');
                 }
 
                 $precioHabitacion = (float) ($habitacionActual['precio'] ?? 0);
@@ -117,26 +105,17 @@ class RegistrarReservaService
                 : 0;
 
             if (!$esPagoPendiente && $montoPagoInicial <= 0) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'Debe registrar un pago inicial para realizar la reserva.'
-                ];
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'Debe registrar un pago inicial para realizar la reserva.');
             }
 
             $montoMinimoInicial = round($totalCalculado * 0.5, 2);
 
             if (!$esPagoPendiente && $montoPagoInicial < $montoMinimoInicial) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'El pago inicial debe ser al menos el 50% del total de la reserva. Monto mínimo: S/ ' . number_format($montoMinimoInicial, 2)
-                ];
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'El pago inicial debe ser al menos el 50% del total de la reserva. Monto mínimo: S/ ' . number_format($montoMinimoInicial, 2));
             }
 
             if (!$esPagoPendiente && $montoPagoInicial > $totalCalculado) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'El pago inicial no puede ser mayor al total de la reserva.'
-                ];
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'El pago inicial no puede ser mayor al total de la reserva.');
             }
 
             DB::connection()->beginTransaction();
@@ -174,12 +153,10 @@ class RegistrarReservaService
             if ($esPagoPendiente) {
                 DB::connection()->commit();
 
-                return [
-                    'exito' => true,
-                    'mensaje' => 'Reserva registrada como pendiente de pago.',
+                return $this->respuesta(true, 'CREADO', 'Reserva registrada como pendiente de pago.', [
                     'id_reserva' => $idReserva,
                     'estado' => 'pendiente',
-                ];
+                ]);
             }
 
             $pago = $this->pagoModel->crear([
@@ -210,13 +187,11 @@ class RegistrarReservaService
             $comprobanteData['cliente'] = !empty($reserva['nombre']) ? trim($reserva['nombre']) : '—';
             DB::connection()->commit();
 
-            return [
-                'exito' => true,
-                'mensaje' => 'Reserva registrada correctamente.',
+            return $this->respuesta(true, 'CREADO', 'Reserva registrada correctamente.', [
                 'id_reserva' => $idReserva,
                 'pago_id' => (int) $pago->id,
                 'comprobante' => $comprobanteData,
-            ];
+            ]);
         } catch (\Throwable $e) {
             error_log('RegistrarReservaService::registrarReserva -> ' . $e->getMessage());
             $conexion = DB::connection();
@@ -225,10 +200,20 @@ class RegistrarReservaService
                 $conexion->rollBack();
             }
 
-            return [
-                'exito' => false,
-                'mensaje' => 'No se pudo registrar la reserva. Intente nuevamente.'
-            ];
+            return $this->respuesta(false, 'EXCEPCION', 'No se pudo registrar la reserva. Intente nuevamente.');
         }
+    }
+
+    private function respuesta(bool $exito, string $codigo, string $mensaje, mixed $data = null, array $errores = []): array
+    {
+        $respuesta = [
+            'exito' => $exito,
+            'codigo' => $codigo,
+            'mensaje' => $mensaje,
+            'data' => $data,
+            'errores' => $errores,
+        ];
+
+        return is_array($data) ? array_merge($respuesta, $data) : $respuesta;
     }
 }

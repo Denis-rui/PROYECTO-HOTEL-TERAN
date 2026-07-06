@@ -10,10 +10,7 @@ class NubefactClient
         $apiToken = defined('NUBEFACT_API_TOKEN') ? (string) constant('NUBEFACT_API_TOKEN') : '';
 
         if ($apiUrl === '' || $apiToken === '') {
-            return [
-                'exito' => false,
-                'mensaje' => 'Falta configurar la ruta y el token de la cuenta emisora de NubeFact.'
-            ];
+            return $this->respuesta(false, 'DATOS_INCOMPLETOS', 'Falta configurar la ruta y el token de la cuenta emisora de NubeFact.');
         }
 
         $curl = curl_init($apiUrl);
@@ -37,29 +34,29 @@ class NubefactClient
 
         if ($respuesta === false) {
             error_log('NubefactClient::enviarComprobante -> ' . $error);
-            return ['exito' => false, 'mensaje' => 'No se pudo conectar con el servicio de facturación. Intente nuevamente.'];
+            return $this->respuesta(false, 'ERROR_INTERNO', 'No se pudo conectar con el servicio de facturación. Intente nuevamente.');
         }
 
         $datos = json_decode($respuesta, true);
 
         if (!is_array($datos)) {
-            return ['exito' => false, 'mensaje' => 'NubeFact devolvió una respuesta inválida.'];
+            return $this->respuesta(false, 'ERROR_INTERNO', 'NubeFact devolvió una respuesta inválida.');
         }
 
         if ($codigoHttp >= 400 || isset($datos['errors']) || isset($datos['codigo'])) {
             $mensaje = $this->extraerMensajeError($datos);
             error_log('NubefactClient::enviarComprobante -> ' . $mensaje);
-            return [
-                'exito' => false,
-                'mensaje' => 'NubeFact no pudo procesar el comprobante: ' . $mensaje,
+            return $this->respuesta(false, 'CONFLICTO', 'NubeFact no pudo procesar el comprobante: ' . $mensaje, [
                 'codigo_error' => $this->esErrorDocumentoExistente($mensaje)
                     ? 'documento_existente'
                     : 'nubefact_error',
                 'respuesta' => $datos,
-            ];
+            ]);
         }
 
-        return ['exito' => true, 'respuesta' => $datos];
+        return $this->respuesta(true, 'OK', 'Comprobante aceptado por NubeFact.', [
+            'respuesta' => $datos,
+        ]);
     }
 
     private function extraerMensajeError(array $datos): string
@@ -82,5 +79,18 @@ class NubefactClient
     {
         return stripos($mensaje, 'ya existe') !== false
             && stripos($mensaje, 'documento') !== false;
+    }
+
+    private function respuesta(bool $exito, string $codigo, string $mensaje, mixed $data = null, array $errores = []): array
+    {
+        $respuesta = [
+            'exito' => $exito,
+            'codigo' => $codigo,
+            'mensaje' => $mensaje,
+            'data' => $data,
+            'errores' => $errores,
+        ];
+
+        return is_array($data) ? array_merge($respuesta, $data) : $respuesta;
     }
 }

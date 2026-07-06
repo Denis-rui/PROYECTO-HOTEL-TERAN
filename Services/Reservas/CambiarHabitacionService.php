@@ -41,26 +41,17 @@ class CambiarHabitacionService
             $reservaActual = $this->reservaModel->obtenerReservaConHabitacionesYPagos($idReserva);
 
             if (!$reservaActual || !in_array($reservaActual->estado, ['en_estadia', 'checkout_pendiente'], true)) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'Solo se puede cambiar habitación de una estadía activa.'
-                ];
+                return $this->respuesta(false, 'CONFLICTO', 'Solo se puede cambiar habitación de una estadía activa.');
             }
 
             $tipoMotivo = strtolower(trim($tipoMotivo));
 
             if (!in_array($tipoMotivo, ['falla_hotel', 'solicitud_cliente'], true)) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'Seleccione si el cambio es por falla del hotel o solicitud del cliente.'
-                ];
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'Seleccione si el cambio es por falla del hotel o solicitud del cliente.');
             }
 
             if (trim($motivo) === '') {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'Debe indicar motivo del cambio de habitación.'
-                ];
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'Debe indicar motivo del cambio de habitación.');
             }
 
             $relacionActual = null;
@@ -76,10 +67,7 @@ class CambiarHabitacionService
             }
 
             if (!$relacionActual) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'No se encontró la habitación activa que desea cambiar.'
-                ];
+                return $this->respuesta(false, 'NO_ENCONTRADO', 'No se encontró la habitación activa que desea cambiar.');
             }
 
             $fechaCambio = FechaHotelHelper::ahora();
@@ -89,10 +77,7 @@ class CambiarHabitacionService
                 $tipoMotivo === 'solicitud_cliente'
                 && substr($fechaCambio, 0, 10) === substr((string) $checkOut, 0, 10)
             ) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'No se puede cambiar la habitación por solicitud del cliente el mismo día de salida. Primero actualice la fecha de checkout.'
-                ];
+                return $this->respuesta(false, 'CONFLICTO', 'No se puede cambiar la habitación por solicitud del cliente el mismo día de salida. Primero actualice la fecha de checkout.');
             }
 
             $disponibilidad = $this->reporteOcupacionModel->validarDisponibilidadHabitacion(
@@ -103,20 +88,14 @@ class CambiarHabitacionService
             );
 
             if (!$disponibilidad['disponible']) {
-                return [
-                    'exito' => false,
-                    'mensaje' => $disponibilidad['mensaje']
-                ];
+                return $this->respuesta(false, 'CONFLICTO', $disponibilidad['mensaje']);
             }
 
             $habitacionAnterior = $this->habitacionModel->obtenerPorId($idHabitacionActual);
             $habitacionNueva = $this->habitacionModel->obtenerPorId($idHabitacionNueva);
 
             if (!$habitacionAnterior || !$habitacionNueva) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'No se encontró la habitación seleccionada.'
-                ];
+                return $this->respuesta(false, 'NO_ENCONTRADO', 'No se encontró la habitación seleccionada.');
             }
 
             $precioAnterior = (float) (
@@ -199,14 +178,12 @@ class CambiarHabitacionService
 
             DB::connection()->commit();
 
-            return [
-                'exito' => true,
-                'mensaje' => 'Cambio de habitación registrado correctamente.',
+            return $this->respuesta(true, 'ACTUALIZADO', 'Cambio de habitación registrado correctamente.', [
                 'total_anterior' => $totalAnterior,
                 'total_nuevo' => $nuevoTotal,
                 'diferencia' => max(0, $nuevoTotal - $totalAnterior),
                 'reserva' => $this->reservaModel->obtenerReservaPorId($idReserva),
-            ];
+            ]);
         } catch (\Throwable $e) {
             error_log('CambiarHabitacionService::cambiarHabitacion -> ' . $e->getMessage());
             $conexion = DB::connection();
@@ -215,10 +192,20 @@ class CambiarHabitacionService
                 $conexion->rollBack();
             }
 
-            return [
-                'exito' => false,
-                'mensaje' => 'No se pudo cambiar la habitación. Intente nuevamente.'
-            ];
+            return $this->respuesta(false, 'EXCEPCION', 'No se pudo cambiar la habitación. Intente nuevamente.');
         }
+    }
+
+    private function respuesta(bool $exito, string $codigo, string $mensaje, mixed $data = null, array $errores = []): array
+    {
+        $respuesta = [
+            'exito' => $exito,
+            'codigo' => $codigo,
+            'mensaje' => $mensaje,
+            'data' => $data,
+            'errores' => $errores,
+        ];
+
+        return is_array($data) ? array_merge($respuesta, $data) : $respuesta;
     }
 }

@@ -71,7 +71,7 @@ class ReservaController extends ApiController
     {
         $datos = $this->obtenerPayloadJson() ?? [];
         $modelo = new DocumentoElectronicoService();
-        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva(
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta(
             $modelo->emitir($datos, $_SESSION['id_usuario'] ?? null),
             201
         );
@@ -83,11 +83,17 @@ class ReservaController extends ApiController
     {
         $datos = $this->obtenerPayloadJson();
         if (!is_array($datos)) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'Datos inválidos.'], 400);
+            $this->responderJson([
+                'exito' => false,
+                'codigo' => 'DATOS_INCOMPLETOS',
+                'mensaje' => 'Datos inválidos.',
+                'data' => null,
+                'errores' => [],
+            ], 422);
         }
         $service = new RegistrarReservaService();
         $resultado = $service->registrarReserva($datos, $_SESSION['id_usuario'] ?? null);
-        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado, 201);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($resultado, 201);
         $this->responderJson($payload, $codigoHttp);
     }
 
@@ -100,8 +106,11 @@ class ReservaController extends ApiController
         if (!is_array($datos)) {
             $this->responderJson([
                 'exito' => false,
-                'mensaje' => 'Datos inválidos.'
-            ], 400);
+                'codigo' => 'DATOS_INCOMPLETOS',
+                'mensaje' => 'Datos inválidos.',
+                'data' => null,
+                'errores' => [],
+            ], 422);
         }
 
         $service = new ActualizarReservaService();
@@ -111,7 +120,7 @@ class ReservaController extends ApiController
             $_SESSION['id_usuario'] ?? null
         );
 
-        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($resultado);
         $this->responderJson($payload, $codigoHttp);
     }
 
@@ -122,8 +131,11 @@ class ReservaController extends ApiController
         if (!is_array($datos)) {
             $this->responderJson([
                 'exito' => false,
-                'mensaje' => 'Datos inválidos.'
-            ], 400);
+                'codigo' => 'DATOS_INCOMPLETOS',
+                'mensaje' => 'Datos inválidos.',
+                'data' => null,
+                'errores' => [],
+            ], 422);
         }
 
         $service = new RegistrarPagoService();
@@ -139,7 +151,7 @@ class ReservaController extends ApiController
 
         );
 
-        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado, 201);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($resultado, 201);
         $this->responderJson($payload, $codigoHttp);
     }
 
@@ -155,7 +167,7 @@ class ReservaController extends ApiController
             $_SESSION['id_usuario'] ?? null
         );
 
-        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($resultado);
         $this->responderJson($payload, $codigoHttp);
     }
 
@@ -176,7 +188,7 @@ class ReservaController extends ApiController
             $motivoAutorizacion
         );
 
-        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($resultado);
         $this->responderJson($payload, $codigoHttp);
     }
 
@@ -192,7 +204,7 @@ class ReservaController extends ApiController
             $_SESSION['id_usuario'] ?? null
         );
 
-        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($resultado);
         $this->responderJson($payload, $codigoHttp);
     }
 
@@ -208,7 +220,7 @@ class ReservaController extends ApiController
             $_SESSION['id_usuario'] ?? null
         );
 
-        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($resultado);
         $this->responderJson($payload, $codigoHttp);
     }
 
@@ -270,7 +282,7 @@ class ReservaController extends ApiController
             $_SESSION['id_usuario'] ?? null
         );
 
-        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($resultado);
         $this->responderJson($payload, $codigoHttp);
     }
 
@@ -285,7 +297,7 @@ class ReservaController extends ApiController
             $_SESSION['id_usuario'] ?? null
         );
 
-        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($resultado);
         $this->responderJson($payload, $codigoHttp);
     }
 
@@ -293,7 +305,7 @@ class ReservaController extends ApiController
     {
         $datos = $this->obtenerPayloadJson() ?? [];
         $modelo = new CalculoDevolucionService();
-        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva(
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta(
             $modelo->calcular((int) ($datos['id_reserva'] ?? 0))
         );
         $this->responderJson($payload, $codigoHttp);
@@ -314,7 +326,7 @@ class ReservaController extends ApiController
             $_SESSION['id_usuario'] ?? null
         );
 
-        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($resultado);
         $this->responderJson($payload, $codigoHttp);
     }
 }

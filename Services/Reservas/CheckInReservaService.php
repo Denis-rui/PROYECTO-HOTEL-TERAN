@@ -28,16 +28,10 @@ class CheckInReservaService
         try {
             $reservaActual = $this->reservaModel->obtenerReservaConHabitaciones($idReserva);
             if (!$reservaActual) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'Reserva no encontrada.'
-                ];
+                return $this->respuesta(false, 'NO_ENCONTRADO', 'Reserva no encontrada.');
             }
             if ($reservaActual->estado !== 'confirmada') {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'Solo se puede confirmar check-in de reservas confirmadas.'
-                ];
+                return $this->respuesta(false, 'CONFLICTO', 'Solo se puede confirmar check-in de reservas confirmadas.');
             }
             foreach ($reservaActual->reservaHabitacion as $reservaHabitacion) {
                 if (!ReservaHabitacionHelper::esActiva($reservaHabitacion)) {
@@ -51,10 +45,7 @@ class CheckInReservaService
                 if ($ocupada && (int) $ocupada['id'] !== (int) $idReserva) {
                     $numeroHabitacion = $reservaHabitacion->habitacion->numero_habitacion ?? '';
 
-                    return [
-                        'exito' => false,
-                        'mensaje' => 'La habitación ' . $numeroHabitacion . ' está ocupada por otra reserva.',
-                    ];
+                    return $this->respuesta(false, 'CONFLICTO', 'La habitación ' . $numeroHabitacion . ' está ocupada por otra reserva.');
                 }
             }
 
@@ -74,12 +65,10 @@ class CheckInReservaService
             }
 
             DB::connection()->commit();
-            return [
-                'exito' => true,
-                'mensaje' => 'Check-in confirmado correctamente.',
+            return $this->respuesta(true, 'ACTUALIZADO', 'Check-in confirmado correctamente.', [
                 'checkin_real' => $fechaCheckin,
                 'reserva' => $this->reservaModel->obtenerReservaPorId($idReserva),
-            ];
+            ]);
         } catch (\Throwable $e) {
             error_log('CheckInReservaService::confirmarCheckIn -> ' . $e->getMessage());
             $conexion = DB::connection();
@@ -87,10 +76,20 @@ class CheckInReservaService
             if ($conexion->getPdo()->inTransaction()) {
                 $conexion->rollBack();
             }
-            return [
-                'exito' => false,
-                'mensaje' => 'No se pudo confirmar el check-in. Intente nuevamente.'
-            ];
+            return $this->respuesta(false, 'EXCEPCION', 'No se pudo confirmar el check-in. Intente nuevamente.');
         }
+    }
+
+    private function respuesta(bool $exito, string $codigo, string $mensaje, mixed $data = null, array $errores = []): array
+    {
+        $respuesta = [
+            'exito' => $exito,
+            'codigo' => $codigo,
+            'mensaje' => $mensaje,
+            'data' => $data,
+            'errores' => $errores,
+        ];
+
+        return is_array($data) ? array_merge($respuesta, $data) : $respuesta;
     }
 }

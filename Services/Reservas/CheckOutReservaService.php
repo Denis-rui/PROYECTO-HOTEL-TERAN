@@ -30,17 +30,11 @@ class CheckOutReservaService
             $reservaActual = $this->reservaModel->obtenerReservaConHabitacionesYPagos($idReserva);
 
             if (!$reservaActual) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'Reserva no encontrada.'
-                ];
+                return $this->respuesta(false, 'NO_ENCONTRADO', 'Reserva no encontrada.');
             }
 
             if (!in_array($reservaActual->estado, ['en_estadia', 'checkout_pendiente'], true)) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'Solo se puede hacer checkout de reservas en estadía o checkout pendiente.'
-                ];
+                return $this->respuesta(false, 'CONFLICTO', 'Solo se puede hacer checkout de reservas en estadía o checkout pendiente.');
             }
 
             $primeraRelacion = $reservaActual->reservaHabitacion->first();
@@ -74,15 +68,13 @@ class CheckOutReservaService
 
                 DB::connection()->commit();
 
-                return [
-                    'exito' => false,
+                return $this->respuesta(false, 'CONFLICTO', 'Existe saldo pendiente de S/ ' . number_format($saldoFinal, 2) . '. Registre el pago completo antes de confirmar el checkout.', [
                     'requiere_pago' => true,
-                    'mensaje' => 'Existe saldo pendiente de S/ ' . number_format($saldoFinal, 2) . '. Registre el pago completo antes de confirmar el checkout.',
                     'saldo_pendiente' => round($saldoFinal, 2),
                     'cargo_checkout_tarde' => $cargoTarde,
                     'minutos_demora' => $minutosDemora,
                     'reserva' => $this->reservaModel->obtenerReservaPorId($idReserva),
-                ];
+                ]);
             }
 
             DB::connection()->beginTransaction();
@@ -129,14 +121,12 @@ class CheckOutReservaService
 
             DB::connection()->commit();
 
-            return [
-                'exito' => true,
-                'mensaje' => 'Checkout confirmado. La habitación quedó en mantenimiento hasta limpieza.',
+            return $this->respuesta(true, 'ACTUALIZADO', 'Checkout confirmado. La habitación quedó en mantenimiento hasta limpieza.', [
                 'checkout_real' => $fechaCheckout,
                 'cargo_checkout_tarde' => $cargoTarde,
                 'minutos_demora' => $minutosDemora,
                 'reserva' => $this->reservaModel->obtenerReservaPorId($idReserva),
-            ];
+            ]);
         } catch (\Throwable $e) {
             error_log('CheckOutReservaService::confirmarCheckout -> ' . $e->getMessage());
             $conexion = DB::connection();
@@ -145,10 +135,20 @@ class CheckOutReservaService
                 $conexion->rollBack();
             }
 
-            return [
-                'exito' => false,
-                'mensaje' => 'No se pudo confirmar el checkout. Intente nuevamente.'
-            ];
+            return $this->respuesta(false, 'EXCEPCION', 'No se pudo confirmar el checkout. Intente nuevamente.');
         }
+    }
+
+    private function respuesta(bool $exito, string $codigo, string $mensaje, mixed $data = null, array $errores = []): array
+    {
+        $respuesta = [
+            'exito' => $exito,
+            'codigo' => $codigo,
+            'mensaje' => $mensaje,
+            'data' => $data,
+            'errores' => $errores,
+        ];
+
+        return is_array($data) ? array_merge($respuesta, $data) : $respuesta;
     }
 }
