@@ -23,17 +23,36 @@ class DevolucionController extends Controller
             exit();
         }
 
-        $busqueda = $_GET['busqueda'] ?? '';
-
-        // Llamamos al servicio en lugar del modelo
-        $respuesta = $this->devolucionService->listarDevoluciones($busqueda);
-
         $data['page_title'] = "Devoluciones";
-        // Si el servicio tuvo éxito, enviamos la data; si no, un arreglo vacío
-        $data['devoluciones'] = $respuesta['exito'] ? $respuesta['data'] : [];
-        $data['page_js'] = [];
+        $data['page_js'] = ['Devoluciones.js'];
 
         $this->views->render($this, 'index', $data);
+    }
+
+    public function datatable($params = '')
+    {
+        if (!isset($_SESSION['usuario'])) {
+            $this->responderJson([
+                'draw' => (int) ($_POST['draw'] ?? 0),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => 'Sesión no válida.',
+            ], 401);
+        }
+
+        try {
+            $this->responderJson($this->devolucionService->listarParaDataTable($_POST));
+        } catch (\Throwable $e) {
+            error_log('DevolucionController::datatable -> ' . $e->getMessage());
+            $this->responderJson([
+                'draw' => (int) ($_POST['draw'] ?? 0),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => 'No se pudieron cargar las devoluciones.',
+            ], 500);
+        }
     }
 
     public function registrar($params = '')

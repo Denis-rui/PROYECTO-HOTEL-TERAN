@@ -18,15 +18,16 @@ class DevolucionService
         $this->calculoService = new CalculoDevolucionService();
     }
 
-    public function listarDevoluciones(string $busqueda = ''): array
+    public function listarParaDataTable(array $parametros): array
     {
-        try {
-            $datos = $this->devolucionModel->listar($busqueda);
-            return ['exito' => true, 'mensaje' => 'Listado correcto', 'data' => $datos];
-        } catch (Exception $e) {
-            error_log('Error al listar devoluciones: ' . $e->getMessage());
-            return ['exito' => false, 'mensaje' => 'Error al cargar las devoluciones', 'data' => []];
-        }
+        $resultado = $this->devolucionModel->obtenerDevolucionesDataTable($parametros);
+
+        return [
+            'draw' => (int) ($parametros['draw'] ?? 0),
+            'recordsTotal' => (int) ($resultado['total'] ?? 0),
+            'recordsFiltered' => (int) ($resultado['filtrados'] ?? 0),
+            'data' => $resultado['items'] ?? [],
+        ];
     }
 
     public function registrarDevolucion(array $data, ?int $idUsuario): array

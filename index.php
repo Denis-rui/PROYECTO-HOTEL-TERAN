@@ -94,6 +94,7 @@ $router->get('Comprobante/emitidosPorReserva', ['Comprobante', 'emitidosPorReser
 
 $router->get('Devolucion/index', ['Devolucion', 'index']);
 
+$router->post('Devolucion/datatable', ['Devolucion', 'datatable']);
 $router->post('Devolucion/registrar', ['Devolucion', 'registrar']);
 $router->put('Devolucion/actualizar', ['Devolucion', 'actualizar']);
 $router->delete('Devolucion/eliminar', ['Devolucion', 'eliminar']);
