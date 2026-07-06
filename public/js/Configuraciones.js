@@ -39,10 +39,10 @@ window.inicializarConfiguraciones = () => {
           .then((res) => res.json())
           .then((data) => {
             if (data.exito) {
-              Notificar("Configuración guardada correctamente.", "exito");
+              Notificar(data.mensaje || "Configuración guardada correctamente.", "exito");
               setTimeout(() => location.reload(), 800);
             } else {
-              Notificar("Error al guardar. Intenta de nuevo.", "error");
+              Notificar(data.mensaje || "Error al guardar. Intenta de nuevo.", "error");
               if (btnGuardar) btnGuardar.disabled = false;
             }
           })
