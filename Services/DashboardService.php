@@ -27,7 +27,8 @@ class DashboardService
                 'exito' => true,
                 'codigo' => 'OK',
                 'mensaje' => 'Estadísticas del dashboard cargadas correctamente.',
-                'data' => $estadisticas
+                'data' => $estadisticas,
+                'errores' => [],
             ];
         } catch (Exception $e) {
             // Si algo falla en el SQL (una tabla no existe, se cayó la BD, etc.)
@@ -37,9 +38,10 @@ class DashboardService
             // Y le devolvemos una respuesta controlada al usuario/frontend
             return [
                 'exito' => false,
-                'codigo' => 'ERROR_ESTADISTICAS',
+                'codigo' => 'ERROR_INTERNO',
                 'mensaje' => 'Ocurrió un error al intentar cargar las estadísticas. Por favor, intenta más tarde.',
-                'data' => null
+                'data' => null,
+                'errores' => [],
             ];
         }
     }

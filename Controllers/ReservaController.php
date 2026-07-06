@@ -233,7 +233,10 @@ class ReservaController extends ApiController
         if (!$reserva) {
             $this->responderJson([
                 'exito' => false,
-                'mensaje' => 'Reserva no encontrada.'
+                'codigo' => 'NO_ENCONTRADO',
+                'mensaje' => 'Reserva no encontrada.',
+                'data' => null,
+                'errores' => [],
             ], 404);
         }
 
@@ -244,7 +247,7 @@ class ReservaController extends ApiController
     {
         $dashboardService = new DashboardService();
         $respuesta = $dashboardService->obtenerEstadisticas();
-        $this->responderJson($respuesta['data']);
+        $this->responderJson($respuesta['data'] ?? []);
     }
 
     public function notificaciones($params = '')
@@ -252,7 +255,11 @@ class ReservaController extends ApiController
         $notificacionService = new NotificacionService();
         $respuesta = $notificacionService->obtenerNotificacionesCheckout();
 
-        $this->responderJson($respuesta['data']);
+        $this->responderJson($respuesta['data'] ?? [
+            'proximos' => [],
+            'vencidos' => [],
+            'notificaciones' => [],
+        ]);
     }
 
     public function calcularTotal($params = '')

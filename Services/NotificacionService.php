@@ -37,13 +37,15 @@ class NotificacionService
 
             $guardado = $this->notificacionModel->guardarNotificacion($datosIdentificadores, $datosActualizar);
 
-            return [
-                'exito' => $guardado,
-                'mensaje' => $guardado ? 'Notificacion creada.' : 'No se pudo crear la notificacion.'
-            ];
+            return $this->respuesta(
+                (bool) $guardado,
+                $guardado ? 'CREADO' : 'ERROR_GUARDADO',
+                $guardado ? 'Notificación creada.' : 'No se pudo crear la notificación.',
+                ['notificacion' => $datosActualizar]
+            );
         } catch (Exception $e) {
             error_log('Error crear notificacion: ' . $e->getMessage());
-            return ['exito' => false, 'mensaje' => 'Error inesperado al crear notificacion.'];
+            return $this->respuesta(false, 'ERROR_INTERNO', 'Error inesperado al crear notificación.');
         }
     }
 
@@ -142,19 +144,28 @@ class NotificacionService
                 'notificaciones' => $notificaciones,
             ];
 
-            return ['exito' => true, 'mensaje' => 'Notificaciones cargadas.', 'data' => $data];
+            return $this->respuesta(true, 'OK', 'Notificaciones cargadas.', $data);
         } catch (Exception $e) {
             error_log('Error obtenerNotificacionesCheckout: ' . $e->getMessage());
 
-            return [
-                'exito' => false,
-                'mensaje' => 'Error al cargar las notificaciones.',
-                'data' => [
+            return $this->respuesta(false, 'ERROR_INTERNO', 'Error al cargar las notificaciones.', [
                     'proximos' => [],
                     'vencidos' => [],
                     'notificaciones' => []
-                ]
-            ];
+                ]);
         }
+    }
+
+    private function respuesta(bool $exito, string $codigo, string $mensaje, mixed $data = null, array $errores = []): array
+    {
+        $respuesta = [
+            'exito' => $exito,
+            'codigo' => $codigo,
+            'mensaje' => $mensaje,
+            'data' => $data,
+            'errores' => $errores,
+        ];
+
+        return is_array($data) ? array_merge($respuesta, $data) : $respuesta;
     }
 }

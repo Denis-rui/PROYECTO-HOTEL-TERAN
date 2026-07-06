@@ -13,14 +13,14 @@ class LoginService
         $this->usuarioModel = new UsuarioModel();
     }
 
-    public function autenticar($usuario, $contrasenia, $tipousuario)
+    public function autenticar($usuario, $contrasenia, $tipousuario): array
     {
         try {
             $user = $this->usuarioModel->obtenerPorNombreUsuario($usuario);
 
             // 1. Validar si el usuario existe
             if (!$user) {
-                return ['exito' => false, 'mensaje' => 'Usuario no encontrado'];
+                return $this->respuesta(false, 'NO_ENCONTRADO', 'Usuario no encontrado');
             }
 
             // 2. Validar la contraseña (incluyendo legacy MD5 y texto plano)
@@ -31,18 +31,17 @@ class LoginService
                 || (is_string($contraseniaGuardada) && hash_equals($contraseniaGuardada, $contrasenia));
 
             if (!$contraseniaValida) {
-                return ['exito' => false, 'mensaje' => 'Contraseña incorrecta'];
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'Contraseña incorrecta');
             }
 
             // 3. Validar el rol (insensible a mayúsculas y espacios)
             $rolUsuario = $user->rol->rol ?? '';
-            if (strcasecmp(trim($tipousuario), trim((string)$rolUsuario)) !== 0) {
-                return ['exito' => false, 'mensaje' => 'Rol de usuario no coincide'];
+            if (strcasecmp(trim($tipousuario), trim((string) $rolUsuario)) !== 0) {
+                return $this->respuesta(false, 'NO_AUTORIZADO', 'Rol de usuario no coincide');
             }
 
             // 4. Retornar el arreglo de éxito solo con los datos necesarios para la sesión
-            return [
-                'exito' => true,
+            return $this->respuesta(true, 'OK', 'Autenticación correcta.', [
                 'usuario' => [
                     'id' => $user->id,
                     'nombre_usuario' => $user->nombre_usuario,
@@ -54,10 +53,23 @@ class LoginService
                         ->all()
                         : []
                 ]
-            ];
+            ]);
         } catch (\Throwable $e) {
             error_log('LOGIN ERROR autenticar: ' . $e->getMessage());
-            return ['exito' => false, 'mensaje' => 'Error interno del servidor'];
+            return $this->respuesta(false, 'ERROR_INTERNO', 'Error interno del servidor');
         }
+    }
+
+    private function respuesta(bool $exito, string $codigo, string $mensaje, mixed $data = null, array $errores = []): array
+    {
+        $respuesta = [
+            'exito' => $exito,
+            'codigo' => $codigo,
+            'mensaje' => $mensaje,
+            'data' => $data,
+            'errores' => $errores,
+        ];
+
+        return is_array($data) ? array_merge($respuesta, $data) : $respuesta;
     }
 }
