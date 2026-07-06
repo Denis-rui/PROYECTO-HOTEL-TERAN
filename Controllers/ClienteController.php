@@ -3,6 +3,7 @@
 namespace Controllers;
 
 use Libraries\Core\ApiController;
+use Helpers\CodigoHTTP;
 use Services\ClienteService;
 
 class ClienteController extends ApiController
@@ -48,10 +49,8 @@ class ClienteController extends ApiController
         $documento = $_GET['documento'] ?? '';
 
         $respuesta = $this->clienteService->consultarApiExterna($tipo, $documento);
-        $codigoHttp = $respuesta['code'] ?? 200;
-        unset($respuesta['code']); // Quitamos el código interno del array final
-
-        $this->responderJson($respuesta, $codigoHttp);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($respuesta);
+        $this->responderJson($payload, $codigoHttp);
     }
 
     public function registrar($params = '')
@@ -60,15 +59,12 @@ class ClienteController extends ApiController
         $datos = $this->obtenerPayloadJson();
 
         if ($datos === null) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'JSON inválido'], 400);
+            $this->responderJson($this->respuestaJsonInvalido(), 400);
             return;
         }
 
         $respuesta = $this->clienteService->registrarCliente($datos);
-        $codigoHttp = $respuesta['code'] ?? 200;
-        unset($respuesta['code']);
-
-        $this->responderJson($respuesta, $codigoHttp);
+        $this->responderServicio($respuesta);
     }
 
     public function actualizar($params = '')
@@ -77,15 +73,12 @@ class ClienteController extends ApiController
         $datos = $this->obtenerPayloadJson();
 
         if ($datos === null) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'JSON inválido'], 400);
+            $this->responderJson($this->respuestaJsonInvalido(), 400);
             return;
         }
 
         $respuesta = $this->clienteService->actualizarCliente($datos);
-        $codigoHttp = $respuesta['code'] ?? 200;
-        unset($respuesta['code']);
-
-        $this->responderJson($respuesta, $codigoHttp);
+        $this->responderServicio($respuesta);
     }
 
     public function eliminar($params = '')
@@ -93,15 +86,12 @@ class ClienteController extends ApiController
         $this->validarCsrf();
         $datos = $this->obtenerPayloadJson();
         if ($datos === null) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'JSON inválido'], 400);
+            $this->responderJson($this->respuestaJsonInvalido(), 400);
             return;
         }
 
         $respuesta = $this->clienteService->cambiarEstado((int)($datos['id'] ?? 0), 0);
-        $codigoHttp = $respuesta['code'] ?? 200;
-        unset($respuesta['code']);
-
-        $this->responderJson($respuesta, $codigoHttp);
+        $this->responderServicio($respuesta);
     }
 
     public function habilitar($params = '')
@@ -109,14 +99,28 @@ class ClienteController extends ApiController
         $this->validarCsrf();
         $datos = $this->obtenerPayloadJson();
         if ($datos === null) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'JSON inválido'], 400);
+            $this->responderJson($this->respuestaJsonInvalido(), 400);
             return;
         }
 
         $respuesta = $this->clienteService->cambiarEstado((int)($datos['id'] ?? 0), 1);
-        $codigoHttp = $respuesta['code'] ?? 200;
-        unset($respuesta['code']);
+        $this->responderServicio($respuesta);
+    }
 
-        $this->responderJson($respuesta, $codigoHttp);
+    private function responderServicio(array $respuesta): void
+    {
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($respuesta);
+        $this->responderJson($payload, $codigoHttp);
+    }
+
+    private function respuestaJsonInvalido(): array
+    {
+        return [
+            'exito' => false,
+            'codigo' => 'VALIDACION_ERROR',
+            'mensaje' => 'JSON inválido',
+            'data' => null,
+            'errores' => [],
+        ];
     }
 }
