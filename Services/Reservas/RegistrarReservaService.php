@@ -169,7 +169,6 @@ class RegistrarReservaService
                     'id_usuario_movimiento' => $idUsuarioActual,
                     'fecha_movimiento' => FechaHotelHelper::ahora(),
                 ]);
-
             }
 
             if ($esPagoPendiente) {
@@ -208,7 +207,7 @@ class RegistrarReservaService
             }
 
             $comprobanteData = $this->comprobanteService->obtenerPorPago((int) $pago->id);
-
+            $comprobanteData['cliente'] = !empty($reserva['nombre']) ? trim($reserva['nombre']) : '—';
             DB::connection()->commit();
 
             return [

@@ -56,7 +56,16 @@ class NotificacionModel
             ->whereNotNull('rh.check_out')
             ->where('rh.activo', 1)
             ->orderBy('rh.check_out', 'asc')
-            ->selectRaw("r.id AS id_reserva, c.id AS id_cliente, c.nombre_completo AS cliente, h.id AS id_habitacion, h.numero_habitacion AS habitacion, rh.check_out, TIMESTAMPDIFF(MINUTE, NOW(), rh.check_out) AS minutos_faltantes, CASE WHEN NOW() > rh.check_out THEN TIMESTAMPDIFF(MINUTE, rh.check_out, NOW()) ELSE 0 END AS minutos_excedidos")
+            ->selectRaw("
+                        r.id AS id_reserva, 
+                        c.id AS id_cliente, 
+                        CONCAT(COALESCE(c.nombres, ''), ' ', COALESCE(c.apellido_paterno, ''), ' ', COALESCE(c.apellido_materno, '')) AS cliente, 
+                        h.id AS id_habitacion, 
+                        h.numero_habitacion AS habitacion, 
+                        rh.check_out, 
+                        TIMESTAMPDIFF(MINUTE, NOW(), rh.check_out) AS minutos_faltantes, 
+                        CASE WHEN NOW() > rh.check_out THEN TIMESTAMPDIFF(MINUTE, rh.check_out, NOW()) ELSE 0 END AS minutos_excedidos
+                    ")
             ->get()
             ->map(fn($item) => (array) $item)
             ->toArray();

@@ -33,12 +33,17 @@ const configurarEventosClientes = () => {
       filas.forEach((fila) => {
         const nombre = normalizarTexto(fila.cells[1]?.innerText);
         const documento = normalizarTexto(fila.cells[3]?.innerText);
-        const coincide = nombre.includes(texto) || documento.includes(texto);
+        const ruc = normalizarTexto(fila.cells[4]?.innerText);
+
+        const coincide =
+          nombre.includes(texto) ||
+          documento.includes(texto) ||
+          ruc.includes(texto);
+
         fila.style.display = coincide ? "" : "none";
       });
     });
   }
-
   if (cuerpoTabla) {
     cuerpoTabla.addEventListener("click", async (evento) => {
       const botonVerPerfil = evento.target.closest(".btnVerPerfil");
@@ -58,18 +63,67 @@ const configurarEventosClientes = () => {
 
       const botonEditar = evento.target.closest(".btnEditarCliente");
       if (botonEditar) {
-        const id = botonEditar.dataset.id;
+        const id = botonEditar.dataset.id; // O botonEditar.dataset.id
         const fila = botonEditar.closest("tr");
+        const tipoDocumento = botonEditar.dataset.tipoDocumento || "1";
+        const esRuc = tipoDocumento === "6";
+
+        const nombreCompletoTabla = fila.cells[1]?.innerText.trim() || "";
+
+        // Helper optimizado con tus reglas dinámicas de conteo
+        const desglosarNombreCompleto = (textoCompleto) => {
+          const partes = textoCompleto.split(/\s+/).filter(Boolean);
+          const conteo = partes.length;
+
+          // Caso 0: Vacío
+          if (conteo === 0) {
+            return { nombres: "", paterno: "", materno: "" };
+          }
+
+          // Caso 1: Solo una palabra (Se asume como nombre)
+          if (conteo === 1) {
+            return { nombres: partes[0], paterno: "", materno: "" };
+          }
+
+          // Caso 2: Exactamente dos palabras (Comportamiento Extranjero)
+          if (conteo === 2) {
+            return {
+              nombres: partes[0],
+              paterno: partes[1], // Última palabra es Paterno
+              materno: "", // Extranjero no suele usar materno
+            };
+          }
+
+          // Caso 3: Tres o más palabras (Comportamiento Nacional / Completo)
+          // Extraemos de atrás hacia adelante de forma segura
+          const materno = partes.pop();
+          const paterno = partes.pop();
+          const nombres = partes.join(" "); // Agrupa todo el remanente (1 o más nombres)
+
+          return { nombres, paterno, materno };
+        };
+
+        // Procesamos el desglose condicional
+        const nombreDesglosado = !esRuc
+          ? desglosarNombreCompleto(nombreCompletoTabla)
+          : { nombres: nombreCompletoTabla, paterno: "", materno: "" };
+
         const datos = {
           id: id,
-          id_tipo_documento: botonEditar.dataset.tipoDocumento || "",
-          nombre: fila.cells[1]?.innerText.trim() || "",
+          id_tipo_documento: tipoDocumento,
+
+          // Inyección de la estructura limpia desglosada hacia el modal
+          nombres: nombreDesglosado.nombres,
+          apellido_paterno: nombreDesglosado.paterno,
+          apellido_materno: nombreDesglosado.materno,
+
           documento: fila.cells[3]?.innerText.trim() || "",
-          gmail: fila.cells[4]?.innerText.trim() || "",
-          telefono: fila.cells[6]?.innerText.trim() || "",
-          procedencia: fila.cells[5]?.innerText.trim() || "",
-          reservaciones: Number(fila.cells[7]?.innerText.trim() || "0"),
-          observaciones: fila.cells[8]?.innerText.trim() || "",
+          ruc: fila.cells[4]?.innerText.trim() || "",
+          correo_electronico: fila.cells[5]?.innerText.trim() || "",
+          procedencia: fila.cells[6]?.innerText.trim() || "",
+          telefono: fila.cells[7]?.innerText.trim() || "",
+          reservaciones: Number(fila.cells[8]?.innerText.trim() || "0"),
+          observaciones: fila.cells[9]?.innerText.trim() || "",
         };
 
         if (window.abrirModalCliente) {

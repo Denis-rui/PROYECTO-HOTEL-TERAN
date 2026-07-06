@@ -48,12 +48,15 @@ class ReservaModel
             if ($busqueda !== '') {
                 $query->whereHas('cliente', function ($q) use ($busqueda) {
                     $q->where(function ($subQuery) use ($busqueda) {
-                        $subQuery->where('nombre_completo', 'like', '%' . $busqueda . '%')
-                            ->orWhere('documento', 'like', '%' . $busqueda . '%');
+                        $subQuery->whereRaw(
+                            "CONCAT(COALESCE(nombres, ''), ' ', COALESCE(apellido_paterno, ''), ' ', COALESCE(apellido_materno, '')) LIKE ?",
+                            ['%' . $busqueda . '%']
+                        )
+                            ->orWhere('documento', 'like', '%' . $busqueda . '%')
+                            ->orWhere('ruc', 'like', '%' . $busqueda . '%'); // Soporte para empresas por RUC
                     });
                 });
             }
-
             if ($estado !== '' && in_array($estado, $estadosPermitidos, true)) {
                 $query->where('estado', $estado);
             }
@@ -182,8 +185,7 @@ class ReservaModel
             'reservaHabitacion.habitacion'
         ]);
 
-        // Mantenemos la misma regla del listado anterior: las canceladas no salen en "todos";
-        // solo aparecen cuando el usuario filtra explícitamente por estado cancelada.
+        // Mantenemos la misma regla del listado anterior: las canceladas no salen en "todos"
         if ($estado === '') {
             $query->whereNotIn('estado', ['cancelada', 'inactiva']);
         } elseif (!in_array($estado, ['cancelada', 'inactiva'], true)) {
@@ -201,8 +203,14 @@ class ReservaModel
                 $q->where('codigo_reserva', 'like', '%' . $busqueda . '%')
                     ->orWhere('estado', 'like', '%' . $busqueda . '%')
                     ->orWhereHas('cliente', function ($clienteQuery) use ($busqueda) {
-                        $clienteQuery->where('nombre_completo', 'like', '%' . $busqueda . '%')
-                            ->orWhere('documento', 'like', '%' . $busqueda . '%');
+                        $clienteQuery->where(function ($sub) use ($busqueda) {
+                            $sub->whereRaw(
+                                "CONCAT(COALESCE(nombres, ''), ' ', COALESCE(apellido_paterno, ''), ' ', COALESCE(apellido_materno, '')) LIKE ?",
+                                ['%' . $busqueda . '%']
+                            )
+                                ->orWhere('documento', 'like', '%' . $busqueda . '%')
+                                ->orWhere('ruc', 'like', '%' . $busqueda . '%'); // Aseguramos RUC aquí también
+                        });
                     })
                     ->orWhereHas('reservaHabitacion.habitacion', function ($habitacionQuery) use ($busqueda) {
                         $habitacionQuery->where('numero_habitacion', 'like', '%' . $busqueda . '%');
@@ -213,7 +221,7 @@ class ReservaModel
         return $query
             ->select('reserva.*')
             ->selectSub(
-                Cliente::select('nombre_completo')
+                Cliente::selectRaw("TRIM(CONCAT_WS(' ', NULLIF(nombres, ''), NULLIF(apellido_paterno, ''), NULLIF(apellido_materno, '')))")
                     ->whereColumn('cliente.id', 'reserva.id_cliente')
                     ->limit(1),
                 'cliente_nombre_orden'

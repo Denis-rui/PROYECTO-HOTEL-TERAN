@@ -1,5 +1,6 @@
 <?php
 $clientes = $data['clientes'] ?? [];
+
 $obtenerCampoCliente = static function ($cliente, string $campo, $defecto = '') {
   if (is_array($cliente)) {
     return $cliente[$campo] ?? $defecto;
@@ -48,6 +49,7 @@ $obtenerCampoCliente = static function ($cliente, string $campo, $defecto = '') 
           <th>Nombre</th>
           <th>Tipo Documento</th>
           <th>Documento</th>
+          <th>RUC</th>
           <th>Correo Electronico</th>
           <th>Procedencia</th>
           <th>Telefono</th>
@@ -66,6 +68,7 @@ $obtenerCampoCliente = static function ($cliente, string $campo, $defecto = '') 
               <td><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'nombre_completo', '')) ?></td>
               <td><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'tipo_documento_nombre', '')) ?></td>
               <td><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'documento', '')) ?></td>
+              <td><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'ruc', '')) ?></td>
               <td><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'correo_electronico', '')) ?></td>
               <td><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'procedencia', '')) ?></td>
               <td><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'telefono', '')) ?></td>

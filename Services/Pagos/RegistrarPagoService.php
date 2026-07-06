@@ -21,7 +21,7 @@ class RegistrarPagoService
         $this->comprobanteService = new ComprobanteService();
     }
 
-    public function registrarPago(int $idReserva, float $monto, int $idMetodoPago, string $descripcion = '', ?string $fechaPago = null, ?int $idUsuario = null): array
+    public function registrarPago(int $idReserva, float $monto, int $idMetodoPago, string $descripcion = '', ?string $fechaPago = null, ?int $idUsuario = null,string $cliente = ''): array
     {
         try {
             $idUsuarioActual = $idUsuario ?? ($_SESSION['id_usuario'] ?? null);
@@ -91,6 +91,7 @@ class RegistrarPagoService
 
             $comprobanteData = $this->comprobanteService->obtenerPorPago((int) $pago->id);
 
+            $comprobanteData['cliente'] = !empty($cliente) ? trim($cliente) : '—';
             DB::connection()->commit();
 
             return [

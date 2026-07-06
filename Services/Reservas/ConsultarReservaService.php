@@ -21,6 +21,7 @@ class ConsultarReservaService
         return $this->reservaModel->obtenerReservas($filtros, $limite);
     }
 
+
     public function listarParaDataTable(array $parametros): array
     {
         // El servicio traduce la respuesta del modelo al contrato que DataTables espera.

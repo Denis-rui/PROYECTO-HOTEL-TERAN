@@ -47,9 +47,9 @@ class HabitacionModel extends Eloquent
             ->where('id', $id)
             ->first();
 
-            if(!$habitacion) {
-                return null;
-            }
+        if (!$habitacion) {
+            return null;
+        }
 
         return [
             'id' => $habitacion->id,
@@ -138,7 +138,7 @@ class HabitacionModel extends Eloquent
                 'h.activo',
                 'h.limpieza_inicio',
                 'r.id as reserva_actual_id',
-                'c.nombre_completo as cliente_actual'
+                DB::raw("CONCAT(COALESCE(c.nombres, ''), ' ', COALESCE(c.apellido_paterno, ''), ' ', COALESCE(c.apellido_materno, '')) as cliente_actual")
             ]);
 
         if ($numero) $query->where('h.numero_habitacion', 'like', '%' . $numero . '%');
