@@ -300,26 +300,37 @@
     );
     if (listaHabitaciones) {
       if (habitacionesHistorial.length) {
-        const cambiosActivos = habitacionesHistorial.filter(
-          (habitacion) => habitacion.tipo_asignacion === "cambio",
-        );
-        const habitacionesOrdenadas = [
-          ...habitacionesHistorial.filter((habitacion) => {
-            const estadoAsignacion = normalizarEstado(
-              habitacion.estado_asignacion || habitacion.estado,
-            );
-            return estadoAsignacion === "activa";
-          }),
-          ...habitacionesHistorial.filter((habitacion) => {
-            const estadoAsignacion = normalizarEstado(
-              habitacion.estado_asignacion || habitacion.estado,
-            );
-            return estadoAsignacion !== "activa";
-          }),
-        ];
+        const activas = habitacionesHistorial.filter((habitacion) => {
+          const estadoAsignacion = normalizarEstado(
+            habitacion.estado_asignacion || habitacion.estado,
+          );
+          return estadoAsignacion === "activa";
+        });
 
-        listaHabitaciones.innerHTML = habitacionesOrdenadas
-          .map((habitacion) => {
+        const cambiadas = habitacionesHistorial.filter((habitacion) => {
+          const estadoAsignacion = normalizarEstado(
+            habitacion.estado_asignacion || habitacion.estado,
+          );
+          return estadoAsignacion !== "activa";
+        });
+
+        let htmlFinal = "";
+
+        if (activas.length > 0) {
+          htmlFinal += `<li style="list-style: none; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #2e7d32; margin: 5px 0 8px 0; letter-spacing: 0.5px; border-bottom: 1px solid #c8e6c9; padding-bottom: 3px;">Habitaciones Activas</li>`;
+          htmlFinal += activas.map((habitacion) => {
+            const texto = formatearHabitacion(habitacion);
+            if (!texto) return "";
+            return `<li class="detalle-habitacion-activa" style="margin-bottom: 8px;">${escapeHtml(texto)}</li>`;
+          }).filter(Boolean).join("");
+        }
+
+        if (cambiadas.length > 0) {
+          const cambiosActivos = habitacionesHistorial.filter(
+            (habitacion) => habitacion.tipo_asignacion === "cambio",
+          );
+          htmlFinal += `<li style="list-style: none; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #8d6e63; margin: 15px 0 8px 0; letter-spacing: 0.5px; border-bottom: 1px solid #d7ccc8; padding-bottom: 3px;">Historial de Cambios / Modificaciones</li>`;
+          htmlFinal += cambiadas.map((habitacion) => {
             const texto = formatearHabitacion(habitacion);
             if (!texto) return "";
 
@@ -333,7 +344,7 @@
                   item.fecha_movimiento === habitacion.fecha_movimiento,
               );
               return `
-                <li class="detalle-habitacion-cambiada">
+                <li class="detalle-habitacion-cambiada" style="margin-bottom: 8px;">
                   <span class="detalle-habitacion-badge">Cambiada</span>
                   <div><small>Habitación anterior</small><strong>${escapeHtml(texto)}</strong></div>
                   ${
@@ -345,18 +356,11 @@
                 </li>`;
             }
 
-            if (habitacion.tipo_asignacion === "cambio") {
-              return `
-                <li class="detalle-habitacion-nueva">
-                  <span class="detalle-habitacion-badge">Actual</span>
-                  ${escapeHtml(texto)}
-                </li>`;
-            }
+            return `<li class="detalle-habitacion-cambiada" style="margin-bottom: 8px;">${escapeHtml(texto)}</li>`;
+          }).filter(Boolean).join("");
+        }
 
-            return `<li>${escapeHtml(texto)}</li>`;
-          })
-          .filter(Boolean)
-          .join("");
+        listaHabitaciones.innerHTML = htmlFinal;
       } else {
         listaHabitaciones.innerHTML = "<li>---</li>";
       }
