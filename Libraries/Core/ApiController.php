@@ -28,9 +28,15 @@ class ApiController extends Controller
     {
         try {
             Csrf::validar();
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             error_log('Error de validación CSRF: ' . $e->getMessage());
-            $this->responderJson(['exito' => false, 'mensaje' => 'No se pudo validar la solicitud.'], 403);
+            $this->responderJson([
+                'exito' => false,
+                'codigo' => 'NO_AUTORIZADO',
+                'mensaje' => 'No se pudo validar la solicitud.',
+                'data' => null,
+                'errores' => [],
+            ], 403);
         }
     }
 }

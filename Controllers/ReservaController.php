@@ -69,6 +69,7 @@ class ReservaController extends ApiController
 
     public function emitirDocumentoElectronico($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
         $modelo = new DocumentoElectronicoService();
         [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta(
@@ -81,6 +82,7 @@ class ReservaController extends ApiController
 
     public function registrar($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson();
         if (!is_array($datos)) {
             $this->responderJson([
@@ -101,6 +103,7 @@ class ReservaController extends ApiController
 
     public function actualizar($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson();
 
         if (!is_array($datos)) {
@@ -126,6 +129,7 @@ class ReservaController extends ApiController
 
     public function pago($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson();
 
         if (!is_array($datos)) {
@@ -157,6 +161,7 @@ class ReservaController extends ApiController
 
     public function checkin($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
         $idReserva = (int) ($datos['id_reserva'] ?? 0);
 
@@ -173,6 +178,7 @@ class ReservaController extends ApiController
 
     public function checkout($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
 
         $idReserva = (int) ($datos['id_reserva'] ?? 0);
@@ -194,6 +200,7 @@ class ReservaController extends ApiController
 
     public function marcarAusente($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
         $idReserva = (int) ($datos['id_reserva'] ?? 0);
 
@@ -210,6 +217,7 @@ class ReservaController extends ApiController
 
     public function marcarRegreso($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
         $idReserva = (int) ($datos['id_reserva'] ?? 0);
 
@@ -276,6 +284,7 @@ class ReservaController extends ApiController
 
     public function cancelar($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
 
         $idReserva = (int) ($datos['id_reserva'] ?? 0);
@@ -295,6 +304,7 @@ class ReservaController extends ApiController
 
     public function eliminarPendiente($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
         $idReserva = (int) ($datos['id_reserva'] ?? 0);
 
@@ -310,6 +320,7 @@ class ReservaController extends ApiController
 
     public function calcularCancelacion($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
         $modelo = new CalculoDevolucionService();
         [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta(
@@ -320,6 +331,7 @@ class ReservaController extends ApiController
 
     public function cambiarHabitacion($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
 
         $service = new CambiarHabitacionService();

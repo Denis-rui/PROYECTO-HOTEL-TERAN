@@ -95,12 +95,14 @@ class HabitacionController extends ApiController
 
     public function notificarLimpiezaVencida($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
         $this->responderServicio($this->habitacionService->notificarLimpiezaVencida((int) ($datos['id'] ?? 0)));
     }
 
     public function extenderLimpieza($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
         $this->responderServicio($this->habitacionService->extenderLimpieza(
             (int) ($datos['id'] ?? 0),

@@ -63,12 +63,14 @@ class UsuarioController extends ApiController
 
     public function crear($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
         $this->responderServicio($this->usuarioService->crearUsuario($datos));
     }
 
     public function actualizar($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
         $nombreUsuario = $_SESSION['usuario'] ?? $_SESSION['nombreUsuario'] ?? '';
 
@@ -89,12 +91,14 @@ class UsuarioController extends ApiController
 
     public function actualizarAdmin($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
         $this->responderServicio($this->usuarioService->actualizarUsuarioAdmin((int)($datos['id'] ?? 0), $datos));
     }
 
     public function eliminar($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
         $this->responderServicio($this->usuarioService->eliminarUsuario((int)($datos['id'] ?? 0)));
     }
