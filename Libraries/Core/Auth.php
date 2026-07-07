@@ -26,7 +26,6 @@ class Auth
             'checkout' => 'reservas.checkout',
             'marcarAusente' => 'reservas.ausencia',
             'marcarRegreso' => 'reservas.ausencia',
-            'calcularTotal' => 'reservas.crear',
             'cancelar' => 'reservas.cancelar',
             'calcularCancelacion' => 'reservas.cancelar',
             'cambiarHabitacion' => 'reservas.cambiar_habitacion',
@@ -92,7 +91,11 @@ class Auth
     public static function autorizarRuta(string $controlador, string $metodo): void
     {
 
-        Csrf::validar();    
+        try {
+            Csrf::validar();
+        } catch (\Throwable $e) {
+            self::responderCsrfInvalido();
+        }
 
         if (in_array($controlador, ['Login', 'Error'], true)) {
             return;
@@ -136,6 +139,20 @@ class Auth
         }
 
         header('Location: ' . BASE_URL . 'Dashboard/index?error=sin_permiso');
+        exit();
+    }
+
+    private static function responderCsrfInvalido(): void
+    {
+        http_response_code(403);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'exito' => false,
+            'codigo' => 'NO_AUTORIZADO',
+            'mensaje' => 'No se pudo validar la solicitud.',
+            'data' => null,
+            'errores' => [],
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit();
     }
 

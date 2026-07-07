@@ -14,41 +14,6 @@ class NotificacionService
         $this->notificacionModel = new NotificacionModel();
     }
 
-    public function crearNotificacion($tipo, $titulo, $mensaje, $idReserva = null, $idHabitacion = null, $idCliente = null, $prioridad = 'media'): array
-    {
-        try {
-            $datosIdentificadores = [
-                'tipo' => $tipo,
-                'id_reserva' => $idReserva ? (int) $idReserva : null,
-                'id_habitacion' => $idHabitacion ? (int) $idHabitacion : null,
-                'leida' => 0,
-            ];
-
-            $datosActualizar = [
-                'tipo' => $tipo,
-                'titulo' => $titulo,
-                'mensaje' => $mensaje,
-                'id_reserva' => $idReserva ? (int) $idReserva : null,
-                'id_habitacion' => $idHabitacion ? (int) $idHabitacion : null,
-                'id_cliente' => $idCliente ? (int) $idCliente : null,
-                'leida' => 0,
-                'prioridad' => $prioridad,
-            ];
-
-            $guardado = $this->notificacionModel->guardarNotificacion($datosIdentificadores, $datosActualizar);
-
-            return $this->respuesta(
-                (bool) $guardado,
-                $guardado ? 'CREADO' : 'ERROR_GUARDADO',
-                $guardado ? 'Notificación creada.' : 'No se pudo crear la notificación.',
-                ['notificacion' => $datosActualizar]
-            );
-        } catch (Exception $e) {
-            error_log('Error crear notificacion: ' . $e->getMessage());
-            return $this->respuesta(false, 'ERROR_INTERNO', 'Error inesperado al crear notificación.');
-        }
-    }
-
     public function obtenerPendientes($limite = 30): array
     {
         $limite = max(1, (int) $limite);

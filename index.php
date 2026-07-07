@@ -63,7 +63,6 @@ $router->get('Habitacion/obtenerFiltros', ['Habitacion', 'obtenerFiltros']);
 // Vistas y consultas
 $router->get('Reserva/index', ['Reserva', 'index']);
 $router->get('Reserva/obtener', ['Reserva', 'obtener']);
-$router->get('Reserva/dashboard', ['Reserva', 'dashboard']);
 $router->get('Reserva/notificaciones', ['Reserva', 'notificaciones']);
 
 // Operaciones de escritura
@@ -134,7 +133,6 @@ $router->get('Perfil/index', ['Perfil', 'index']);
 
 $router->post('Perfil/actualizarPerfil', ['Perfil', 'actualizarPerfil']);
 $router->post('Perfil/cambiarClave', ['Perfil', 'cambiarClave']);
-$router->post('Reserva/calcularTotal', ['Reserva', 'calcularTotal']);
 $route = $router->resolve();
 
 $controller = $route['controller'];

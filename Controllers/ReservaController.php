@@ -3,7 +3,6 @@
 namespace Controllers;
 
 use Libraries\Core\ApiController;
-use Services\DashboardService;
 use Services\Reservas\CheckInReservaService;
 use Services\Reservas\CheckOutReservaService;
 use Services\Reservas\AusenciaReservaService;
@@ -251,13 +250,6 @@ class ReservaController extends ApiController
         $this->responderJson($reserva);
     }
 
-    public function dashboard($params = '')
-    {
-        $dashboardService = new DashboardService();
-        $respuesta = $dashboardService->obtenerEstadisticas();
-        $this->responderJson($respuesta['data'] ?? []);
-    }
-
     public function notificaciones($params = '')
     {
         $notificacionService = new NotificacionService();
@@ -268,18 +260,6 @@ class ReservaController extends ApiController
             'vencidos' => [],
             'notificaciones' => [],
         ]);
-    }
-
-    public function calcularTotal($params = '')
-    {
-        $datos = $this->obtenerPayloadJson() ?? [];
-        $service = new ConsultarReservaService();
-        $resultado = $service->calcularTotal(
-            (int) ($datos['id_habitacion'] ?? 0),
-            $datos['check_in']  ?? '',
-            $datos['check_out'] ?? ''
-        );
-        $this->responderJson($resultado);
     }
 
     public function cancelar($params = '')
