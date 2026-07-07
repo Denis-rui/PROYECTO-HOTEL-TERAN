@@ -101,7 +101,7 @@ class CheckInReservaService
             }
 
             if (!$this->esAntesCheckinNormal()) {
-                return $this->respuesta(false, 'CONFLICTO', 'Desde las 2:00 p. m. corresponde realizar check-in normal.');
+                return $this->respuesta(false, 'CONFLICTO', 'Desde las 1:40 p. m. corresponde realizar check-in normal.');
             }
 
             $fechaPreCheckin = FechaHotelHelper::ahora();
@@ -127,7 +127,9 @@ class CheckInReservaService
 
     private function esAntesCheckinNormal(): bool
     {
-        return (int) (new \DateTimeImmutable('now', new \DateTimeZone('America/Lima')))->format('H') < 14;
+        $ahora = new \DateTimeImmutable('now', new \DateTimeZone('America/Lima'));
+        $limite = $ahora->setTime(13, 40, 0);
+        return $ahora < $limite;
     }
 
     private function respuesta(bool $exito, string $codigo, string $mensaje, mixed $data = null, array $errores = []): array

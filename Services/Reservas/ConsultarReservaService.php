@@ -75,7 +75,9 @@ class ConsultarReservaService
 
     private function esAntesCheckinNormal(): bool
     {
-        return (int) (new \DateTimeImmutable('now', new \DateTimeZone('America/Lima')))->format('H') < 14;
+        $ahora = new \DateTimeImmutable('now', new \DateTimeZone('America/Lima'));
+        $limite = $ahora->setTime(13, 40, 0);
+        return $ahora < $limite;
     }
 
     public function obtenerPorId(int $idReserva): ?array
