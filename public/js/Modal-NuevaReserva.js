@@ -450,7 +450,8 @@ const sincronizarHabitaciones = () => {
     if ((esEstadia || esConfirmada) && haCambiadoReserva() && totalPagado > totalNuevo) {
       const montoCancelado = Math.max(0, totalAnterior - totalNuevo);
       const montoPenalidad = redondearMonedaPeru(montoCancelado * 0.25);
-      const montoDevolver = redondearMonedaPeru(Math.max(0, totalPagado - (totalNuevo + montoPenalidad)));
+      const excesoDevolvible = Math.max(0, totalPagado - totalNuevo);
+      const montoDevolver = redondearMonedaPeru(Math.min(montoCancelado - montoPenalidad, excesoDevolvible));
       const montoTotal = redondearMonedaPeru(montoPenalidad + montoDevolver);
 
       txtPenalidad.textContent = `S/ ${montoPenalidad.toFixed(2)}`;
@@ -1353,7 +1354,8 @@ const calcularDevolucionPreviaEdicion = (datosReserva) => {
 
   const montoCancelado = Math.max(0, totalAnterior - totalNuevo);
   const montoPenalidad = redondearMonedaPeru(montoCancelado * 0.25);
-  const montoDevuelto = redondearMonedaPeru(Math.max(0, totalPagado - (totalNuevo + montoPenalidad)));
+  const excesoDevolvible = Math.max(0, totalPagado - totalNuevo);
+  const montoDevuelto = redondearMonedaPeru(Math.min(montoCancelado - montoPenalidad, excesoDevolvible));
 
   if (montoDevuelto <= 0) return null;
 

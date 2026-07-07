@@ -173,7 +173,8 @@ class ActualizarReservaService
                 $hotel = Hotel::first();
                 $porcentaje = max(0.0, min(100.0, (float) ($hotel->porcentaje_penalidad_cancelacion ?? 25)));
                 $montoPenalidad = round($montoCancelado * ($porcentaje / 100), 1);
-                $montoDevolver = round(max(0.0, $totalPagado - ($totalCalculado + $montoPenalidad)), 1);
+                $excesoDevolvible = max(0.0, $totalPagado - $totalCalculado);
+                $montoDevolver = round(min($montoCancelado - $montoPenalidad, $excesoDevolvible), 1);
 
                 if ($montoDevolver > 0.00001) {
                     $diasAnteriores = ReservaHelper::obtenerDiasEstadia($reservaActual->check_in_programado, $reservaActual->check_out_programado);
@@ -189,8 +190,7 @@ class ActualizarReservaService
                         number_format($montoPenalidad, 2)
                     );
 
-                    Devolucion::updateOrCreate(
-                        ['id_reserva' => $idReserva],
+                    Devolucion::create(
                         [
                             'id_reserva' => $idReserva,
                             'fecha_cancelacion' => FechaHotelHelper::ahora(),
@@ -424,7 +424,8 @@ class ActualizarReservaService
             $hotel = Hotel::first();
             $porcentaje = max(0.0, min(100.0, (float) ($hotel->porcentaje_penalidad_cancelacion ?? 25)));
             $montoPenalidad = round($montoCancelado * ($porcentaje / 100), 1);
-            $montoDevolver = round(max(0.0, $totalPagado - ($totalCalculado + $montoPenalidad)), 1);
+            $excesoDevolvible = max(0.0, $totalPagado - $totalCalculado);
+            $montoDevolver = round(min($montoCancelado - $montoPenalidad, $excesoDevolvible), 1);
             $devolucion = null;
 
             if ($montoDevolver > 0.00001) {
@@ -441,8 +442,7 @@ class ActualizarReservaService
                     number_format($montoPenalidad, 2)
                 );
 
-                Devolucion::updateOrCreate(
-                    ['id_reserva' => $idReserva],
+                Devolucion::create(
                     [
                         'id_reserva' => $idReserva,
                         'fecha_cancelacion' => FechaHotelHelper::ahora(),

@@ -76,9 +76,9 @@ class CancelarReservaService
                 ]);
             }
 
-            Devolucion::updateOrCreate(
-                ['id_reserva' => $idReserva],
+            Devolucion::create(
                 [
+                    'id_reserva' => $idReserva,
                     'fecha_cancelacion' => $calculo['fecha_cancelacion'],
                     'fecha_inicio' => $calculo['fecha_inicio'],
                     'fecha_prevista' => $calculo['fecha_prevista'],
@@ -88,7 +88,6 @@ class CancelarReservaService
                     'porcentaje_penalidad' => (float) $calculo['porcentaje_penalidad'],
                     'monto_penalidad' => (float) $calculo['monto_penalidad'],
                     'monto_devuelto' => (float) $calculo['monto_devuelto'],
-                    'id_reserva' => $idReserva,
                     'id_usuario' => $idUsuario ?? ($_SESSION['id_usuario'] ?? null),
                     'descripcion' => trim(
                         $motivo

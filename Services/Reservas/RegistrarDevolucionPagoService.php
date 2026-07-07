@@ -60,7 +60,7 @@ class RegistrarDevolucionPagoService
                 return $this->respuesta(false, 'CONFLICTO', 'Esta devolución ya fue registrada en pagos.');
             }
 
-            $devolucionModel = Devolucion::where('id_reserva', $idReserva)->first();
+            $devolucionModel = Devolucion::where('id_reserva', $idReserva)->latest('id')->first();
 
             $descripcionPago = "";
             $descripcionComprobante = "";
