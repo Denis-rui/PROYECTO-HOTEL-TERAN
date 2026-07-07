@@ -7,6 +7,8 @@ use Helpers\FechaHotelHelper;
 use Helpers\ReservaHabitacionHelper;
 use Helpers\ReservaHelper;
 use Models\Entities\Habitacion;
+use Models\Entities\Devolucion;
+use Models\Entities\Hotel;
 use Models\HabitacionModel;
 use Models\ReporteOcupacionModel;
 use Models\ReservaHabitacionModel;
@@ -176,6 +178,59 @@ class CambiarHabitacionService
 
             $this->reservaModel->guardar($reservaActual);
 
+            // Calcular Devolución si es que se ha pagado de más y el total bajó
+            $sumPagos = (float) ($reservaActual->pagos->sum('monto') ?? 0);
+            $sumPenalidades = (float) Devolucion::where('id_reserva', $reservaActual->id)->sum('monto_penalidad');
+            $totalPagado = max(0.0, $sumPagos - $sumPenalidades);
+
+            $devolucion = null;
+            $montoDevolver = 0.0;
+            $montoPenalidad = 0.0;
+            $porcentaje = 0.0;
+
+            if ($totalPagado > $nuevoTotal) {
+                $montoCancelado = max(0.0, $totalAnterior - $nuevoTotal);
+                $hotel = Hotel::first();
+                $porcentaje = max(0.0, min(100.0, (float) ($hotel->porcentaje_penalidad_cancelacion ?? 25)));
+                $montoPenalidad = round($montoCancelado * ($porcentaje / 100), 1);
+                $excesoDevolvible = max(0.0, $totalPagado - $nuevoTotal);
+                $montoDevolver = round(min($montoCancelado - $montoPenalidad, $excesoDevolvible), 1);
+
+                if ($montoDevolver > 0.00001) {
+                    $descripcionDevolucion = sprintf(
+                        'Devolución por cambio de habitación en estadía (Hab. %s por Hab. %s). Total anterior: S/ %s; nuevo total: S/ %s; pagado: S/ %s; penalidad (%s%%): S/ %s.',
+                        ($habitacionAnterior['numero_habitacion'] ?? $idHabitacionActual),
+                        ($habitacionNueva['numero_habitacion'] ?? $idHabitacionNueva),
+                        number_format($totalAnterior, 2),
+                        number_format($nuevoTotal, 2),
+                        number_format($totalPagado, 2),
+                        $porcentaje,
+                        number_format($montoPenalidad, 2)
+                    );
+
+                    Devolucion::create([
+                        'id_reserva' => $idReserva,
+                        'fecha_cancelacion' => FechaHotelHelper::ahora(),
+                        'fecha_inicio' => $relacionActual->check_in,
+                        'fecha_prevista' => $checkOut,
+                        'dias_usados' => $diasHabitacionAnterior,
+                        'dias_no_usados' => $diasHabitacionNueva,
+                        'total_no_ocupado' => $montoCancelado,
+                        'porcentaje_penalidad' => $porcentaje,
+                        'monto_penalidad' => $montoPenalidad,
+                        'monto_devuelto' => $montoDevolver,
+                        'id_usuario' => $idUsuarioActual,
+                        'descripcion' => $descripcionDevolucion,
+                    ]);
+
+                    $devolucion = [
+                        'monto_devuelto' => $montoDevolver,
+                        'monto_penalidad' => $montoPenalidad,
+                        'porcentaje_penalidad' => $porcentaje,
+                        'descripcion' => $descripcionDevolucion,
+                    ];
+                }
+            }
 
             DB::connection()->commit();
 
@@ -187,6 +242,7 @@ class CambiarHabitacionService
                 'fecha_cambio_real' => $fechaCambio,
                 'fecha_efectiva_cobro' => $fechaEfectivaCobro,
                 'reserva' => $this->reservaModel->obtenerReservaPorId($idReserva),
+                'devolucion' => $devolucion,
             ]);
         } catch (\Throwable $e) {
             error_log('CambiarHabitacionService::cambiarHabitacion -> ' . $e->getMessage());

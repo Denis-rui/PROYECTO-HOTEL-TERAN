@@ -393,8 +393,40 @@ const calcularTotalReserva = () => {
         0,
       );
 
+    const cambio = estado.habitacionCambioPendiente;
+
     const totalActivo = habitaciones.reduce((acumulado, habitacion) => {
       const inicioHabitacion = habitacion.check_in || checkIn;
+
+      if (cambio && String(habitacion.id) === String(cambio.actual.id)) {
+        const precioActual = Number(
+          habitacion.precio_aplicado || habitacion.precio || 0,
+        );
+        const precioNuevoReal = Number(cambio.nueva.precio || 0);
+        const precioNuevoAplicado =
+          cambio.tipo_motivo === "falla_hotel"
+            ? Math.min(precioActual, precioNuevoReal)
+            : precioNuevoReal;
+
+        const fechaEfectivaCobro = obtenerFechaEfectivaCobroCambio(
+          cambio.tipo_motivo,
+        );
+
+        const diasAnterior = obtenerDiasEstadiaActiva(
+          inicioHabitacion,
+          fechaEfectivaCobro,
+        );
+        const diasNuevo = obtenerDiasEstadiaActiva(
+          fechaEfectivaCobro,
+          checkOut,
+        );
+
+        const subtotalAnterior = precioActual * diasAnterior;
+        const subtotalNuevo = precioNuevoAplicado * diasNuevo;
+
+        return acumulado + subtotalAnterior + subtotalNuevo;
+      }
+
       const diasHabitacion = obtenerDiasEstadiaActiva(
         inicioHabitacion,
         checkOut,
@@ -1484,10 +1516,19 @@ const confirmarGuardarEdicionReserva = async (datosReserva) => {
       return;
     }
 
-    if (resultado.devolucion?.monto_devuelto > 0) {
+    let devolucionesARegistrar = [];
+    if (resultado.devolucion && Number(resultado.devolucion.monto_devuelto) > 0) {
+      devolucionesARegistrar.push({ dev: resultado.devolucion, fallback: devolucionConfirmada });
+    }
+    if (resultadoCambio.devolucion && Number(resultadoCambio.devolucion.monto_devuelto) > 0) {
+      devolucionesARegistrar.push({ dev: resultadoCambio.devolucion, fallback: null });
+    }
+
+    if (devolucionesARegistrar.length > 0) {
+      for (const item of devolucionesARegistrar) {
         const registroDevolucion = await registrarPagoDevolucionReserva(
           resultado.id_reserva || datosReserva.idReserva,
-          resultado.devolucion || devolucionConfirmada,
+          item.dev || item.fallback,
         );
 
         if (!registroDevolucion.exito) {
@@ -1498,7 +1539,7 @@ const confirmarGuardarEdicionReserva = async (datosReserva) => {
               registroDevolucion.mensaje ||
               "No se pudo generar el movimiento negativo de devolución.",
           });
-          return;
+          continue;
         }
 
         if (
@@ -1516,12 +1557,13 @@ const confirmarGuardarEdicionReserva = async (datosReserva) => {
             text: registroDevolucion.mensaje || "Se registró el pago negativo.",
           });
         }
+      }
     } else {
       await Swal.fire({
         toast: true,
         position: "top-end",
         icon: "success",
-        title: resultado.mensaje || "Reserva actualizada correctamente",
+        title: resultadoCambio.mensaje || resultado.mensaje || "Reserva actualizada correctamente",
         showConfirmButton: false,
         timer: 2200,
         timerProgressBar: true,
