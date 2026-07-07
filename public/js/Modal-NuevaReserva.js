@@ -1176,15 +1176,28 @@ const confirmarGuardarEdicionReserva = async (datosReserva) => {
       return;
     }
 
-    await Swal.fire({
-      toast: true,
-      position: "top-end",
-      icon: "success",
-      title: resultado.mensaje || "Reserva actualizada correctamente",
-      showConfirmButton: false,
-      timer: 2200,
-      timerProgressBar: true,
-    });
+    if (resultado.devolucion?.monto_devuelto > 0) {
+      await Swal.fire({
+        icon: "info",
+        title: "Devolución por reducción de estadía",
+        html: `
+          <p>Se debe devolver al cliente:</p>
+          <h2 style="margin: 10px 0;">S/ ${Number(resultado.devolucion.monto_devuelto).toFixed(2)}</h2>
+          <p style="font-size: 0.95rem;">${resultado.devolucion.descripcion || "Devolución registrada por disminución de días de estadía."}</p>
+        `,
+        confirmButtonText: "Entendido",
+      });
+    } else {
+      await Swal.fire({
+        toast: true,
+        position: "top-end",
+        icon: "success",
+        title: resultado.mensaje || "Reserva actualizada correctamente",
+        showConfirmButton: false,
+        timer: 2200,
+        timerProgressBar: true,
+      });
+    }
 
     estado.habitacionCambioPendiente = null;
     if (modal) modal.style.display = "none";

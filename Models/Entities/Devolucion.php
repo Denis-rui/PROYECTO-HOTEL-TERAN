@@ -18,7 +18,8 @@ class Devolucion extends Eloquent
         'porcentaje_penalidad',
         'monto_penalidad',
         'monto_devuelto',
-        'id_usuario'
+        'id_usuario',
+        'descripcion'
     ];
 
     public function reserva()

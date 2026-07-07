@@ -7,6 +7,7 @@ use Helpers\FechaHotelHelper;
 use Helpers\HabitacionInputHelper;
 use Helpers\ReservaHabitacionHelper;
 use Helpers\ReservaHelper;
+use Models\Entities\Devolucion;
 use Models\Entities\Habitacion;
 use Models\Entities\Reserva as ReservaEntity;
 use Models\HabitacionModel;
@@ -197,6 +198,13 @@ class ActualizarReservaService
                 return $this->respuesta(false, 'VALIDACION_ERROR', 'Debe indicar la fecha de salida.');
             }
 
+            $hoy = FechaHotelHelper::hoy();
+            $checkOutFecha = substr($checkOut, 0, 10);
+
+            if ($checkOutFecha < $hoy) {
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'La salida de una estadía activa no puede ser anterior a hoy.');
+            }
+
             $clienteNuevo = (int) ($datos['cliente'] ?? $datos['id_cliente'] ?? $reservaActual->id_cliente);
 
             if ($clienteNuevo !== (int) $reservaActual->id_cliente) {
@@ -224,6 +232,11 @@ class ActualizarReservaService
             $idsNuevos = array_values(array_diff($idsSolicitados, $idsActivos));
             $fechaAlta = FechaHotelHelper::ahora();
             $totalCalculado = 0;
+            $totalAnterior = (float) ($reservaActual->total ?? 0);
+            $totalPagado = (float) ($reservaActual->pagos->sum('monto') ?? 0);
+            $checkOutPrevistoAnterior = (string) ($reservaActual->check_out ?? '');
+            $fechaInicioEstadia = (string) ($reservaActual->checkin_real ?? $reservaActual->check_in ?? '');
+            $diasPrevios = ReservaHelper::obtenerDiasEstadia($fechaInicioEstadia, $checkOutPrevistoAnterior);
 
             DB::connection()->beginTransaction();
 
@@ -251,10 +264,16 @@ class ActualizarReservaService
                     $precioAplicado = (float) ($habitacionActual['precio'] ?? 0);
                 }
 
-                $dias = ReservaHelper::obtenerDiasEstadia(
+                $dias = $this->obtenerDiasEstadiaActiva(
                     $relacion->check_in,
                     $checkOut
                 );
+
+                if ($dias <= 0) {
+                    DB::connection()->rollBack();
+
+                    return $this->respuesta(false, 'VALIDACION_ERROR', 'La fecha de salida debe generar al menos un día de estadía.');
+                }
 
                 $subtotal = $precioAplicado * $dias;
 
@@ -290,7 +309,14 @@ class ActualizarReservaService
                 }
 
                 $precio = (float) ($habitacionNueva['precio'] ?? 0);
-                $dias = ReservaHelper::obtenerDiasEstadia($fechaAlta, $checkOut);
+                $dias = $this->obtenerDiasEstadiaActiva($fechaAlta, $checkOut);
+
+                if ($dias <= 0) {
+                    DB::connection()->rollBack();
+
+                    return $this->respuesta(false, 'VALIDACION_ERROR', 'La fecha de salida debe generar al menos un día de estadía.');
+                }
+
                 $subtotal = $precio * $dias;
 
                 $this->reservaHabitacionModel->crear([
@@ -320,11 +346,56 @@ class ActualizarReservaService
 
             $this->reservaModel->guardar($reservaActual);
 
+            $montoDevolver = round(max(0, $totalPagado - $totalCalculado), 2);
+            $devolucion = null;
+
+            if ($montoDevolver > 0.00001) {
+                $diasNuevos = $this->obtenerDiasEstadiaActiva($fechaInicioEstadia, $checkOut);
+                $diasNoUsados = max(0, $diasPrevios - $diasNuevos);
+                $descripcionDevolucion = sprintf(
+                    'Devolución por disminución de días de estadía. Total anterior: S/ %s; nuevo total: S/ %s; pagado: S/ %s.',
+                    number_format($totalAnterior, 2),
+                    number_format($totalCalculado, 2),
+                    number_format($totalPagado, 2)
+                );
+
+                Devolucion::updateOrCreate(
+                    ['id_reserva' => $idReserva],
+                    [
+                        'id_reserva' => $idReserva,
+                        'fecha_cancelacion' => FechaHotelHelper::ahora(),
+                        'fecha_inicio' => $fechaInicioEstadia !== '' ? $fechaInicioEstadia : $fechaAlta,
+                        'fecha_prevista' => $checkOutPrevistoAnterior !== '' ? $checkOutPrevistoAnterior : $checkOut,
+                        'dias_usados' => max(1, $diasNuevos),
+                        'dias_no_usados' => $diasNoUsados,
+                        'total_no_ocupado' => $montoDevolver,
+                        'porcentaje_penalidad' => 0,
+                        'monto_penalidad' => 0,
+                        'monto_devuelto' => $montoDevolver,
+                        'id_usuario' => $idUsuarioActual,
+                        'descripcion' => $descripcionDevolucion,
+                    ]
+                );
+
+                $devolucion = [
+                    'monto_devuelto' => $montoDevolver,
+                    'descripcion' => $descripcionDevolucion,
+                    'total_anterior' => round($totalAnterior, 2),
+                    'total_nuevo' => round($totalCalculado, 2),
+                    'total_pagado' => round($totalPagado, 2),
+                ];
+            }
+
             DB::connection()->commit();
 
-            return $this->respuesta(true, 'ACTUALIZADO', 'Estadía actualizada correctamente.', [
+            $mensaje = $devolucion
+                ? 'Estadía actualizada correctamente. Devolución a realizar: S/ ' . number_format($montoDevolver, 2) . '.'
+                : 'Estadía actualizada correctamente.';
+
+            return $this->respuesta(true, 'ACTUALIZADO', $mensaje, [
                 'id_reserva' => $idReserva,
                 'reserva' => $this->reservaModel->obtenerReservaPorId($idReserva),
+                'devolucion' => $devolucion,
             ]);
         } catch (\Throwable $e) {
             error_log('ActualizarReservaService::actualizarEstadiaActiva -> ' . $e->getMessage());
@@ -336,6 +407,18 @@ class ActualizarReservaService
 
             return $this->respuesta(false, 'EXCEPCION', 'No se pudo actualizar la estadía. Intente nuevamente.');
         }
+    }
+
+    private function obtenerDiasEstadiaActiva($checkIn, $checkOut): int
+    {
+        $dias = ReservaHelper::obtenerDiasEstadia($checkIn, $checkOut);
+        $checkOutFecha = ReservaHelper::normalizarFecha($checkOut);
+
+        if ($checkOutFecha === FechaHotelHelper::hoy()) {
+            return max(1, $dias);
+        }
+
+        return $dias;
     }
 
     private function obtenerIdsHabitacionesActuales($reservaActual): array
