@@ -442,8 +442,23 @@ const buscarDatosClientePorDocumento = async () => {
 
   try {
     const respuesta = await fetch(
-      BASE_URL + `Cliente/buscar&q=${encodeURIComponent(documento)}`,
+      BASE_URL + `Cliente/buscar?q=${encodeURIComponent(documento)}`,
+      {
+        headers: {
+          Accept: "application/json",
+        },
+      },
     );
+
+    if (!respuesta.ok) {
+      throw new Error(`Error HTTP ${respuesta.status}`);
+    }
+
+    const contentType = respuesta.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      throw new Error("La respuesta del servidor no es JSON.");
+    }
+
     const data = await respuesta.json();
     console.log(data);
     const clientes = Array.isArray(data.clientes) ? data.clientes : [];
@@ -458,8 +473,7 @@ const buscarDatosClientePorDocumento = async () => {
 
     if (cliente) {
       // Personalizamos el mensaje si se encontró específicamente por RUC o por DNI
-      const esRucEncontrado =
-        String(cliente.ruc || "").trim() === documento;
+      const esRucEncontrado = String(cliente.ruc || "").trim() === documento;
       const tipoMensaje = esRucEncontrado ? "con el RUC" : "con el documento";
 
       await mostrarAlertaCliente(

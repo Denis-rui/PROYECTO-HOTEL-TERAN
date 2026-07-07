@@ -90,6 +90,7 @@ const renderizarNotificacionesCheckout = (datos) => {
 const ETIQUETAS_ESTADO = {
   pendiente: "Pendiente",
   confirmada: "Confirmada",
+  pre_checkin: "Pre-check-in",
   checkin_realizado: "Check-in",
   en_estadia: "En estadia",
   checkout_pendiente: "Checkout pendiente",

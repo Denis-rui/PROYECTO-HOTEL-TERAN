@@ -2,10 +2,10 @@
 
 namespace Controllers;
 
-use Libraries\Core\Controller;
+use Libraries\Core\ApiController;
 use Services\Comprobantes\ComprobanteService;
 
-class ComprobanteController extends Controller
+class ComprobanteController extends ApiController
 {
     public function obtenerPorPago($params = '')
     {

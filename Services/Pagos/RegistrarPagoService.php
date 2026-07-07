@@ -21,7 +21,7 @@ class RegistrarPagoService
         $this->comprobanteService = new ComprobanteService();
     }
 
-    public function registrarPago(int $idReserva, float $monto, int $idMetodoPago, string $descripcion = '', ?string $fechaPago = null, ?int $idUsuario = null,string $cliente = ''): array
+    public function registrarPago(int $idReserva, float $monto, int $idMetodoPago, string $descripcion = '', ?string $fechaPago = null, ?int $idUsuario = null, string $cliente = ''): array
     {
         try {
             $idUsuarioActual = $idUsuario ?? ($_SESSION['id_usuario'] ?? null);
@@ -29,26 +29,17 @@ class RegistrarPagoService
             $reserva = $this->reservaModel->obtenerReservaPorId($idReserva);
 
             if (!$reserva) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'Reserva no encontrada.'
-                ];
+                return $this->respuesta(false, 'NO_ENCONTRADO', 'Reserva no encontrada.');
             }
 
             if ($monto <= 0) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'El monto debe ser mayor a cero.'
-                ];
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'El monto debe ser mayor a cero.');
             }
 
             $saldoDisponible = (float) ($reserva['saldo_pendiente'] ?? 0);
 
             if ($monto > $saldoDisponible + 0.00001) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'El monto no puede ser mayor al saldo pendiente. Saldo disponible: S/ ' . number_format($saldoDisponible, 2)
-                ];
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'El monto no puede ser mayor al saldo pendiente. Saldo disponible: S/ ' . number_format($saldoDisponible, 2));
             }
 
             $fecha = $this->normalizarFechaPago($fechaPago);
@@ -94,12 +85,10 @@ class RegistrarPagoService
             $comprobanteData['cliente'] = !empty($cliente) ? trim($cliente) : '—';
             DB::connection()->commit();
 
-            return [
-                'exito' => true,
-                'mensaje' => 'Pago registrado correctamente.',
+            return $this->respuesta(true, 'CREADO', 'Pago registrado correctamente.', [
                 'pago_id' => (int) $pago->id,
                 'comprobante' => $comprobanteData,
-            ];
+            ]);
         } catch (\Throwable $e) {
             error_log('RegistrarPagoService::registrarPago -> ' . $e->getMessage());
             $conexion = DB::connection();
@@ -108,10 +97,7 @@ class RegistrarPagoService
                 $conexion->rollBack();
             }
 
-            return [
-                'exito' => false,
-                'mensaje' => 'No se pudo registrar el pago. Intente nuevamente.'
-            ];
+            return $this->respuesta(false, 'EXCEPCION', 'No se pudo registrar el pago. Intente nuevamente.');
         }
     }
 
@@ -140,5 +126,18 @@ class RegistrarPagoService
         }
 
         return FechaHotelHelper::ahora();
+    }
+
+    private function respuesta(bool $exito, string $codigo, string $mensaje, mixed $data = null, array $errores = []): array
+    {
+        $respuesta = [
+            'exito' => $exito,
+            'codigo' => $codigo,
+            'mensaje' => $mensaje,
+            'data' => $data,
+            'errores' => $errores,
+        ];
+
+        return is_array($data) ? array_merge($respuesta, $data) : $respuesta;
     }
 }

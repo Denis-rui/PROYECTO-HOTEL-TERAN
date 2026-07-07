@@ -65,6 +65,39 @@
     }).format(fecha);
   };
 
+  const formatTimeOnly = (valor, fallback = "12:00") => {
+    if (!valor) return fallback;
+
+    const texto = String(valor);
+    const partes = texto.match(/[ T](\d{2}):(\d{2})/);
+    if (partes) return `${partes[1]}:${partes[2]}`;
+
+    const fecha = new Date(texto.replace(" ", "T"));
+    if (Number.isNaN(fecha.getTime())) return fallback;
+
+    return new Intl.DateTimeFormat("es-PE", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(fecha);
+  };
+
+  const obtenerPagoNormalizado = (reserva) => {
+    const total = Math.max(
+      0,
+      toNumber(reserva.total) + toNumber(reserva.cargo_checkout_tarde),
+    );
+    const totalPagadoNeto = Math.max(
+      0,
+      toNumber(reserva.total_pagado_neto) ||
+        toNumber(reserva.total_pagado) - toNumber(reserva.total_devuelto),
+    );
+    const saldo = Math.max(0, total - totalPagadoNeto);
+    const porcentaje = total > 0 ? Math.min(100, Math.round((totalPagadoNeto / total) * 100)) : 0;
+
+    return { saldo, porcentaje };
+  };
+
   const normalizarEstado = (estado) =>
     String(estado || "")
       .trim()
@@ -73,6 +106,7 @@
   const etiquetaEstado = (estado) => {
     const mapa = {
       confirmada: "Confirmada",
+      pre_checkin: "Pre-check-in",
       en_estadia: "En estadía",
       ausente: "Ausente",
       checkout_realizado: "Checkout realizado",
@@ -159,7 +193,7 @@
     if (!contenedor) return;
 
     const documentos = generarDocumentosBase(reserva);
-    const porcentajePago = toNumber(reserva.porcentaje_pago);
+    const { porcentaje: porcentajePago } = obtenerPagoNormalizado(reserva);
 
     if (contador) {
       contador.textContent = `${documentos.length} emitido${documentos.length === 1 ? "" : "s"}`;
@@ -234,12 +268,17 @@
           .filter(Boolean)
           .join(" | ")
       : reserva.habitacion || "---";
+    const pago = obtenerPagoNormalizado(reserva);
+    const checkInMostrar =
+      reserva.checkin_real || reserva.check_in_programado || reserva.check_in;
+    const checkOutMostrar =
+      reserva.checkout_real || reserva.check_out_programado || reserva.check_out;
 
     setText("#detalleReservaCodigo", reserva.codigo_reserva || reserva.id || "---");
     setText("#detalleReservaCliente", reserva.cliente || "---");
     setText("#detalleReservaEstado", etiquetaEstado(reserva.estado));
-    setText("#detalleReservaPago", `${toNumber(reserva.porcentaje_pago)}%`);
-    setText("#detalleReservaSaldo", formatMoney(reserva.saldo_pendiente));
+    setText("#detalleReservaPago", `${pago.porcentaje}%`);
+    setText("#detalleReservaSaldo", formatMoney(pago.saldo));
     setText("#detalleReservaClienteNombre", reserva.cliente || "---");
     setText(
       "#detalleReservaClienteDocumento",
@@ -261,26 +300,37 @@
     );
     if (listaHabitaciones) {
       if (habitacionesHistorial.length) {
-        const cambiosActivos = habitacionesHistorial.filter(
-          (habitacion) => habitacion.tipo_asignacion === "cambio",
-        );
-        const habitacionesOrdenadas = [
-          ...habitacionesHistorial.filter((habitacion) => {
-            const estadoAsignacion = normalizarEstado(
-              habitacion.estado_asignacion || habitacion.estado,
-            );
-            return estadoAsignacion === "activa";
-          }),
-          ...habitacionesHistorial.filter((habitacion) => {
-            const estadoAsignacion = normalizarEstado(
-              habitacion.estado_asignacion || habitacion.estado,
-            );
-            return estadoAsignacion !== "activa";
-          }),
-        ];
+        const activas = habitacionesHistorial.filter((habitacion) => {
+          const estadoAsignacion = normalizarEstado(
+            habitacion.estado_asignacion || habitacion.estado,
+          );
+          return estadoAsignacion === "activa";
+        });
 
-        listaHabitaciones.innerHTML = habitacionesOrdenadas
-          .map((habitacion) => {
+        const cambiadas = habitacionesHistorial.filter((habitacion) => {
+          const estadoAsignacion = normalizarEstado(
+            habitacion.estado_asignacion || habitacion.estado,
+          );
+          return estadoAsignacion !== "activa";
+        });
+
+        let htmlFinal = "";
+
+        if (activas.length > 0) {
+          htmlFinal += `<li style="list-style: none; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #2e7d32; margin: 5px 0 8px 0; letter-spacing: 0.5px; border-bottom: 1px solid #c8e6c9; padding-bottom: 3px;">Habitaciones Activas</li>`;
+          htmlFinal += activas.map((habitacion) => {
+            const texto = formatearHabitacion(habitacion);
+            if (!texto) return "";
+            return `<li class="detalle-habitacion-activa" style="margin-bottom: 8px;">${escapeHtml(texto)}</li>`;
+          }).filter(Boolean).join("");
+        }
+
+        if (cambiadas.length > 0) {
+          const cambiosActivos = habitacionesHistorial.filter(
+            (habitacion) => habitacion.tipo_asignacion === "cambio",
+          );
+          htmlFinal += `<li style="list-style: none; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #8d6e63; margin: 15px 0 8px 0; letter-spacing: 0.5px; border-bottom: 1px solid #d7ccc8; padding-bottom: 3px;">Historial de Cambios / Modificaciones</li>`;
+          htmlFinal += cambiadas.map((habitacion) => {
             const texto = formatearHabitacion(habitacion);
             if (!texto) return "";
 
@@ -294,7 +344,7 @@
                   item.fecha_movimiento === habitacion.fecha_movimiento,
               );
               return `
-                <li class="detalle-habitacion-cambiada">
+                <li class="detalle-habitacion-cambiada" style="margin-bottom: 8px;">
                   <span class="detalle-habitacion-badge">Cambiada</span>
                   <div><small>Habitación anterior</small><strong>${escapeHtml(texto)}</strong></div>
                   ${
@@ -306,37 +356,34 @@
                 </li>`;
             }
 
-            if (habitacion.tipo_asignacion === "cambio") {
-              return `
-                <li class="detalle-habitacion-nueva">
-                  <span class="detalle-habitacion-badge">Actual</span>
-                  ${escapeHtml(texto)}
-                </li>`;
-            }
+            return `<li class="detalle-habitacion-cambiada" style="margin-bottom: 8px;">${escapeHtml(texto)}</li>`;
+          }).filter(Boolean).join("");
+        }
 
-            return `<li>${escapeHtml(texto)}</li>`;
-          })
-          .filter(Boolean)
-          .join("");
+        listaHabitaciones.innerHTML = htmlFinal;
       } else {
         listaHabitaciones.innerHTML = "<li>---</li>";
       }
     }
     setText("#detalleReservaHabitaciones", habitacionesTexto);
-    setText("#detalleReservaCheckIn", formatDateOnly(reserva.check_in));
+    setText("#detalleReservaCheckIn", formatDateOnly(checkInMostrar));
     setText(
       "#detalleReservaHoraEntrada",
-      reserva.hora_entrada || reserva.horaEntrada || "---",
+      reserva.hora_entrada ||
+        reserva.horaEntrada ||
+        formatTimeOnly(checkInMostrar),
     );
-    setText("#detalleReservaCheckOut", formatDateOnly(reserva.check_out));
+    setText("#detalleReservaCheckOut", formatDateOnly(checkOutMostrar));
     setText(
       "#detalleReservaHoraSalida",
-      reserva.hora_salida || reserva.horaSalida || "---",
+      reserva.hora_salida ||
+        reserva.horaSalida ||
+        formatTimeOnly(checkOutMostrar),
     );
     setText("#detalleReservaTotal", formatMoney(reserva.total));
     setText(
       "#detalleReservaSaldoDetalle",
-      `Saldo pendiente: ${formatMoney(reserva.saldo_pendiente)}`,
+      `Saldo pendiente: ${formatMoney(pago.saldo)}`,
     );
     setText(
       "#detalleReservaUsuario",

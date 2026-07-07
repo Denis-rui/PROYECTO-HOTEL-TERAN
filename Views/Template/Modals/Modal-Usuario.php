@@ -6,7 +6,7 @@
       <input type="hidden" id="id-usuario" name="id-usuario" />
 
       <div class="label-input-modal">
-        <label for="nombre" class="nombre">Nombre</label>
+        <label for="nombre" class="nombre">Nombre <span class="campo-requerido">*</span></label>
         <input
           type="text"
           id="nombre"
@@ -17,7 +17,7 @@
       </div>
 
       <div class="label-input-modal">
-        <label for="usuario" class="usuario">Usuario</label>
+        <label for="usuario" class="usuario">Usuario <span class="campo-requerido">*</span></label>
         <input
           type="text"
           name="usuario"
@@ -28,7 +28,7 @@
       </div>
 
       <div class="label-input-modal">
-        <label for="gmail" class="gmail">Gmail</label>
+        <label for="gmail" class="gmail">Gmail <span class="campo-requerido">*</span></label>
         <input
           type="email"
           name="gmail"
@@ -39,7 +39,7 @@
       </div>
 
       <div class="label-input-modal">
-        <label for="telefono" class="telefono">Telefono</label>
+        <label for="telefono" class="telefono">Telefono <span class="campo-requerido">*</span></label>
         <input
           type="tel"
           name="telefono"
@@ -50,7 +50,7 @@
       </div>
 
       <div class="label-input-modal">
-        <label for="dni" class="dni">DNI</label>
+        <label for="dni" class="dni">DNI <span class="campo-requerido">*</span></label>
         <input
           type="text"
           name="dni"
@@ -61,7 +61,7 @@
       </div>
 
       <div class="label-input-modal">
-        <label for="rol" class="rol">Rol</label>
+        <label for="rol" class="rol">Rol <span class="campo-requerido">*</span></label>
         <select
           name="rol"
           id="rol"
@@ -75,7 +75,7 @@
       </div>
 
       <div class="label-input-modal">
-        <label for="password" class="password">Contrasena</label>
+        <label for="password" class="password">Contrasena <span class="campo-requerido">*</span></label>
         <input
           type="password"
           name="password"
@@ -85,7 +85,7 @@
       </div>
 
       <div class="label-input-modal">
-        <label for="fecha_nacimiento" class="fecha_nacimiento">Fecha de Nacimiento</label>
+        <label for="fecha_nacimiento" class="fecha_nacimiento">Fecha de Nacimiento <span class="campo-requerido">*</span></label>
         <input
           type="date"
           name="fecha_nacimiento"

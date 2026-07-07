@@ -91,15 +91,15 @@
   const textoHabitacion = (habitacion) =>
     `Hab. ${habitacion?.numero_habitacion || "--"}${habitacion?.piso ? ` - Piso ${habitacion.piso}` : ""}`;
 
+  const obtenerCheckInGeneral = (reserva = {}) =>
+    fechaAInput(reserva?.check_in_programado || reserva?.check_in || "");
+
+  const obtenerCheckOutGeneral = (reserva = {}) =>
+    fechaAInput(reserva?.check_out_programado || reserva?.check_out || "");
+
   const calcularRangoFacturable = (reserva) => {
-    const desde = fechaMayor(
-      reserva?.checkin_real,
-      reserva?.check_in,
-      reserva?.check_in_programado,
-    );
-    const hasta = fechaMenor(
-      reserva?.checkout_real || reserva?.check_out || reserva?.check_out_programado,
-    );
+    const desde = obtenerCheckInGeneral(reserva);
+    const hasta = obtenerCheckOutGeneral(reserva);
 
     return { desde, hasta };
   };
@@ -127,14 +127,9 @@
     const cargo = toNumber(reserva?.cargo_checkout_tarde);
     if (cargo <= 0 || !fechaHasta) return false;
 
-    const finHabitaciones =
-      estado.habitaciones
-        .map((habitacion) => fechaAInput(habitacion?.check_out))
-        .filter(Boolean)
-        .sort()
-        .pop() || "";
+    const finReserva = obtenerCheckOutGeneral(reserva);
     const checkoutReal = fechaAInput(reserva?.checkout_real);
-    const limite = [finHabitaciones, checkoutReal].filter(Boolean).sort()[0];
+    const limite = [finReserva, checkoutReal].filter(Boolean).sort()[0];
 
     return Boolean(limite) && fechaHasta >= limite;
   };
@@ -156,11 +151,19 @@
     fechaHasta.min = rango.desde;
     fechaHasta.max = rango.hasta;
 
-    if (!fechaDesde.value || fechaDesde.value < rango.desde || fechaDesde.value > rango.hasta) {
+    if (
+      !fechaDesde.value ||
+      fechaDesde.value < rango.desde ||
+      fechaDesde.value > rango.hasta
+    ) {
       fechaDesde.value = rango.desde;
     }
 
-    if (!fechaHasta.value || fechaHasta.value < rango.desde || fechaHasta.value > rango.hasta) {
+    if (
+      !fechaHasta.value ||
+      fechaHasta.value < rango.desde ||
+      fechaHasta.value > rango.hasta
+    ) {
       fechaHasta.value = rango.hasta;
     }
   };
@@ -171,6 +174,70 @@
     if (limpio.length === 8) return "1";
     return "-";
   };
+
+  const tipoDocumentoClienteNormalizado = (cliente = {}) =>
+    String(
+      cliente.documento_tipo_nombre ||
+        cliente.tipo_documento_nombre ||
+        "",
+    ).toLowerCase();
+
+  const obtenerNumeroClientePorTipoSunat = (cliente = {}, tipoSunat = "-") => {
+    const tipoCliente = tipoDocumentoClienteNormalizado(cliente);
+    const documento = String(cliente.documento || "").trim();
+    const ruc = String(cliente.ruc || "").trim();
+
+    if (tipoSunat === "6") {
+      return ruc || (tipoCliente.includes("ruc") ? documento : "");
+    }
+
+    if (tipoSunat === "1") {
+      return tipoCliente.includes("dni") || documento.length === 8
+        ? documento
+        : "";
+    }
+
+    if (tipoSunat === "4") {
+      return tipoCliente.includes("extranjer") ? documento : "";
+    }
+
+    if (tipoSunat === "7") {
+      return tipoCliente.includes("pasaporte") ? documento : "";
+    }
+
+    if (tipoSunat === "0") {
+      return tipoCliente.includes("no domiciliado") ? documento : "";
+    }
+
+    return "";
+  };
+
+  const establecerClienteDocumentoActual = (cliente = {}) => {
+    window.__docElectronicoClienteActual = {
+      documento: cliente.documento || "",
+      ruc: cliente.ruc || "",
+      documento_tipo_nombre:
+        cliente.documento_tipo_nombre || cliente.tipo_documento_nombre || "",
+    };
+  };
+
+  const actualizarNumeroDocumentoSunatDesdeCliente = (cliente = null) => {
+    const clienteActual = cliente || window.__docElectronicoClienteActual || {};
+    const tipo = document.getElementById(
+      "docElectronicoClienteTipoDocumento",
+    )?.value || "-";
+    const numero = document.getElementById("docElectronicoClienteNumero");
+
+    if (!numero) return;
+
+    numero.value = obtenerNumeroClientePorTipoSunat(clienteActual, tipo);
+    numero.dispatchEvent(new Event("input", { bubbles: true }));
+    numero.dispatchEvent(new Event("change", { bubbles: true }));
+  };
+
+  window.actualizarNumeroDocumentoSunatDesdeCliente =
+    actualizarNumeroDocumentoSunatDesdeCliente;
+  window.establecerClienteDocumentoActual = establecerClienteDocumentoActual;
 
   const obtenerModal = () => ({
     overlay: document.getElementById("contenedor-modal-documento-electronico"),
@@ -193,7 +260,9 @@
     const contenedor = document.getElementById(
       "contenedorDocumentosElectronicosEmitidos",
     );
-    const lista = document.getElementById("listaDocumentosElectronicosEmitidos");
+    const lista = document.getElementById(
+      "listaDocumentosElectronicosEmitidos",
+    );
     const boton = document.getElementById("btnToggleDocumentosElectronicos");
 
     if (contenedor) contenedor.hidden = true;
@@ -205,7 +274,9 @@
   };
 
   const renderDocumentosElectronicosEmitidos = (documentos = []) => {
-    const lista = document.getElementById("listaDocumentosElectronicosEmitidos");
+    const lista = document.getElementById(
+      "listaDocumentosElectronicosEmitidos",
+    );
     if (!lista) return;
 
     if (!documentos.length) {
@@ -259,7 +330,9 @@
     const contenedor = document.getElementById(
       "contenedorDocumentosElectronicosEmitidos",
     );
-    const lista = document.getElementById("listaDocumentosElectronicosEmitidos");
+    const lista = document.getElementById(
+      "listaDocumentosElectronicosEmitidos",
+    );
     const boton = document.getElementById("btnToggleDocumentosElectronicos");
 
     if (!reserva?.id || !contenedor || !lista || !boton) return;
@@ -267,7 +340,9 @@
     const abrir = contenedor.hidden;
     contenedor.hidden = !abrir;
     boton.setAttribute("aria-expanded", abrir ? "true" : "false");
-    boton.textContent = abrir ? "Ocultar documentos emitidos" : "Ver documentos emitidos";
+    boton.textContent = abrir
+      ? "Ocultar documentos emitidos"
+      : "Ver documentos emitidos";
 
     if (!abrir || estado.documentosElectronicosCargados) return;
 
@@ -275,9 +350,8 @@
       '<div class="documento-electronico-emitido-vacio">Cargando documentos emitidos...</div>';
 
     try {
-      estado.documentosElectronicos = await cargarDocumentosElectronicosEmitidos(
-        reserva.id,
-      );
+      estado.documentosElectronicos =
+        await cargarDocumentosElectronicosEmitidos(reserva.id);
       estado.documentosElectronicosCargados = true;
       renderDocumentosElectronicosEmitidos(estado.documentosElectronicos);
     } catch (error) {
@@ -520,6 +594,11 @@
 
   const poblarFormulario = (reserva) => {
     estado.reserva = reserva;
+    establecerClienteDocumentoActual({
+      documento: reserva.documento || "",
+      ruc: reserva.ruc || "",
+      documento_tipo_nombre: reserva.documento_tipo_nombre || "",
+    });
 
     const campos = {
       docElectronicoIdReserva: reserva.id || "",
@@ -527,18 +606,18 @@
         reserva.codigo_reserva || reserva.id || "---",
       docElectronicoClienteNombre: reserva.cliente || "",
       docElectronicoClienteTipoDocumento: tipoDocumentoPorNumero(
-        reserva.documento || "",
+        reserva.documento || reserva.ruc || "",
       ),
-      docElectronicoClienteNumero: reserva.documento || "",
+      docElectronicoClienteNumero: "",
       docElectronicoClienteEmail:
         reserva.correo_electronico || reserva.email || "",
       docElectronicoClienteDireccion:
         reserva.cliente_direccion || reserva.procedencia || "",
       docElectronicoFechaDesde: fechaAInput(
-        reserva.check_in || reserva.check_in_programado || "",
+        reserva.check_in_programado || reserva.check_in || "",
       ),
       docElectronicoFechaHasta: fechaAInput(
-        reserva.check_out || reserva.check_out_programado || "",
+        reserva.check_out_programado || reserva.check_out || "",
       ),
       docElectronicoTipoDocumento: "BOLETA",
     };
@@ -554,10 +633,9 @@
       }
     });
 
-    const rangoFacturable = calcularRangoFacturable(
-      reserva,
-      obtenerHabitacionesActivas(reserva),
-    );
+    actualizarNumeroDocumentoSunatDesdeCliente();
+
+    const rangoFacturable = calcularRangoFacturable(reserva);
     const checkIn = rangoFacturable.desde;
     const checkOut = rangoFacturable.hasta;
     const fechaDesde = document.getElementById("docElectronicoFechaDesde");
@@ -773,11 +851,14 @@
       }
 
       const documento = resultado.documento || {};
-      const enlaceDocumento = documento.enlace_del_pdf || documento.enlace || "";
+      const enlaceDocumento =
+        documento.enlace_del_pdf || documento.enlace || "";
       Swal.close();
       const avisoDocumento = await Swal.fire({
         icon: "success",
-        title: resultado.duplicado ? "Documento ya emitido" : "Documento emitido",
+        title: resultado.duplicado
+          ? "Documento ya emitido"
+          : "Documento emitido",
         text:
           resultado.mensaje || "Documento electrónico generado correctamente.",
         showCancelButton: Boolean(enlaceDocumento),
@@ -798,9 +879,8 @@
         "success",
       );
       if (estado.reserva?.id) {
-        estado.documentosElectronicos = await cargarDocumentosElectronicosEmitidos(
-          estado.reserva.id,
-        );
+        estado.documentosElectronicos =
+          await cargarDocumentosElectronicosEmitidos(estado.reserva.id);
         estado.documentosElectronicosCargados = true;
         renderDocumentosElectronicosEmitidos(estado.documentosElectronicos);
       }
@@ -853,6 +933,9 @@
       toggleDocumentosElectronicosEmitidos,
     );
     form?.addEventListener("submit", emitirDocumentoElectronico);
+    clienteTipo?.addEventListener("change", () => {
+      actualizarNumeroDocumentoSunatDesdeCliente();
+    });
 
     overlay?.addEventListener("click", (evento) => {
       if (evento.target === overlay) {
@@ -936,15 +1019,13 @@
   };
 
   const seleccionarClienteDocumento = (cliente) => {
+    window.establecerClienteDocumentoActual?.(cliente);
     actualizarCampoCliente("docElectronicoClienteNombre", cliente.nombre || "");
     actualizarCampoCliente(
       "docElectronicoClienteTipoDocumento",
       obtenerTipoSunatCliente(cliente),
     );
-    actualizarCampoCliente(
-      "docElectronicoClienteNumero",
-      cliente.documento || "",
-    );
+    window.actualizarNumeroDocumentoSunatDesdeCliente?.(cliente);
     actualizarCampoCliente("docElectronicoClienteEmail", cliente.correo || "");
     actualizarCampoCliente(
       "docElectronicoClienteDireccion",
@@ -991,7 +1072,7 @@
             role="option"
           >
             <strong>${escapeClienteHtml(cliente.nombre || "Sin nombre")}</strong>
-            <span>${escapeClienteHtml(cliente.tipo_documento_nombre || "Documento")}: ${escapeClienteHtml(cliente.documento || "---")}</span>
+            <span>${escapeClienteHtml(cliente.tipo_documento_nombre || "Documento")}: ${escapeClienteHtml(cliente.documento || "---")}${cliente.ruc ? ` · RUC: ${escapeClienteHtml(cliente.ruc)}` : ""}</span>
             <small>${escapeClienteHtml(cliente.correo || "Sin correo")} · ${escapeClienteHtml(cliente.procedencia || "Sin procedencia")}</small>
           </button>
         `,
@@ -1012,11 +1093,26 @@
 
     try {
       const respuesta = await fetch(
-        BASE_URL + `Cliente/buscar&q=${encodeURIComponent(textoBusqueda)}`,
-        { signal: controladorBusquedaCliente.signal },
+        BASE_URL + `Cliente/buscar?q=${encodeURIComponent(textoBusqueda)}`,
+        {
+          signal: controladorBusquedaCliente.signal,
+          headers: {
+            Accept: "application/json",
+          },
+        },
       );
+
+      if (!respuesta.ok) {
+        throw new Error(`Error HTTP ${respuesta.status}`);
+      }
+
+      const contentType = respuesta.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        throw new Error("La respuesta del servidor no es JSON.");
+      }
+
       const datos = await respuesta.json();
-      if (!respuesta.ok || datos.error) {
+      if (datos.error) {
         throw new Error(datos.error || "No se pudo buscar clientes.");
       }
 

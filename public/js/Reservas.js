@@ -50,9 +50,12 @@ const inicializarTablaReservas = () => {
         orderable: false,
         render: (_, __, reserva) => renderHabitaciones(reserva),
       },
-      { data: "check_in", render: renderFechaReserva },
       {
-        data: "check_out",
+        data: null,
+        render: (_, __, reserva) => renderFechaReserva(obtenerCheckInGeneral(reserva)),
+      },
+      {
+        data: null,
         render: (_, __, reserva) => renderCheckOut(reserva),
       },
       { data: "estado", render: renderEstadoReserva },
@@ -167,6 +170,12 @@ const formatearFechaReserva = (fecha) => {
 
 const renderFechaReserva = (fecha) => escaparHtml(formatearFechaReserva(fecha));
 
+const obtenerCheckInGeneral = (reserva = {}) =>
+  reserva.check_in_programado || reserva.check_in || "";
+
+const obtenerCheckOutGeneral = (reserva = {}) =>
+  reserva.check_out_programado || reserva.check_out || "";
+
 const renderHabitaciones = (reserva) => {
   const habitaciones = Array.isArray(reserva?.habitaciones)
     ? reserva.habitaciones
@@ -190,7 +199,7 @@ const renderHabitaciones = (reserva) => {
 };
 
 const renderCheckOut = (reserva) => {
-  const fecha = renderFechaReserva(reserva?.check_out);
+  const fecha = renderFechaReserva(obtenerCheckOutGeneral(reserva));
   const badges = [];
 
   if (Number(reserva?.minutos_checkout_vencido || 0) > 0) {
@@ -206,6 +215,7 @@ const textoEstadoReserva = (estado) => {
   const mapa = {
     pendiente: "Pendiente",
     confirmada: "Confirmada",
+    pre_checkin: "Pre-check-in",
     en_estadia: "En estadía",
     ausente: "Ausente",
     checkout_pendiente: "Checkout pendiente",
@@ -223,6 +233,7 @@ const claseEstadoReserva = (estado) => {
   const mapa = {
     pendiente: "estado-pendiente",
     confirmada: "estado-confirmada",
+    pre_checkin: "estado-confirmada",
     en_estadia: "estado-en-estadia",
     ausente: "estado-ausente",
     checkout_pendiente: "estado-checkout-pendiente",
@@ -301,6 +312,12 @@ const renderMenuAccionesReserva = (reserva) => {
   if (tieneAccionReserva(reserva, "marcar_regreso")) {
     opciones.push(
       '<button type="button" class="item-menu-opcion accion-marcar-regreso">Marcar regreso</button>',
+    );
+  }
+
+  if (tieneAccionReserva(reserva, "pre_checkin")) {
+    opciones.push(
+      '<button type="button" class="item-menu-opcion accion-pre-checkin">Pre-check-in</button>',
     );
   }
 
@@ -445,6 +462,22 @@ const configurarEventosReservas = () => {
         return;
       }
 
+      const accionPreCheckin = e.target.closest(".accion-pre-checkin");
+      if (accionPreCheckin) {
+        cerrarMenusOpciones();
+        const reserva = obtenerReservaDesdeEvento(accionPreCheckin);
+        if (!reserva) return;
+        const confirmado = await window.Confirmar(
+          "¿Registrar pre-check-in? El cliente dejó sus pertenencias, pero aún no ocupa la habitación.",
+        );
+        if (!confirmado) return;
+
+        ejecutarAccionReserva("preCheckin", {
+          id_reserva: reserva.id,
+        });
+        return;
+      }
+
       const accionVerDetalles = e.target.closest(".accion-ver-detalles");
       if (accionVerDetalles) {
         cerrarMenusOpciones();
@@ -532,7 +565,7 @@ const configurarEventosReservas = () => {
         const id = reserva.id;
         const codigo = reserva.codigo_reserva || `#${id}`;
         const cliente = reserva.cliente || "";
-        const checkin = formatearFechaReserva(reserva.check_in);
+        const checkin = formatearFechaReserva(obtenerCheckInGeneral(reserva));
 
         let calculoCancelacion;
         try {

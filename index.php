@@ -63,7 +63,6 @@ $router->get('Habitacion/obtenerFiltros', ['Habitacion', 'obtenerFiltros']);
 // Vistas y consultas
 $router->get('Reserva/index', ['Reserva', 'index']);
 $router->get('Reserva/obtener', ['Reserva', 'obtener']);
-$router->get('Reserva/dashboard', ['Reserva', 'dashboard']);
 $router->get('Reserva/notificaciones', ['Reserva', 'notificaciones']);
 
 // Operaciones de escritura
@@ -71,7 +70,10 @@ $router->post('Reserva/datatable', ['Reserva', 'datatable']);
 $router->post('Reserva/registrar', ['Reserva', 'registrar']);
 $router->put('Reserva/actualizar', ['Reserva', 'actualizar']);
 $router->post('Reserva/pago', ['Reserva', 'pago']);
+$router->post('Reserva/validarDevolucionPago', ['Reserva', 'validarDevolucionPago']);
+$router->post('Reserva/registrarDevolucionPago', ['Reserva', 'registrarDevolucionPago']);
 $router->patch('Reserva/checkin', ['Reserva', 'checkin']);
+$router->patch('Reserva/preCheckin', ['Reserva', 'preCheckin']);
 $router->patch('Reserva/checkout', ['Reserva', 'checkout']);
 $router->patch('Reserva/marcarAusente', ['Reserva', 'marcarAusente']);
 $router->patch('Reserva/marcarRegreso', ['Reserva', 'marcarRegreso']);
@@ -94,6 +96,7 @@ $router->get('Comprobante/emitidosPorReserva', ['Comprobante', 'emitidosPorReser
 
 $router->get('Devolucion/index', ['Devolucion', 'index']);
 
+$router->post('Devolucion/datatable', ['Devolucion', 'datatable']);
 $router->post('Devolucion/registrar', ['Devolucion', 'registrar']);
 $router->put('Devolucion/actualizar', ['Devolucion', 'actualizar']);
 $router->delete('Devolucion/eliminar', ['Devolucion', 'eliminar']);
@@ -133,7 +136,6 @@ $router->get('Perfil/index', ['Perfil', 'index']);
 
 $router->post('Perfil/actualizarPerfil', ['Perfil', 'actualizarPerfil']);
 $router->post('Perfil/cambiarClave', ['Perfil', 'cambiarClave']);
-$router->post('Reserva/calcularTotal', ['Reserva', 'calcularTotal']);
 $route = $router->resolve();
 
 $controller = $route['controller'];

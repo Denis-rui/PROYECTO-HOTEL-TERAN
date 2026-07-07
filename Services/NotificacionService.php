@@ -14,39 +14,6 @@ class NotificacionService
         $this->notificacionModel = new NotificacionModel();
     }
 
-    public function crearNotificacion($tipo, $titulo, $mensaje, $idReserva = null, $idHabitacion = null, $idCliente = null, $prioridad = 'media'): array
-    {
-        try {
-            $datosIdentificadores = [
-                'tipo' => $tipo,
-                'id_reserva' => $idReserva ? (int) $idReserva : null,
-                'id_habitacion' => $idHabitacion ? (int) $idHabitacion : null,
-                'leida' => 0,
-            ];
-
-            $datosActualizar = [
-                'tipo' => $tipo,
-                'titulo' => $titulo,
-                'mensaje' => $mensaje,
-                'id_reserva' => $idReserva ? (int) $idReserva : null,
-                'id_habitacion' => $idHabitacion ? (int) $idHabitacion : null,
-                'id_cliente' => $idCliente ? (int) $idCliente : null,
-                'leida' => 0,
-                'prioridad' => $prioridad,
-            ];
-
-            $guardado = $this->notificacionModel->guardarNotificacion($datosIdentificadores, $datosActualizar);
-
-            return [
-                'exito' => $guardado,
-                'mensaje' => $guardado ? 'Notificacion creada.' : 'No se pudo crear la notificacion.'
-            ];
-        } catch (Exception $e) {
-            error_log('Error crear notificacion: ' . $e->getMessage());
-            return ['exito' => false, 'mensaje' => 'Error inesperado al crear notificacion.'];
-        }
-    }
-
     public function obtenerPendientes($limite = 30): array
     {
         $limite = max(1, (int) $limite);
@@ -81,15 +48,14 @@ class NotificacionService
             }
 
             if (!$esNotificacionLimpieza && ($tipo === 'checkout' || strpos($tipo, 'checkout_') === 0)) {
-                $claveCheckout = (int) $item['id_reserva'] . '|' . $idHabitacion;
-                if (!isset($clavesActivasCheckout[$claveCheckout])) {
+                if (!isset($clavesActivasCheckout[(int) $item['id_reserva']])) {
                     continue;
                 }
             }
 
             $claveNotificacion = $esNotificacionLimpieza && $idHabitacion > 0
                 ? 'limpieza|' . $idHabitacion
-                : $tipo . '|' . (int) $item['id_reserva'] . '|' . $idHabitacion;
+                : $tipo . '|' . (int) $item['id_reserva'];
 
             if (isset($clavesAgregadas[$claveNotificacion])) {
                 continue;
@@ -142,19 +108,28 @@ class NotificacionService
                 'notificaciones' => $notificaciones,
             ];
 
-            return ['exito' => true, 'mensaje' => 'Notificaciones cargadas.', 'data' => $data];
+            return $this->respuesta(true, 'OK', 'Notificaciones cargadas.', $data);
         } catch (Exception $e) {
             error_log('Error obtenerNotificacionesCheckout: ' . $e->getMessage());
 
-            return [
-                'exito' => false,
-                'mensaje' => 'Error al cargar las notificaciones.',
-                'data' => [
+            return $this->respuesta(false, 'ERROR_INTERNO', 'Error al cargar las notificaciones.', [
                     'proximos' => [],
                     'vencidos' => [],
                     'notificaciones' => []
-                ]
-            ];
+                ]);
         }
+    }
+
+    private function respuesta(bool $exito, string $codigo, string $mensaje, mixed $data = null, array $errores = []): array
+    {
+        $respuesta = [
+            'exito' => $exito,
+            'codigo' => $codigo,
+            'mensaje' => $mensaje,
+            'data' => $data,
+            'errores' => $errores,
+        ];
+
+        return is_array($data) ? array_merge($respuesta, $data) : $respuesta;
     }
 }

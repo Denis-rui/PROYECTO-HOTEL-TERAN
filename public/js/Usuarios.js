@@ -105,7 +105,7 @@ window.registrarUsuarioNuevo = (datosUsuario) => {
         return data;
       } else {
         window.mostrarMensajeModalUsuario?.(
-          data.error || "Error al registrar usuario.",
+          data.mensaje || data.error || "Error al registrar usuario.",
           "error",
         );
         return data;
@@ -149,7 +149,7 @@ window.actualizarUsuarioExistente = async (datosUsuario) => {
       return data;
     } else {
       window.mostrarMensajeModalUsuario?.(
-        data.error || "Error al actualizar usuario.",
+        data.mensaje || data.error || "Error al actualizar usuario.",
         "error",
       );
       return data;

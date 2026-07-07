@@ -3,7 +3,6 @@
 namespace Models;
 
 use Illuminate\Database\Capsule\Manager as DB;
-use Helpers\ReservaHelper;
 use Models\Entities\Reserva as ReservaEntity;
 
 class ReporteOcupacionModel
@@ -50,22 +49,6 @@ class ReporteOcupacionModel
         } catch (\Throwable $e) {
             error_log('Error en obtenerReser_EstadiaHab: ' . $e->getMessage());
             return null;
-        }
-    }
-
-    public function calcularTotalReserva($idHabitacion, $checkIn, $checkOut)
-    {
-        try {
-            $precio = (float) DB::table('habitacion as h')
-                ->join('tipo_habitacion as t', 't.id', '=', 'h.id_tipo_habitacion')
-                ->where('h.id', (int) $idHabitacion)
-                ->value('t.precio_base');
-
-            $dias = ReservaHelper::obtenerDiasEstadia($checkIn, $checkOut);
-            return $dias * $precio;
-        } catch (\Throwable $e) {
-            error_log('Error en calcularTotalReserva: ' . $e->getMessage());
-            return 0;
         }
     }
 

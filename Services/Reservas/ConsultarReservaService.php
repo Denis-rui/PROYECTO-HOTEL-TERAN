@@ -2,23 +2,15 @@
 
 namespace Services\Reservas;
 
-use Models\ReporteOcupacionModel;
 use Models\ReservaModel;
 
 class ConsultarReservaService
 {
     private ReservaModel $reservaModel;
-    private ReporteOcupacionModel $reporteOcupacionModel;
 
     public function __construct()
     {
         $this->reservaModel = new ReservaModel();
-        $this->reporteOcupacionModel = new ReporteOcupacionModel();
-    }
-
-    public function listar(array $filtros, int $limite): array
-    {
-        return $this->reservaModel->obtenerReservas($filtros, $limite);
     }
 
 
@@ -45,7 +37,7 @@ class ConsultarReservaService
         $estado = strtolower((string) ($reserva['estado'] ?? ''));
         $acciones = ['editar', 'pago', 'ver_detalles'];
 
-        if ($estado !== 'pendiente') {
+        if (in_array($estado, ['en_estadia', 'checkout_pendiente', 'checkout_realizado'], true)) {
             $acciones[] = 'emitir_documento';
         }
 
@@ -54,6 +46,10 @@ class ConsultarReservaService
         }
 
         if ($estado === 'confirmada') {
+            $acciones[] = $this->esAntesCheckinNormal() ? 'pre_checkin' : 'checkin';
+        }
+
+        if ($estado === 'pre_checkin' && !$this->esAntesCheckinNormal()) {
             $acciones[] = 'checkin';
         }
 
@@ -77,13 +73,16 @@ class ConsultarReservaService
         return $reserva;
     }
 
+    private function esAntesCheckinNormal(): bool
+    {
+        $ahora = new \DateTimeImmutable('now', new \DateTimeZone('America/Lima'));
+        $limite = $ahora->setTime(13, 40, 0);
+        return $ahora < $limite;
+    }
+
     public function obtenerPorId(int $idReserva): ?array
     {
         return $this->reservaModel->obtenerReservaPorId($idReserva);
     }
 
-    public function calcularTotal(int $idHabitacion, string $checkIn, string $checkOut)
-    {
-        return $this->reporteOcupacionModel->calcularTotalReserva($idHabitacion, $checkIn, $checkOut);
-    }
 }

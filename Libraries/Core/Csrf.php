@@ -38,12 +38,7 @@ class Csrf {
         );
 
         if (empty($tokenSesion) || !hash_equals($tokenSesion, $tokenRecibido)) {
-            http_response_code(403);
-            header('Content-Type: application/json; charset=utf-8');
-            echo json_encode(
-                ['exito' => false, 'mensaje' => 'Token CSRF inválido'], 
-                JSON_UNESCAPED_UNICODE);
-            exit();
+            throw new \RuntimeException('Token CSRF inválido');
         }
 
         return true;

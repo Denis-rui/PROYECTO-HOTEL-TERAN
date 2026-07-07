@@ -58,7 +58,7 @@ $tipos = $data['tipos_habitacion'] ?? [];
       </div>
 
       <div class="form-campo">
-        <label for="checkin" class="form-label">CHECK-IN</label>
+        <label for="check-in" class="form-label">CHECK-IN</label>
         <input type="time" id="check-in" name="check-in" class="form-input" value="<?= htmlspecialchars($hotel['check_in'] ?? '') ?>" />
       </div>
 

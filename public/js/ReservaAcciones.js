@@ -2,6 +2,7 @@
 (function () {
   const metodosPorAccion = {
     checkin: "PATCH",
+    preCheckin: "PATCH",
     checkout: "PATCH",
     marcarAusente: "PATCH",
     marcarRegreso: "PATCH",

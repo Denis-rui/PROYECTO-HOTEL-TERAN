@@ -25,13 +25,10 @@ class ClienteService
             $clienteInhabilitado = $this->clienteModel->buscarInhabilitadoPorDocumento($texto);
         }
 
-        return [
-            'exito' => true,
-            'data' => [
+        return $this->respuesta(true, 'OK', 'Clientes cargados correctamente.', [
                 'clientes' => $clientes,
                 'cliente_inhabilitado' => $clienteInhabilitado
-            ]
-        ];
+            ]);
     }
 
     public function listarClientes(string $nombre = ''): array
@@ -48,15 +45,15 @@ class ClienteService
         $token = defined('API_PERU_TOKEN') ? (string) constant('API_PERU_TOKEN') : '';
 
         if (!in_array($tipo, ['dni', 'ruc'], true)) {
-            return ['success' => false, 'message' => 'Tipo de documento inválido', 'code' => 422];
+            return $this->respuestaApiExterna(false, 'VALIDACION_ERROR', 'Tipo de documento inválido');
         }
 
         if ($documento === '' || ($tipo === 'dni' && strlen($documento) !== 8) || ($tipo === 'ruc' && strlen($documento) !== 11)) {
-            return ['success' => false, 'message' => 'Documento inválido', 'code' => 422];
+            return $this->respuestaApiExterna(false, 'VALIDACION_ERROR', 'Documento inválido');
         }
 
         if ($apiUrl === '' || $token === '') {
-            return ['success' => false, 'message' => 'Falta configurar la API de consulta de documentos.', 'code' => 500];
+            return $this->respuestaApiExterna(false, 'ERROR_INTERNO', 'Falta configurar la API de consulta de documentos.');
         }
 
         $url = rtrim($apiUrl, '/') . '/' . $tipo . '/' . $documento . '?token=' . urlencode($token);
@@ -76,7 +73,7 @@ class ClienteService
         curl_close($curl);
 
         if ($respuesta === false || $errorCurl) {
-            return ['success' => false, 'message' => 'No se pudo completar la consulta', 'code' => 500];
+            return $this->respuestaApiExterna(false, 'ERROR_INTERNO', 'No se pudo completar la consulta');
         }
 
         $datos = json_decode($respuesta, true);
@@ -89,22 +86,24 @@ class ClienteService
                     $mensaje = $mensajeApi;
                 }
             }
-            return ['success' => false, 'message' => $mensaje, 'code' => 200];
+            return $this->respuestaApiExterna(false, 'NO_ENCONTRADO', $mensaje);
         }
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            return ['success' => false, 'message' => 'No se pudo procesar la respuesta', 'code' => 500];
+            return $this->respuestaApiExterna(false, 'ERROR_INTERNO', 'No se pudo procesar la respuesta');
         }
 
         // Si todo sale bien, devolvemos la data tal cual la espera el frontend
-        return array_merge($datos, ['success' => true, 'code' => $codigoHttp]);
+        return $this->respuestaApiExterna(true, 'OK', 'Documento encontrado.', $datos);
     }
 
     public function registrarCliente(array $datos): array
     {
         // Validar tipo de documento de forma temprana
         if (empty($datos['id_tipo_documento']) || !is_numeric($datos['id_tipo_documento']) || (int)$datos['id_tipo_documento'] <= 0) {
-            return ['exito' => false, 'mensaje' => 'Seleccione un tipo de documento válido', 'code' => 422];
+            return $this->respuesta(false, 'VALIDACION_ERROR', 'Seleccione un tipo de documento válido', null, [
+                'id_tipo_documento' => 'Seleccione un tipo de documento válido.',
+            ]);
         }
 
         $tipoDoc = (int)$datos['id_tipo_documento'];
@@ -134,7 +133,7 @@ class ClienteService
         }
 
         if ($v->falla()) {
-            return ['exito' => false, 'mensaje' => $v->primerError(), 'code' => 422];
+            return $this->respuesta(false, 'VALIDACION_ERROR', $v->primerError());
         }
 
         try {
@@ -154,11 +153,15 @@ class ClienteService
                 'activo'             => 1
             ];
 
-            $this->clienteModel->crear($datosGuardar);
-            return ['exito' => true, 'mensaje' => 'Cliente creado correctamente', 'code' => 200];
+            $cliente = $this->clienteModel->crear($datosGuardar);
+            return $this->respuesta(true, 'CREADO', 'Cliente creado correctamente', $cliente);
         } catch (Exception $e) {
             error_log('Error registrarCliente: ' . $e->getMessage());
-            return ['exito' => false, 'mensaje' => 'No se pudo crear el cliente. Verifica si el documento o RUC ya existe.', 'code' => 500];
+            if ($e->getCode() == 23000 || strpos($e->getMessage(), '1062') !== false) {
+                return $this->respuesta(false, 'CONFLICTO', 'Ya existe un cliente con ese documento o RUC.');
+            }
+
+            return $this->respuesta(false, 'ERROR_INTERNO', 'No se pudo crear el cliente. Verifica si el documento o RUC ya existe.');
         }
     }
 
@@ -166,12 +169,16 @@ class ClienteService
     {
         // Validar ID de forma temprana
         if (empty($datos['id'])) {
-            return ['exito' => false, 'mensaje' => 'ID requerido', 'code' => 422];
+            return $this->respuesta(false, 'VALIDACION_ERROR', 'ID requerido', null, [
+                'id' => 'El cliente es obligatorio.',
+            ]);
         }
 
         // Validar tipo de documento de forma temprana
         if (empty($datos['id_tipo_documento']) || !is_numeric($datos['id_tipo_documento']) || (int)$datos['id_tipo_documento'] <= 0) {
-            return ['exito' => false, 'mensaje' => 'Seleccione un tipo de documento válido', 'code' => 422];
+            return $this->respuesta(false, 'VALIDACION_ERROR', 'Seleccione un tipo de documento válido', null, [
+                'id_tipo_documento' => 'Seleccione un tipo de documento válido.',
+            ]);
         }
 
         $tipoDoc = (int)$datos['id_tipo_documento'];
@@ -199,7 +206,7 @@ class ClienteService
         }
 
         if ($v->falla()) {
-            return ['exito' => false, 'mensaje' => $v->primerError(), 'code' => 422];
+            return $this->respuesta(false, 'VALIDACION_ERROR', $v->primerError());
         }
 
         try {
@@ -219,26 +226,61 @@ class ClienteService
             ];
 
             $this->clienteModel->actualizar((int)$datos['id'], $datosActualizar);
-            return ['exito' => true, 'mensaje' => 'Cliente actualizado correctamente', 'code' => 200];
+            return $this->respuesta(true, 'ACTUALIZADO', 'Cliente actualizado correctamente', [
+                'id' => (int) $datos['id'],
+            ]);
         } catch (Exception $e) {
             error_log('Error actualizarCliente: ' . $e->getMessage());
-            return ['exito' => false, 'mensaje' => 'No se pudo actualizar el cliente. Verifica si el documento o RUC ya existe en otro registro.', 'code' => 500];
+            if ($e->getCode() == 23000 || strpos($e->getMessage(), '1062') !== false) {
+                return $this->respuesta(false, 'CONFLICTO', 'Ya existe otro cliente con ese documento o RUC.');
+            }
+
+            return $this->respuesta(false, 'ERROR_INTERNO', 'No se pudo actualizar el cliente. Verifica si el documento o RUC ya existe en otro registro.');
         }
     }
 
     public function cambiarEstado(int $id, int $estado): array
     {
         if ($id <= 0) {
-            return ['exito' => false, 'mensaje' => 'ID de cliente inválido', 'code' => 422];
+            return $this->respuesta(false, 'VALIDACION_ERROR', 'ID de cliente inválido', null, [
+                'id' => 'El cliente es obligatorio.',
+            ]);
         }
 
         try {
             $this->clienteModel->cambiarEstado($id, $estado);
             $mensaje = $estado === 1 ? 'Cliente habilitado correctamente' : 'Cliente inhabilitado correctamente';
-            return ['exito' => true, 'mensaje' => $mensaje, 'code' => 200];
+            return $this->respuesta(true, 'ACTUALIZADO', $mensaje, [
+                'id' => $id,
+                'activo' => $estado,
+            ]);
         } catch (Exception $e) {
             error_log('Error cambiarEstado cliente: ' . $e->getMessage());
-            return ['exito' => false, 'mensaje' => 'Error al actualizar el estado del cliente', 'code' => 500];
+            return $this->respuesta(false, 'ERROR_INTERNO', 'Error al actualizar el estado del cliente');
         }
+    }
+
+    private function respuesta(bool $exito, string $codigo, string $mensaje, mixed $data = null, array $errores = []): array
+    {
+        return [
+            'exito' => $exito,
+            'codigo' => $codigo,
+            'mensaje' => $mensaje,
+            'data' => $data,
+            'errores' => array_filter($errores, fn($error) => $error !== null),
+        ];
+    }
+
+    private function respuestaApiExterna(bool $exito, string $codigo, string $mensaje, array $datos = []): array
+    {
+        return array_merge($datos, [
+            'exito' => $exito,
+            'codigo' => $codigo,
+            'mensaje' => $mensaje,
+            'data' => $datos,
+            'errores' => [],
+            'success' => $exito,
+            'message' => $mensaje,
+        ]);
     }
 }

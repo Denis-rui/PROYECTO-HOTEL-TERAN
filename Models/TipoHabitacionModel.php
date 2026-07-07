@@ -14,7 +14,13 @@ class TipoHabitacionModel
     public function guardar(?int $id, array $datos): bool
     {
         if ($id !== null && $id > 0) {
-            return TipoHabitacion::where('id', $id)->update($datos) > 0;
+            $tipoHabitacion = TipoHabitacion::find($id);
+            if (!$tipoHabitacion) {
+                return false;
+            }
+
+            $tipoHabitacion->fill($datos);
+            return $tipoHabitacion->save();
         }
 
         TipoHabitacion::create($datos);

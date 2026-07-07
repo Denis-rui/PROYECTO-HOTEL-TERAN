@@ -357,6 +357,16 @@
     color: #24462d;
   }
 
+  .detalle-habitacion-activa {
+    list-style: none;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #a8d5ba;
+    background: #e8f5ec;
+    color: #1b5e2e;
+    font-weight: 500;
+  }
+
   .detalle-habitacion-badge {
     width: fit-content;
     padding: 2px 7px;

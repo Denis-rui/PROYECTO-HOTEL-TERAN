@@ -60,23 +60,43 @@ class FormatearReservas
             }
         }
         $habitacionPrincipal = $habitaciones[0] ?? null;
-        $totalPagado = (float) ($reserva->pagos->sum('monto') ?? 0);
-        $checkInProgramado = $reserva->check_in ?? ($relacionPrincipal->check_in ?? null);
-        $checkOutProgramado = $reserva->check_out ?? ($relacionPrincipal->check_out ?? null);
+        $sumPagos = (float) ($reserva->pagos->sum('monto') ?? 0);
+        $sumPenalidades = (float) DB::table('devolucion')
+            ->where('id_reserva', $reserva->id)
+            ->sum('monto_penalidad');
+        $totalPagado = max(0.0, $sumPagos - $sumPenalidades);
+        $checkInProgramado = $reserva->check_in_programado ?? ($relacionPrincipal->check_in ?? null);
+        $checkOutProgramado = $reserva->check_out_programado ?? ($relacionPrincipal->check_out ?? null);
         $checkIn = $reserva->checkin_real ?? $checkInProgramado;
         $checkOut = $reserva->checkout_real ?? $checkOutProgramado;
         $estado = $reserva->estado ?? '';
         $total = (float) ($reserva->total ?? 0);
         $cargoTarde = (float) ($reserva->cargo_checkout_tarde ?? 0);
-        $saldoPendiente = $total + $cargoTarde - $totalPagado;
+        $totalConCargos = $total + $cargoTarde;
+        $totalPagosNegativos = 0.0;
+        foreach (($reserva->pagos ?? []) as $pago) {
+            $montoPago = (float) ($pago->monto ?? 0);
+            if ($montoPago < 0) {
+                $totalPagosNegativos += abs($montoPago);
+            }
+        }
+        $totalDevuelto = (float) DB::table('devolucion')
+            ->where('id_reserva', $reserva->id)
+            ->sum('monto_devuelto');
+        $devolucionPendienteDeMovimiento = max(0, $totalDevuelto - $totalPagosNegativos);
+        $totalPagadoNeto = max(0, $totalPagado - $devolucionPendienteDeMovimiento);
+        $saldoPendiente = max(0, $totalConCargos - $totalPagadoNeto);
+        $porcentajePago = $totalConCargos > 0
+            ? min(100, round(($totalPagadoNeto / $totalConCargos) * 100, 0))
+            : 0;
         $minutosCheckoutVencido = 0;
         $checkoutHoy = false;
         $zonaHoraria = new \DateTimeZone('America/Lima');
         $ahora = new \DateTimeImmutable('now', $zonaHoraria);
         $checkoutProgramadoFecha = null;
-        if ($checkOut) {
+        if ($checkOutProgramado) {
             try {
-                $checkoutProgramadoFecha = new \DateTimeImmutable((string) $checkOut, $zonaHoraria);
+                $checkoutProgramadoFecha = new \DateTimeImmutable((string) $checkOutProgramado, $zonaHoraria);
             } catch (\Exception $e) {
                 $checkoutProgramadoFecha = null;
             }
@@ -95,6 +115,7 @@ class FormatearReservas
             'id_cliente' => $reserva->id_cliente,
             'cliente' => $nombreCompleto,
             'documento' => $cliente->documento ?? '',
+            'ruc' => $cliente->ruc ?? '',
             'id_tipo_documento' => $cliente->id_tipo_documento ?? null,
             'documento_tipo_nombre' => self::obtenerNombreTipoDocumento($cliente),
             'correo_electronico' => $cliente->correo_electronico ?? '',
@@ -121,8 +142,10 @@ class FormatearReservas
             'estado' => $estado,
             'observaciones' => $reserva->observaciones ?? '',
             'total_pagado' => $totalPagado,
+            'total_devuelto' => $totalDevuelto,
+            'total_pagado_neto' => $totalPagadoNeto,
             'saldo_pendiente' => $saldoPendiente,
-            'porcentaje_pago' => $total + $cargoTarde > 0 ? round(($totalPagado / ($total + $cargoTarde)) * 100, 0) : 0,
+            'porcentaje_pago' => $porcentajePago,
             'pagos' => $pagos,
             'minutos_checkout_vencido' => $minutosCheckoutVencido,
             'checkout_hoy' => $checkoutHoy,

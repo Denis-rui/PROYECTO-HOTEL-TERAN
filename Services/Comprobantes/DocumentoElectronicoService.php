@@ -33,44 +33,32 @@ class DocumentoElectronicoService
         $idReserva = (int) ($datos['id_reserva'] ?? 0);
 
         if ($idReserva <= 0) {
-            return [
-                'exito' => false,
-                'mensaje' => 'Debe seleccionar una reserva válida.'
-            ];
+            return $this->respuesta(false, 'VALIDACION_ERROR', 'Debe seleccionar una reserva válida.');
         }
 
         $tipoDocumento = strtoupper(trim((string) ($datos['tipo_documento'] ?? 'BOLETA')));
 
         if (!in_array($tipoDocumento, ['BOLETA', 'FACTURA'], true)) {
-            return [
-                'exito' => false,
-                'mensaje' => 'El tipo de documento no es válido.'
-            ];
+            return $this->respuesta(false, 'VALIDACION_ERROR', 'El tipo de documento no es válido.');
         }
 
         $reserva = $this->reservaModel->obtenerReservaPorId($idReserva);
 
         if (!$reserva) {
-            return [
-                'exito' => false,
-                'mensaje' => 'La reserva no fue encontrada.'
-            ];
+            return $this->respuesta(false, 'NO_ENCONTRADO', 'La reserva no fue encontrada.');
         }
 
         $checkInReal = $this->fechaInicioFacturable($reserva);
 
         if ($checkInReal === '') {
-            return [
-                'exito' => false,
-                'mensaje' => 'Solo se puede emitir una boleta o factura después de realizar el check-in o checkout del cliente.',
-            ];
+            return $this->respuesta(false, 'CONFLICTO', 'Solo se puede emitir una boleta o factura después de realizar el check-in o checkout del cliente.');
         }
 
         $fechaDesde = $this->fechaIso((string) ($datos['fecha_desde'] ?? $checkInReal));
 
         $fechaHasta = $this->fechaIso((string) (
             $datos['fecha_hasta']
-            ?? ($reserva['checkout_real'] ?? ($reserva['check_out_programado'] ?? ($reserva['check_out'] ?? '')))
+            ?? $this->fechaFinFacturable($reserva)
         ));
 
         $validacionFechas = $this->validarFechas($reserva, $fechaDesde, $fechaHasta);
@@ -86,10 +74,7 @@ class DocumentoElectronicoService
         ));
 
         if (empty($habitacionesReserva)) {
-            return [
-                'exito' => false,
-                'mensaje' => 'No hay habitaciones registradas en la reserva.'
-            ];
+            return $this->respuesta(false, 'CONFLICTO', 'No hay habitaciones registradas en la reserva.');
         }
 
         $habitacionesSolicitadas = $datos['habitaciones'] ?? [];
@@ -131,10 +116,7 @@ class DocumentoElectronicoService
 
         $habitacionesFacturadas = $lineas['habitaciones_facturadas'] ?? [];
         if (empty($habitacionesFacturadas)) {
-            return [
-                'exito' => false,
-                'mensaje' => 'Ninguna de las habitaciones seleccionadas está disponible en el rango de fechas elegido.',
-            ];
+            return $this->respuesta(false, 'CONFLICTO', 'Ninguna de las habitaciones seleccionadas está disponible en el rango de fechas elegido.');
         }
 
         $totalDocumento = (float) ($lineas['total'] ?? 0);
@@ -143,10 +125,7 @@ class DocumentoElectronicoService
         $totalIgv = (float) ($lineas['total_igv'] ?? 0);
 
         if ($totalDocumento <= 0 || $totalExonerada <= 0 || empty($lineas['items'])) {
-            return [
-                'exito' => false,
-                'mensaje' => 'El documento no tiene importes válidos para emitir. Revise precios, fechas y habitaciones seleccionadas.'
-            ];
+            return $this->respuesta(false, 'VALIDACION_ERROR', 'El documento no tiene importes válidos para emitir. Revise precios, fechas y habitaciones seleccionadas.');
         }
 
         $totalReserva = (float) ($reserva['total'] ?? 0)
@@ -185,12 +164,10 @@ class DocumentoElectronicoService
         $duplicado = $this->documentoElectronicoModel->obtenerPorCodigoUnico($codigoUnico);
 
         if ($duplicado) {
-            return [
-                'exito' => true,
-                'mensaje' => 'El documento ya fue emitido anteriormente.',
+            return $this->respuesta(true, 'OK', 'El documento ya fue emitido anteriormente.', [
                 'documento' => $this->formatearRegistro($duplicado),
                 'duplicado' => true,
-            ];
+            ]);
         }
 
         $validacionCruces = $this->validarCrucesConDocumentos(
@@ -208,16 +185,14 @@ class DocumentoElectronicoService
         $pagoDisponible = round(max(0, $totalPagado - $totalYaDocumentado), 2);
 
         if ($totalDocumento - 0.01 > $pagoDisponible) {
-            return [
-                'exito' => false,
-                'mensaje' => 'El importe seleccionado supera el monto pagado disponible para emitir. Ya hay S/ '
+            return $this->respuesta(false, 'CONFLICTO', 'El importe seleccionado supera el monto pagado disponible para emitir. Ya hay S/ '
                     . number_format($totalYaDocumentado, 2)
-                    . ' documentados de esta reserva.',
+                    . ' documentados de esta reserva.', [
                 'total_pagado' => $totalPagado,
                 'total_documentado' => $totalYaDocumentado,
                 'pago_disponible' => $pagoDisponible,
                 'total_documento' => $totalDocumento,
-            ];
+            ]);
         }
 
         $observaciones = $this->construirObservaciones(
@@ -228,9 +203,7 @@ class DocumentoElectronicoService
             $habitacionesFacturadas
         );
 
-        return [
-            'exito' => true,
-            'mensaje' => 'Validación correcta.',
+        return $this->respuesta(true, 'OK', 'Validación correcta.', [
             'datos' => [
                 'id_reserva' => $idReserva,
                 'tipo_documento' => $tipoDocumento,
@@ -267,7 +240,7 @@ class DocumentoElectronicoService
             'fecha_desde' => $fechaDesde,
             'fecha_hasta' => $fechaHasta,
             'noches' => (int) ($validacionFechas['noches'] ?? 0),
-        ];
+        ]);
     }
 
     public function emitir(array $datos, ?int $idUsuario = null): array
@@ -284,10 +257,7 @@ class DocumentoElectronicoService
         $datosPreparados = $preparado['datos'] ?? [];
 
         if (empty($datosPreparados)) {
-            return [
-                'exito' => false,
-                'mensaje' => 'No se encontraron datos válidos para enviar el documento electrónico.',
-            ];
+            return $this->respuesta(false, 'VALIDACION_ERROR', 'No se encontraron datos válidos para enviar el documento electrónico.');
         }
 
         $numeroInicial = (int) ($datosPreparados['numero'] ?? 1);
@@ -316,13 +286,11 @@ class DocumentoElectronicoService
         }
 
         if (!($respuestaApi['exito'] ?? false)) {
-            return [
-                'exito' => false,
-                'mensaje' => 'NubeFact indica que los últimos números intentados ya existen. Revise o actualice la numeración de la serie '
+            return $this->respuesta(false, 'CONFLICTO', 'NubeFact indica que los últimos números intentados ya existen. Revise o actualice la numeración de la serie '
                     . (string) ($datosPreparados['serie'] ?? '')
-                    . ' antes de volver a emitir.',
+                    . ' antes de volver a emitir.', [
                 'respuesta' => $respuestaApi['respuesta'] ?? null,
-            ];
+            ]);
         }
         $respuesta = $respuestaApi['respuesta'] ?? [];
         $registro = [
@@ -382,20 +350,16 @@ class DocumentoElectronicoService
                 . (string) ($datosPreparados['numero'] ?? '')
             );
 
-            return [
-                'exito' => false,
-                'mensaje' => 'NubeFact aceptó el comprobante, pero no se pudo guardar en la base de datos local. No vuelva a emitirlo sin revisar el registro.',
+            return $this->respuesta(false, 'ERROR_GUARDADO', 'NubeFact aceptó el comprobante, pero no se pudo guardar en la base de datos local. No vuelva a emitirlo sin revisar el registro.', [
                 'documento' => $this->formatearRegistro($registro),
                 'respuesta' => $respuesta,
-            ];
+            ]);
         }
 
-        return [
-            'exito' => true,
-            'mensaje' => 'Documento electrónico emitido correctamente.',
+        return $this->respuesta(true, 'CREADO', 'Documento electrónico emitido correctamente.', [
             'documento' => $this->formatearRegistro($registro),
             'respuesta' => $respuesta,
-        ];
+        ]);
     }
 
     public function obtenerEmitidosPorReserva(int $idReserva): array
@@ -441,64 +405,39 @@ class DocumentoElectronicoService
 
     private function fechaInicioFacturable(array $reserva): string
     {
-        $checkInReal = $this->fechaIso((string) ($reserva['checkin_real'] ?? ''));
-
-        if ($checkInReal !== '') {
-            return $checkInReal;
-        }
-
         $estado = strtolower((string) ($reserva['estado'] ?? ''));
+        $checkInReal = $this->fechaIso((string) ($reserva['checkin_real'] ?? ''));
         $tieneCheckout = $this->fechaIso((string) ($reserva['checkout_real'] ?? '')) !== ''
             || $estado === 'checkout_realizado';
 
-        if (!$tieneCheckout) {
+        if ($checkInReal === '' && !$tieneCheckout) {
             return '';
         }
 
-        $inicioReserva = $this->fechaIso((string) (
-            $reserva['check_in_programado'] ?? ($reserva['check_in'] ?? '')
-        ));
-
-        return $inicioReserva !== ''
-            ? $inicioReserva
-            : $this->fechaExtremaHabitaciones($reserva, 'check_in', 'min');
+        return $this->fechaInicioReservaProgramada($reserva);
     }
 
     private function fechaFinFacturable(array $reserva): string
     {
-        $checkout = $this->fechaIso((string) (
-            $reserva['checkout_real']
-            ?? ($reserva['check_out_programado'] ?? ($reserva['check_out'] ?? ''))
-        ));
-
-        return $checkout !== ''
-            ? $checkout
-            : $this->fechaExtremaHabitaciones($reserva, 'check_out', 'max');
+        return $this->fechaFinReservaProgramada($reserva);
     }
 
-    private function fechaExtremaHabitaciones(array $reserva, string $campo, string $modo): string
+    private function fechaInicioReservaProgramada(array $reserva): string
     {
-        $fechas = [];
+        $inicioReserva = $this->fechaIso((string) ($reserva['check_in_programado'] ?? ''));
 
-        foreach ((array) ($reserva['habitaciones_historial'] ?? ($reserva['habitaciones'] ?? [])) as $habitacion) {
-            if (!is_array($habitacion)) {
-                continue;
-            }
+        return $inicioReserva !== ''
+            ? $inicioReserva
+            : $this->fechaIso((string) ($reserva['check_in'] ?? ''));
+    }
 
-            $fecha = $this->fechaIso((string) ($habitacion[$campo] ?? ''));
+    private function fechaFinReservaProgramada(array $reserva): string
+    {
+        $finReserva = $this->fechaIso((string) ($reserva['check_out_programado'] ?? ''));
 
-            if ($fecha !== '') {
-                $fechas[] = $fecha;
-            }
-        }
-
-        if (empty($fechas)) {
-            return '';
-        }
-
-        sort($fechas);
-
-        return $modo === 'max' ? end($fechas) : $fechas[0];
+        return $finReserva !== ''
+            ? $finReserva
+            : $this->fechaIso((string) ($reserva['check_out'] ?? ''));
     }
 
     private function limpiarTexto(string $texto): string
@@ -567,8 +506,8 @@ class DocumentoElectronicoService
             if ($precioBruto <= 0) {
                 $subtotalHabitacion = (float) ($habitacion['subtotal'] ?? 0);
                 $diasHabitacion = max(1, $this->noches(
-                    (string) ($habitacion['check_in'] ?? ($reserva['check_in_programado'] ?? ($reserva['check_in'] ?? ''))),
-                    (string) ($habitacion['check_out'] ?? ($reserva['check_out_programado'] ?? ($reserva['check_out'] ?? '')))
+                    (string) ($habitacion['check_in'] ?? ''),
+                    (string) ($habitacion['check_out'] ?? '')
                 ));
                 $precioBruto = $diasHabitacion > 0 ? ($subtotalHabitacion / $diasHabitacion) : 0;
             }
@@ -576,10 +515,7 @@ class DocumentoElectronicoService
             $precioUnitario = round($precioBruto, 2);
 
             if ($precioUnitario <= 0) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'Una de las habitaciones seleccionadas no tiene precio válido para generar la boleta o factura.',
-                ];
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'Una de las habitaciones seleccionadas no tiene precio válido para generar la boleta o factura.');
             }
 
             $valorUnitario = $precioUnitario;
@@ -588,10 +524,7 @@ class DocumentoElectronicoService
             $igvLinea = 0.0;
 
             if ($subtotal <= 0 || $totalLinea <= 0) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'El rango y habitaciones seleccionadas generan un total en cero. Revise las fechas, noches y precios antes de emitir.',
-                ];
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'El rango y habitaciones seleccionadas generan un total en cero. Revise las fechas, noches y precios antes de emitir.');
             }
 
             $items[] = [
@@ -631,10 +564,7 @@ class DocumentoElectronicoService
         }
 
         if (empty($items)) {
-            return [
-                'exito' => false,
-                'mensaje' => 'Las habitaciones seleccionadas no tienen noches facturables dentro del rango de fechas elegido.',
-            ];
+            return $this->respuesta(false, 'CONFLICTO', 'Las habitaciones seleccionadas no tienen noches facturables dentro del rango de fechas elegido.');
         }
 
         if ($this->debeIncluirCargoCheckoutTarde($reserva, $fechaHasta, $documentosEmitidos)) {
@@ -664,27 +594,20 @@ class DocumentoElectronicoService
             $total += $cargoCheckoutTarde;
         }
 
-        return [
-            'exito' => true,
+        return $this->respuesta(true, 'OK', 'Líneas del documento calculadas.', [
             'items' => $items,
             'total_gravada' => round($totalGravada, 2),
             'total_exonerada' => round($total, 2),
             'total_igv' => round($totalIgv, 2),
             'total' => round($total, 2),
             'habitaciones_facturadas' => $habitacionesFacturadas,
-        ];
+        ]);
     }
 
     private function rangoFacturableHabitacion(array $habitacion, array $reserva, string $fechaDesde, string $fechaHasta): ?array
     {
-        $desdeHabitacion = $this->fechaIso((string) (
-            $habitacion['check_in']
-            ?? ($reserva['check_in_programado'] ?? ($reserva['check_in'] ?? ''))
-        ));
-        $hastaHabitacion = $this->fechaIso((string) (
-            $habitacion['check_out']
-            ?? ($reserva['check_out_programado'] ?? ($reserva['check_out'] ?? ''))
-        ));
+        $desdeHabitacion = $this->fechaIso((string) ($habitacion['check_in'] ?? ''));
+        $hastaHabitacion = $this->fechaIso((string) ($habitacion['check_out'] ?? ''));
 
         if ($desdeHabitacion === '' || $hastaHabitacion === '') {
             return null;
@@ -708,9 +631,9 @@ class DocumentoElectronicoService
             return false;
         }
 
-        $finHabitaciones = $this->fechaExtremaHabitaciones($reserva, 'check_out', 'max');
+        $finReserva = $this->fechaFinReservaProgramada($reserva);
         $checkoutReal = $this->fechaIso((string) ($reserva['checkout_real'] ?? ''));
-        $limites = array_values(array_filter([$finHabitaciones, $checkoutReal]));
+        $limites = array_values(array_filter([$finReserva, $checkoutReal]));
 
         if (empty($limites)) {
             return false;
@@ -749,23 +672,16 @@ class DocumentoElectronicoService
         $checkOut = $this->fechaFinFacturable($reserva);
 
         if ($fechaDesde === '' || $fechaHasta === '' || $checkIn === '' || $checkOut === '') {
-            return [
-                'exito' => false,
-                'mensaje' => 'Debe seleccionar un rango de fechas válido.'
-            ];
+            return $this->respuesta(false, 'VALIDACION_ERROR', 'Debe seleccionar un rango de fechas válido.');
         }
 
         if ($fechaDesde < $checkIn || $fechaHasta > $checkOut || $fechaHasta < $fechaDesde) {
-            return [
-                'exito' => false,
-                'mensaje' => 'El rango del documento debe estar dentro de la reserva y generar al menos una noche.'
-            ];
+            return $this->respuesta(false, 'VALIDACION_ERROR', 'El rango del documento debe estar dentro de la reserva y generar al menos una noche.');
         }
 
-        return [
-            'exito' => true,
+        return $this->respuesta(true, 'OK', 'Rango de fechas válido.', [
             'noches' => $this->noches($fechaDesde, $fechaHasta)
-        ];
+        ]);
     }
 
     private function obtenerHabitacionesSeleccionadas(array $habitacionesReserva, array $habitacionesSolicitadas): array
@@ -785,10 +701,7 @@ class DocumentoElectronicoService
             );
 
             if ($idRelacion <= 0 && $idHabitacion <= 0) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'Una de las habitaciones seleccionadas no pertenece a la reserva.'
-                ];
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'Una de las habitaciones seleccionadas no pertenece a la reserva.');
             }
 
             $encontrada = false;
@@ -807,50 +720,36 @@ class DocumentoElectronicoService
             }
 
             if (!$encontrada) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'Una de las habitaciones seleccionadas no pertenece a la reserva.'
-                ];
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'Una de las habitaciones seleccionadas no pertenece a la reserva.');
             }
         }
 
         if (empty($habitacionesSeleccionadas)) {
-            return [
-                'exito' => false,
-                'mensaje' => 'Debe seleccionar al menos una habitación válida.'
-            ];
+            return $this->respuesta(false, 'VALIDACION_ERROR', 'Debe seleccionar al menos una habitación válida.');
         }
 
-        return [
-            'exito' => true,
+        return $this->respuesta(true, 'OK', 'Habitaciones seleccionadas válidas.', [
             'habitaciones' => $habitacionesSeleccionadas
-        ];
+        ]);
     }
 
     private function validarRangoDentroDeHabitaciones(array $habitacionesSeleccionadas,   array $reserva,  string $fechaDesde,  string $fechaHasta): array
     {
         foreach ($habitacionesSeleccionadas as $habitacionSeleccionada) {
-            $desdeHabitacion = $this->fechaIso((string) (
-                $habitacionSeleccionada['check_in'] ?? ($reserva['check_in'] ?? '')
-            ));
+            $desdeHabitacion = $this->fechaIso((string) ($habitacionSeleccionada['check_in'] ?? ''));
 
-            $hastaHabitacion = $this->fechaIso((string) (
-                $habitacionSeleccionada['check_out'] ?? ($reserva['check_out'] ?? '')
-            ));
+            $hastaHabitacion = $this->fechaIso((string) ($habitacionSeleccionada['check_out'] ?? ''));
 
             if (
                 $desdeHabitacion !== ''
                 && $hastaHabitacion !== ''
                 && ($fechaDesde < $desdeHabitacion || $fechaHasta > $hastaHabitacion)
             ) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'El rango seleccionado debe estar dentro de las fechas asignadas a cada habitación.',
-                ];
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'El rango seleccionado debe estar dentro de las fechas asignadas a cada habitación.');
             }
         }
 
-        return ['exito' => true];
+        return $this->respuesta(true, 'OK', 'Rango válido para las habitaciones.');
     }
 
     private function idsHabitacionesDocumento(array $documento): array
@@ -968,21 +867,19 @@ class DocumentoElectronicoService
                             (string) ($habitacionEmitida['hasta'] ?? '')
                         )
                     ) {
-                        return [
-                            'exito' => false,
-                            'mensaje' => sprintf(
+                        return $this->respuesta(false, 'CONFLICTO', sprintf(
                                 'Ya existe un documento emitido para una de las habitaciones seleccionadas entre %s y %s. No se puede duplicar o cruzar el mismo periodo.',
                                 (string) ($habitacionEmitida['desde'] ?? $desdeEmitido),
                                 (string) ($habitacionEmitida['hasta'] ?? $hastaEmitido)
-                            ),
+                            ), [
                             'documento_cruzado' => $this->formatearRegistro($documento),
-                        ];
+                        ]);
                     }
                 }
             }
         }
 
-        return ['exito' => true];
+        return $this->respuesta(true, 'OK', 'No hay cruces con documentos emitidos.');
     }
 
     private function calcularTotalDocumentado(array $documentosEmitidos): float
@@ -1008,10 +905,7 @@ class DocumentoElectronicoService
             $clienteTipoDocumento = '6';
 
             if (strlen(preg_replace('/\D+/', '', $clienteNumero)) !== 11) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'Para factura el cliente debe tener RUC de 11 dígitos.'
-                ];
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'Para factura el cliente debe tener RUC de 11 dígitos.');
             }
         } elseif ($clienteTipoDocumento === '') {
             $numeroNormalizado = preg_replace('/\D+/', '', $clienteNumero);
@@ -1021,14 +915,13 @@ class DocumentoElectronicoService
                 : (strlen($numeroNormalizado) === 8 ? '1' : '-');
         }
 
-        return [
-            'exito' => true,
+        return $this->respuesta(true, 'OK', 'Datos del cliente válidos.', [
             'cliente_denominacion' => $clienteNombre !== '' ? $clienteNombre : ($reserva['cliente'] ?? ''),
             'cliente_numero_documento' => $clienteNumero,
             'cliente_tipo_documento' => $clienteTipoDocumento,
             'cliente_email' => $clienteEmail,
             'cliente_direccion' => $clienteDireccion,
-        ];
+        ]);
     }
 
     private function construirObservaciones(array $reserva,  int $idReserva,  string $fechaDesde,  string $fechaHasta,  array $habitacionesSeleccionadas): string
@@ -1037,12 +930,8 @@ class DocumentoElectronicoService
         $fechaIngresoReal = $this->fechaIso((string) ($reserva['checkin_real'] ?? ''));
         $fechaSalidaReal = $this->fechaIso((string) ($reserva['checkout_real'] ?? ''));
 
-        $rangoOriginal = $fechaDesde === $this->fechaIso((string) (
-            $reserva['check_in_programado'] ?? ($reserva['check_in'] ?? '')
-        ))
-            && $fechaHasta === $this->fechaIso((string) (
-                $reserva['check_out_programado'] ?? ($reserva['check_out'] ?? '')
-            ));
+        $rangoOriginal = $fechaDesde === $this->fechaInicioReservaProgramada($reserva)
+            && $fechaHasta === $this->fechaFinReservaProgramada($reserva);
 
         $fechaIngresoDocumento = $rangoOriginal && $fechaIngresoReal !== ''
             ? $fechaIngresoReal
@@ -1062,6 +951,20 @@ class DocumentoElectronicoService
                 return 'Hab. ' . ($habitacion['numero_habitacion'] ?? $habitacion['id'] ?? '--');
             }, $habitacionesSeleccionadas)),
         ])));
+    }
+
+
+    private function respuesta(bool $exito, string $codigo, string $mensaje, mixed $data = null, array $errores = []): array
+    {
+        $respuesta = [
+            'exito' => $exito,
+            'codigo' => $codigo,
+            'mensaje' => $mensaje,
+            'data' => $data,
+            'errores' => $errores,
+        ];
+
+        return is_array($data) ? array_merge($respuesta, $data) : $respuesta;
     }
 
 

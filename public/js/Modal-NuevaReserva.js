@@ -83,7 +83,7 @@ const establecerHorasPorDefectoEstadia = (forzar = false) => {
 
   if (horaEntrada) {
     if (forzar || !horaEntrada.value) {
-      horaEntrada.value = "12:00";
+      horaEntrada.value = "14:00";
     }
     horaEntrada.min = "";
   }
@@ -141,6 +141,32 @@ const asegurarOpcionCliente = (cliente) => {
   }
 };
 
+const resolverTipoDocumentoCliente = (cliente = {}) => {
+  const nombreTipo = String(cliente.tipo_documento_nombre || "").toLowerCase();
+
+  if (nombreTipo.includes("ruc")) return "ruc";
+  if (!cliente.documento && cliente.ruc) return "ruc";
+
+  return "dni";
+};
+
+const obtenerNumeroDocumentoCliente = (cliente = {}, tipo = "dni") =>
+  tipo === "ruc" ? cliente.ruc || "" : cliente.documento || "";
+
+const actualizarDocumentoClienteReserva = (cliente = null) => {
+  const estado = obtenerEstadoModalReserva();
+  const clienteActual = cliente || estado.clienteSeleccionado || {};
+  const selectorTipo = estado.elementos?.tipoDocumentoCliente;
+  const campoDni = estado.elementos?.campoDni;
+  const tipo = selectorTipo?.value || "dni";
+
+  if (campoDni) {
+    campoDni.value = obtenerNumeroDocumentoCliente(clienteActual, tipo);
+    campoDni.placeholder =
+      tipo === "ruc" ? "RUC no registrado" : "DNI no registrado";
+  }
+};
+
 const aplicarReservaEdicion = (reserva) => {
   const estado = obtenerEstadoModalReserva();
   if (!reserva) return;
@@ -168,15 +194,19 @@ const aplicarReservaEdicion = (reserva) => {
     estado.elementos.campoNombre.value = reserva.cliente || "";
   }
 
-  if (estado.elementos?.campoDni) {
-    estado.elementos.campoDni.value = reserva.documento || "";
+  estado.clienteSeleccionado = {
+    documento: reserva.documento || "",
+    ruc: reserva.ruc || "",
+    tipo_documento_nombre: reserva.documento_tipo_nombre || "",
+  };
+
+  if (estado.elementos?.tipoDocumentoCliente) {
+    estado.elementos.tipoDocumentoCliente.value = resolverTipoDocumentoCliente(
+      estado.clienteSeleccionado,
+    );
   }
 
-  // mostrar tipo de documento en label si viene
-  const etiquetaDni = document.getElementById("label-dni");
-  if (etiquetaDni) {
-    etiquetaDni.textContent = reserva.documento_tipo_nombre || "DNI";
-  }
+  actualizarDocumentoClienteReserva(estado.clienteSeleccionado);
 
   if (estado.elementos?.procedencia) {
     estado.elementos.procedencia.value = reserva.procedencia || "";
@@ -186,8 +216,25 @@ const aplicarReservaEdicion = (reserva) => {
     estado.elementos.campoEmail.value = reserva.correo_electronico || "";
   }
 
-  const checkIn = separarFechaHora(reserva.check_in);
-  const checkOut = separarFechaHora(reserva.check_out);
+  estado.reservaTotalOriginal = Number(reserva.total || 0);
+  estado.reservaTotalPagado = Number(reserva.total_pagado || 0);
+  estado.reservaTotalPagadoNeto = Number(
+    reserva.total_pagado_neto ?? reserva.total_pagado ?? 0,
+  );
+  estado.reservaCheckOutOriginal =
+    reserva.check_out_programado || reserva.check_out || "";
+  estado.reservaCheckInOriginal =
+    reserva.check_in_programado || reserva.check_in || "";
+  estado.reservaHabitacionesOriginalesIds = (reserva.habitaciones || []).map(
+    (h) => String(h.id)
+  );
+
+  const checkIn = separarFechaHora(
+    reserva.check_in_programado || reserva.check_in,
+  );
+  const checkOut = separarFechaHora(
+    reserva.check_out_programado || reserva.check_out,
+  );
 
   if (estado.elementos?.fechaEntrada) {
     estado.elementos.fechaEntrada.value = checkIn.fecha;
@@ -205,6 +252,9 @@ const aplicarReservaEdicion = (reserva) => {
   estado.habitacionesSeleccionadas = Array.isArray(reserva.habitaciones)
     ? reserva.habitaciones.map(normalizarHabitacion)
     : [];
+  estado.habitacionesHistorial = Array.isArray(reserva.habitaciones_historial)
+    ? reserva.habitaciones_historial.map(normalizarHabitacion)
+    : estado.habitacionesSeleccionadas;
   estado.reservaEstado = String(reserva.estado || "").toLowerCase();
 
   bloquearCamposPorEstadoReserva();
@@ -249,6 +299,31 @@ const obtenerDiasEstadia = (checkIn, checkOut) => {
   }
 
   return Math.max(1, Math.ceil((fin - inicio) / 86400000));
+};
+
+const obtenerDiasEstadiaActiva = (checkIn, checkOut) => {
+  const dias = obtenerDiasEstadia(checkIn, checkOut);
+  const fechaCheckOut = String(checkOut || "").slice(0, 10);
+
+  return fechaCheckOut === obtenerFechaActualISO() ? Math.max(1, dias) : dias;
+};
+
+const obtenerFechaEfectivaCobroCambio = (tipoMotivo = "") => {
+  const ahora = new Date();
+  const fechaBase = new Date(
+    ahora.getFullYear(),
+    ahora.getMonth(),
+    ahora.getDate(),
+  );
+
+  if (tipoMotivo === "solicitud_cliente" && ahora.getHours() >= 12) {
+    fechaBase.setDate(fechaBase.getDate() + 1);
+  }
+
+  const anio = fechaBase.getFullYear();
+  const mes = String(fechaBase.getMonth() + 1).padStart(2, "0");
+  const dia = String(fechaBase.getDate()).padStart(2, "0");
+  return `${anio}-${mes}-${dia}`;
 };
 
 const obtenerHabitacionSeleccionadaPorId = (id) => {
@@ -301,8 +376,73 @@ const calcularTotalReserva = () => {
   const dias = obtenerDiasEstadia(checkIn, checkOut);
   if (dias === 0 || habitaciones.length === 0) return 0;
 
+  if (esEdicionEnEstadia()) {
+    const historial = Array.isArray(estado.habitacionesHistorial)
+      ? estado.habitacionesHistorial
+      : [];
+    const totalHistorico = historial
+      .filter((habitacion) => {
+        const estadoAsignacion = String(
+          habitacion.estado_asignacion || habitacion.estado || "activa",
+        ).toLowerCase();
+        return estadoAsignacion !== "activa";
+      })
+      .reduce(
+        (acumulado, habitacion) =>
+          acumulado + Number(habitacion.subtotal || 0),
+        0,
+      );
+
+    const cambio = estado.habitacionCambioPendiente;
+
+    const totalActivo = habitaciones.reduce((acumulado, habitacion) => {
+      const inicioHabitacion = habitacion.check_in || checkIn;
+
+      if (cambio && String(habitacion.id) === String(cambio.actual.id)) {
+        const precioActual = Number(
+          habitacion.precio_aplicado || habitacion.precio || 0,
+        );
+        const precioNuevoReal = Number(cambio.nueva.precio || 0);
+        const precioNuevoAplicado =
+          cambio.tipo_motivo === "falla_hotel"
+            ? Math.min(precioActual, precioNuevoReal)
+            : precioNuevoReal;
+
+        const fechaEfectivaCobro = obtenerFechaEfectivaCobroCambio(
+          cambio.tipo_motivo,
+        );
+
+        const diasAnterior = obtenerDiasEstadiaActiva(
+          inicioHabitacion,
+          fechaEfectivaCobro,
+        );
+        const diasNuevo = obtenerDiasEstadiaActiva(
+          fechaEfectivaCobro,
+          checkOut,
+        );
+
+        const subtotalAnterior = precioActual * diasAnterior;
+        const subtotalNuevo = precioNuevoAplicado * diasNuevo;
+
+        return acumulado + subtotalAnterior + subtotalNuevo;
+      }
+
+      const diasHabitacion = obtenerDiasEstadiaActiva(
+        inicioHabitacion,
+        checkOut,
+      );
+      const precio = Number(
+        habitacion.precio_aplicado || habitacion.precio || 0,
+      );
+      return acumulado + precio * diasHabitacion;
+    }, 0);
+
+    return totalHistorico + totalActivo;
+  }
+
   const sumaPrecio = habitaciones.reduce(
-    (acumulado, habitacion) => acumulado + Number(habitacion.precio || 0),
+    (acumulado, habitacion) =>
+      acumulado + Number(habitacion.precio_aplicado || habitacion.precio || 0),
     0,
   );
 
@@ -322,8 +462,42 @@ const sincronizarHabitaciones = () => {
     estado.elementos.contadorHabitacionesSeleccionadas.textContent = `${habitaciones.length} ${habitaciones.length === 1 ? "habitación" : "habitaciones"}`;
   }
 
+  const totalNuevo = calcularTotalReserva();
   if (estado.elementos?.totalHabitacionesReserva) {
-    estado.elementos.totalHabitacionesReserva.textContent = `S/ ${calcularTotalReserva().toFixed(2)}`;
+    estado.elementos.totalHabitacionesReserva.textContent = `S/ ${totalNuevo.toFixed(2)}`;
+  }
+
+  // Actualizar penalidad y devolución en caliente en el modal de edición
+  const contenedorPenalidad = document.getElementById("contenedor-penalidad-edicion");
+  const txtPenalidad = document.getElementById("montoPenalidadEdicion");
+  const txtDevolver = document.getElementById("montoDevolverEdicion");
+
+  if (contenedorPenalidad && txtPenalidad && txtDevolver) {
+    const esEstadia = estado.modo === "editar" && ["en_estadia", "checkout_pendiente"].includes(String(estado.reservaEstado || ""));
+    const esConfirmada = estado.modo === "editar" && ["confirmada", "pre_checkin"].includes(String(estado.reservaEstado || ""));
+
+    const totalAnterior = Number(estado.reservaTotalOriginal || 0);
+    const totalPagado = Number(estado.reservaTotalPagadoNeto || estado.reservaTotalPagado || 0);
+
+    if ((esEstadia || esConfirmada) && haCambiadoReserva() && totalPagado > totalNuevo) {
+      const montoCancelado = Math.max(0, totalAnterior - totalNuevo);
+      const montoPenalidad = redondearMonedaPeru(montoCancelado * 0.25);
+      const excesoDevolvible = Math.max(0, totalPagado - totalNuevo);
+      const montoDevolver = redondearMonedaPeru(Math.min(montoCancelado - montoPenalidad, excesoDevolvible));
+      const montoTotal = redondearMonedaPeru(montoPenalidad + montoDevolver);
+
+      txtPenalidad.textContent = `S/ ${montoPenalidad.toFixed(2)}`;
+      txtDevolver.textContent = `S/ ${montoDevolver.toFixed(2)}`;
+
+      const txtTotal = document.getElementById("montoTotalDevolucionEdicion");
+      if (txtTotal) {
+        txtTotal.textContent = `S/ ${montoTotal.toFixed(2)}`;
+      }
+
+      contenedorPenalidad.style.display = "block";
+    } else {
+      contenedorPenalidad.style.display = "none";
+    }
   }
 };
 
@@ -586,25 +760,31 @@ const confirmarCambioHabitacion = async () => {
   }
 
   const totalActual = Number(estado.reservaTotalOriginal || 0);
+  const precioActual = Number(actual.precio_aplicado || actual.precio || 0);
+  const precioNuevoReal = Number(nueva.precio || 0);
+  const precioNuevoAplicado =
+    tipoMotivo === "falla_hotel"
+      ? Math.min(precioActual, precioNuevoReal)
+      : precioNuevoReal;
+  const fechaEfectivaCobro = obtenerFechaEfectivaCobroCambio(tipoMotivo);
   const diasRestantes = obtenerDiasEstadia(
-    new Date().toISOString().slice(0, 10),
+    fechaEfectivaCobro,
     estado.elementos?.fechaSalida?.value || "",
   );
-  const diferencia =
-    tipoMotivo === "falla_hotel"
-      ? 0
-      : Math.max(
-          0,
-          (Number(nueva.precio || 0) -
-            Number(actual.precio_aplicado || actual.precio || 0)) *
-            diasRestantes,
-        );
+  const diferencia = (precioNuevoAplicado - precioActual) * diasRestantes;
   const nuevoTotal = totalActual + diferencia;
 
-  const nota =
-    tipoMotivo === "falla_hotel"
-      ? "<p>No se cobrará diferencia porque el cambio es responsabilidad del hotel.</p>"
-      : `<p>El cliente debe pagar S/ ${diferencia.toFixed(2)} adicionales.</p>`;
+  let nota = "";
+  if (tipoMotivo === "falla_hotel" && precioNuevoReal > precioActual) {
+    nota =
+      "<p>No se cobrará diferencia porque el cambio es responsabilidad del hotel.</p>";
+  } else if (diferencia > 0) {
+    nota = `<p>El cliente debe pagar S/ ${diferencia.toFixed(2)} adicionales.</p>`;
+  } else if (diferencia < 0) {
+    nota = `<p>Se genera un ajuste a favor del cliente de S/ ${Math.abs(diferencia).toFixed(2)}.</p>`;
+  } else {
+    nota = "<p>El cambio no modifica el total de la reserva.</p>";
+  }
 
   const resultado = await Swal.fire({
     title: "Cambio de habitación",
@@ -613,7 +793,8 @@ const confirmarCambioHabitacion = async () => {
         <p><strong>Habitación actual:</strong><br>${formatearHabitacionTexto(actual)}</p>
         <p><strong>Nueva habitación:</strong><br>${formatearHabitacionTexto(nueva)}</p>
         <p><strong>Motivo:</strong><br>${tipoMotivo === "falla_hotel" ? "Falla de habitación" : "Solicitud del cliente"} - ${motivo}</p>
-        <p><strong>Resumen económico:</strong><br>Total actual: S/ ${totalActual.toFixed(2)}<br>Nuevo total estimado: S/ ${nuevoTotal.toFixed(2)}<br>Diferencia: S/ ${diferencia.toFixed(2)}</p>
+        <p><strong>Fecha efectiva de cobro:</strong><br>${fechaEfectivaCobro}</p>
+        <p><strong>Resumen económico:</strong><br>Total actual: S/ ${totalActual.toFixed(2)}<br>Nuevo total estimado: S/ ${nuevoTotal.toFixed(2)}<br>Ajuste: S/ ${diferencia.toFixed(2)}</p>
         ${nota}
       </div>
     `,
@@ -676,9 +857,24 @@ const cargarClientes = async (texto = "") => {
   }
   try {
     const res = await fetch(
-      BASE_URL + `Cliente/buscar&q=${encodeURIComponent(textoBusqueda)}`,
-      { signal: _controladorBusquedaClienteModal.signal },
+      BASE_URL + `Cliente/buscar?q=${encodeURIComponent(textoBusqueda)}`,
+      {
+        signal: _controladorBusquedaClienteModal.signal,
+        headers: {
+          Accept: "application/json",
+        },
+      },
     );
+
+    if (!res.ok) {
+      throw new Error(`Error HTTP ${res.status}`);
+    }
+
+    const contentType = res.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      throw new Error("La respuesta del servidor no es JSON.");
+    }
+
     const respuesta = await res.json();
     if (respuesta.error) {
       if (mensajeBusquedaCliente)
@@ -738,6 +934,7 @@ const seleccionarCliente = () => {
     if (campoNombre) campoNombre.value = "";
     if (campoDni) campoDni.value = "";
     if (campoEmail) campoEmail.value = "";
+    estado.clienteSeleccionado = null;
     return;
   }
 
@@ -747,14 +944,16 @@ const seleccionarCliente = () => {
 
   if (!cliente) return;
 
+  estado.clienteSeleccionado = cliente;
+
   if (idClienteReserva) idClienteReserva.value = cliente.id;
   if (campoNombre) campoNombre.value = cliente.nombre || "";
-  if (campoDni) campoDni.value = cliente.documento || "";
+  if (estado.elementos?.tipoDocumentoCliente) {
+    estado.elementos.tipoDocumentoCliente.value = resolverTipoDocumentoCliente(cliente);
+  }
+  actualizarDocumentoClienteReserva(cliente);
   if (estado.elementos?.procedencia)
     estado.elementos.procedencia.value = cliente.procedencia || "";
-  const etiquetaDni2 = document.getElementById("label-dni");
-  if (etiquetaDni2)
-    etiquetaDni2.textContent = cliente.tipo_documento_nombre || "DNI";
   if (campoEmail) campoEmail.value = cliente.correo || "";
   if (mensajeBusquedaCliente)
     mensajeBusquedaCliente.textContent = "Cliente seleccionado correctamente.";
@@ -808,9 +1007,9 @@ const cargarHabitacionesDisponibles = () => {
   const checkIn = estado.habitacionCambioActual
     ? `${fechaCambioISO} ${horaCambioISO}`
     : fechaEntrada && horaEntrada
-      ? `${fechaEntrada} 12:00:00`
+      ? `${fechaEntrada} ${horaEntrada}:00`
       : "";
-  const checkOut = fechaSalida && horaSalida ? `${fechaSalida} 12:00:00` : "";
+  const checkOut = fechaSalida && horaSalida ? `${fechaSalida} ${horaSalida}:00` : "";
 
   estado.habitacionesDisponibles = [];
   renderizarHabitacionesDisponibles();
@@ -961,7 +1160,7 @@ const obtenerDatosReservaDesdeFormulario = () => {
     return null;
   }
   if (!dni) {
-    window.Alerta("DNI obligatorio", "advertencia");
+    window.Alerta("Documento obligatorio", "advertencia");
     return null;
   }
   if (!email) {
@@ -1099,6 +1298,132 @@ const guardarEdicionReserva = async (datosReserva) => {
   return respuesta.ok ? resultado : { ...resultado, exito: false };
 };
 
+const registrarPagoDevolucionReserva = async (idReserva, devolucion) => {
+  const respuesta = await fetch(BASE_URL + "Reserva/registrarDevolucionPago", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-Token": typeof CSRF_TOKEN !== "undefined" ? CSRF_TOKEN : "",
+    },
+    body: JSON.stringify({
+      id_reserva: idReserva,
+      monto: Number(devolucion?.monto_devuelto || 0),
+      fecha_desde_devuelta: devolucion?.fecha_desde_devuelta || "",
+      fecha_hasta_devuelta: devolucion?.fecha_hasta_devuelta || "",
+    }),
+  });
+
+  const resultado = await respuesta.json();
+  return respuesta.ok ? resultado : { ...resultado, exito: false };
+};
+
+const validarPagoDevolucionReserva = async (idReserva, devolucion) => {
+  const respuesta = await fetch(BASE_URL + "Reserva/validarDevolucionPago", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-Token": typeof CSRF_TOKEN !== "undefined" ? CSRF_TOKEN : "",
+    },
+    body: JSON.stringify({
+      id_reserva: idReserva,
+      monto: Number(devolucion?.monto_devuelto || 0),
+      fecha_desde_devuelta: devolucion?.fecha_desde_devuelta || "",
+      fecha_hasta_devuelta: devolucion?.fecha_hasta_devuelta || "",
+    }),
+  });
+
+  const resultado = await respuesta.json();
+  return respuesta.ok ? resultado : { ...resultado, exito: false };
+};
+
+const haCambiadoReserva = () => {
+  const estado = obtenerEstadoModalReserva();
+  if (estado.modo !== "editar") return false;
+
+  const fechaEntrada = estado.elementos?.fechaEntrada?.value || "";
+  const horaEntrada = estado.elementos?.horaEntrada?.value || "";
+  const fechaSalida = estado.elementos?.fechaSalida?.value || "";
+  const horaSalida = estado.elementos?.horaSalida?.value || "";
+
+  const checkInActual = `${fechaEntrada} ${horaEntrada}`.replace("T", " ").slice(0, 16);
+  const checkOutActual = `${fechaSalida} ${horaSalida}`.replace("T", " ").slice(0, 16);
+
+  const checkInOrig = String(estado.reservaCheckInOriginal || "").replace("T", " ").slice(0, 16);
+  const checkOutOrig = String(estado.reservaCheckOutOriginal || "").replace("T", " ").slice(0, 16);
+
+  if (checkInActual !== checkInOrig) return true;
+  if (checkOutActual !== checkOutOrig) return true;
+
+  const origIds = estado.reservaHabitacionesOriginalesIds || [];
+  const actualIds = (estado.habitacionesSeleccionadas || []).map(h => String(h.id));
+
+  if (origIds.length !== actualIds.length) return true;
+
+  for (const id of actualIds) {
+    if (!origIds.includes(id)) return true;
+  }
+
+  if (estado.habitacionCambioPendiente) return true;
+
+  return false;
+};
+
+const redondearMonedaPeru = (valor) => Math.round(Number(valor || 0) * 10) / 10;
+
+const calcularDevolucionPreviaEdicion = (datosReserva) => {
+  const estado = obtenerEstadoModalReserva();
+  const esEstadia = esEdicionEnEstadia();
+  const esConfirmada = estado.modo === "editar" && ["confirmada", "pre_checkin"].includes(String(estado.reservaEstado || ""));
+
+  if (!esEstadia && !esConfirmada) return null;
+  if (!haCambiadoReserva()) return null;
+
+  const totalAnterior = Number(estado.reservaTotalOriginal || 0);
+  const totalNuevo = Number(datosReserva?.totalReserva || 0);
+  const totalPagado = Number(
+    estado.reservaTotalPagadoNeto || estado.reservaTotalPagado || 0,
+  );
+
+  const montoCancelado = Math.max(0, totalAnterior - totalNuevo);
+  const montoPenalidad = redondearMonedaPeru(montoCancelado * 0.25);
+  const excesoDevolvible = Math.max(0, totalPagado - totalNuevo);
+  const montoDevuelto = redondearMonedaPeru(Math.min(montoCancelado - montoPenalidad, excesoDevolvible));
+
+  if (montoDevuelto <= 0) return null;
+
+  const fechaDesde = esConfirmada ? (datosReserva?.checkIn || "") : (datosReserva?.checkOut || "");
+  const fechaHasta = esConfirmada ? (datosReserva?.checkOut || "") : (String(estado.reservaCheckOutOriginal || "").slice(0, 10));
+  const descripcion = esConfirmada
+    ? `Devolución por reducción de reserva. Total anterior: S/ ${totalAnterior.toFixed(2)}; nuevo total: S/ ${totalNuevo.toFixed(2)}; pagado: S/ ${totalPagado.toFixed(2)}; penalidad (25%): S/ ${montoPenalidad.toFixed(2)}.`
+    : `Devolución por disminución de días de estadía del ${fechaDesde} al ${fechaHasta || fechaDesde}. Total anterior: S/ ${totalAnterior.toFixed(2)}; nuevo total: S/ ${totalNuevo.toFixed(2)}; pagado: S/ ${totalPagado.toFixed(2)}; penalidad (25%): S/ ${montoPenalidad.toFixed(2)}.`;
+
+  return {
+    monto_devuelto: montoDevuelto,
+    monto_penalidad: montoPenalidad,
+    porcentaje_penalidad: 25,
+    descripcion,
+    total_anterior: totalAnterior,
+    total_nuevo: totalNuevo,
+    total_pagado: totalPagado,
+    fecha_desde_devuelta: fechaDesde,
+    fecha_hasta_devuelta: fechaHasta || fechaDesde,
+  };
+};
+
+const confirmarDevolucionAntesDeGuardar = async (devolucion) =>
+  Swal.fire({
+    icon: "info",
+    title: "Devolución por reducción de estadía",
+    html: `
+      <p>Se debe devolver al cliente:</p>
+      <h2 style="margin: 10px 0;">S/ ${Number(devolucion.monto_devuelto).toFixed(2)}</h2>
+      <p style="font-size: 0.95rem;">${devolucion.descripcion}</p>
+    `,
+    confirmButtonText: "Devolver",
+    showCancelButton: true,
+    cancelButtonText: "Cancelar",
+  });
+
 const aplicarCambioHabitacionPendiente = async () => {
   const estado = obtenerEstadoModalReserva();
   const cambio = estado.habitacionCambioPendiente;
@@ -1126,19 +1451,49 @@ const confirmarGuardarEdicionReserva = async (datosReserva) => {
   const estado = obtenerEstadoModalReserva();
   const modal = estado.elementos?.modal;
   const contenedor = estado.elementos?.contenedor;
+  const devolucionPrevia = calcularDevolucionPreviaEdicion(datosReserva);
 
-  const resultadoConfirmacion = await Swal.fire({
-    title: "Guardar cambios",
-    text: "¿Desea guardar los cambios de la reserva?",
-    icon: "question",
-    showCancelButton: true,
-    confirmButtonText: "Sí, guardar",
-    cancelButtonText: "Cancelar",
-  });
+  let devolucionConfirmada = null;
 
-  if (!resultadoConfirmacion.isConfirmed) return;
+  if (devolucionPrevia) {
+    const respuestaDevolucion = await confirmarDevolucionAntesDeGuardar(
+      devolucionPrevia,
+    );
+
+    if (!respuestaDevolucion.isConfirmed) return;
+
+    const validacionDevolucion = await validarPagoDevolucionReserva(
+      datosReserva.idReserva,
+      devolucionPrevia,
+    );
+
+    if (!validacionDevolucion.exito) {
+      await Swal.fire({
+        icon: "error",
+        title: "No se puede devolver",
+        text:
+          validacionDevolucion.mensaje ||
+          "No se puede registrar la devolución para estas fechas.",
+      });
+      return;
+    }
+
+    devolucionConfirmada = devolucionPrevia;
+  } else {
+    const resultadoConfirmacion = await Swal.fire({
+      title: "Guardar cambios",
+      text: "¿Desea guardar los cambios de la reserva?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Sí, guardar",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (!resultadoConfirmacion.isConfirmed) return;
+  }
 
   try {
+    let comprobanteDevolucionAbierto = false;
     const resultado = await guardarEdicionReserva(datosReserva);
     if (!resultado.exito) {
       Swal.fire({
@@ -1161,19 +1516,64 @@ const confirmarGuardarEdicionReserva = async (datosReserva) => {
       return;
     }
 
-    await Swal.fire({
-      toast: true,
-      position: "top-end",
-      icon: "success",
-      title: resultado.mensaje || "Reserva actualizada correctamente",
-      showConfirmButton: false,
-      timer: 2200,
-      timerProgressBar: true,
-    });
+    let devolucionesARegistrar = [];
+    if (resultado.devolucion && Number(resultado.devolucion.monto_devuelto) > 0) {
+      devolucionesARegistrar.push({ dev: resultado.devolucion, fallback: devolucionConfirmada });
+    }
+    if (resultadoCambio.devolucion && Number(resultadoCambio.devolucion.monto_devuelto) > 0) {
+      devolucionesARegistrar.push({ dev: resultadoCambio.devolucion, fallback: null });
+    }
+
+    if (devolucionesARegistrar.length > 0) {
+      for (const item of devolucionesARegistrar) {
+        const registroDevolucion = await registrarPagoDevolucionReserva(
+          resultado.id_reserva || datosReserva.idReserva,
+          item.dev || item.fallback,
+        );
+
+        if (!registroDevolucion.exito) {
+          await Swal.fire({
+            icon: "error",
+            title: "No se pudo registrar la devolución",
+            text:
+              registroDevolucion.mensaje ||
+              "No se pudo generar el movimiento negativo de devolución.",
+          });
+          continue;
+        }
+
+        if (
+          registroDevolucion.comprobante &&
+          typeof window.abrirModalComprobante === "function"
+        ) {
+          comprobanteDevolucionAbierto = true;
+          window.abrirModalComprobante(registroDevolucion.comprobante, {
+            recargarAlCerrar: true,
+          });
+        } else {
+          await Swal.fire({
+            icon: "success",
+            title: "Devolución registrada",
+            text: registroDevolucion.mensaje || "Se registró el pago negativo.",
+          });
+        }
+      }
+    } else {
+      await Swal.fire({
+        toast: true,
+        position: "top-end",
+        icon: "success",
+        title: resultadoCambio.mensaje || resultado.mensaje || "Reserva actualizada correctamente",
+        showConfirmButton: false,
+        timer: 2200,
+        timerProgressBar: true,
+      });
+    }
 
     estado.habitacionCambioPendiente = null;
     if (modal) modal.style.display = "none";
     if (contenedor) contenedor.style.display = "none";
+    if (comprobanteDevolucionAbierto) return;
     window.location.reload();
   } catch (error) {
     console.error(error);
@@ -1221,6 +1621,7 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
     idClienteReserva: document.getElementById("idClienteReserva"),
     campoNombre: document.getElementById("nombre"),
     campoDni: document.getElementById("dni"),
+    tipoDocumentoCliente: document.getElementById("tipoDocumentoClienteReserva"),
     procedencia: document.getElementById("procedencia"),
     campoEmail: document.getElementById("email"),
     fechaEntrada: document.getElementById("fechaEntrada"),
@@ -1254,10 +1655,12 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
   estado.clientes = [];
   estado.habitacionesDisponibles = [];
   estado.habitacionesSeleccionadas = [];
+  estado.habitacionesHistorial = [];
   estado.habitacionCambioActual = null;
   estado.habitacionCambioNueva = null;
   estado.habitacionCambioPendiente = null;
   estado.reservaEstado = "";
+  estado.clienteSeleccionado = null;
   estado.reservaTotalOriginal = Number(datos?.total || 0);
   estado.modo = modo;
   estado.reservaEditandoId = datos?.id || null;
@@ -1277,8 +1680,9 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
     if (estado.elementos.btnDejarPagoPendiente) {
       estado.elementos.btnDejarPagoPendiente.style.display = "";
     }
-    const etiquetaDni = document.getElementById("label-dni");
-    if (etiquetaDni) etiquetaDni.textContent = "DNI";
+    if (estado.elementos?.tipoDocumentoCliente) {
+      estado.elementos.tipoDocumentoCliente.value = "dni";
+    }
     if (estado.elementos?.procedencia) estado.elementos.procedencia.value = "";
   }
 
@@ -1336,6 +1740,10 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
       "change",
       seleccionarCliente,
     );
+
+    estado.elementos.tipoDocumentoCliente?.addEventListener("change", () => {
+      actualizarDocumentoClienteReserva();
+    });
 
     estado.elementos.fechaEntrada?.addEventListener("change", () => {
       actualizarMinimosFecha();

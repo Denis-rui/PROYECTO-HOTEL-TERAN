@@ -2,10 +2,11 @@
 
 namespace Controllers;
 
-use Libraries\Core\Controller;
+use Libraries\Core\ApiController;
+use Helpers\CodigoHTTP;
 use Services\HabitacionService;
 
-class HabitacionController extends Controller
+class HabitacionController extends ApiController
 {
     private HabitacionService $habitacionService;
 
@@ -60,54 +61,50 @@ class HabitacionController extends Controller
     public function registrar($params = '')
     {
         $this->validarCsrf();
-        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            $datos = $this->obtenerPayloadJson() ?? $_POST;
-            $this->responderJson($this->habitacionService->registrar($datos));
-        }
+        $datos = $this->obtenerPayloadJson() ?? $_POST;
+        $this->responderServicio($this->habitacionService->registrar($datos));
     }
 
     public function editar($params = '')
     {
         $this->validarCsrf();
-        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            $datos = $this->obtenerPayloadJson() ?? $_POST;
-            $this->responderJson($this->habitacionService->editar($datos));
-        }
+        $datos = $this->obtenerPayloadJson() ?? $_POST;
+        $this->responderServicio($this->habitacionService->editar($datos));
     }
 
     public function eliminar($params = '')
     {
         $this->validarCsrf();
-        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            $datos = $this->obtenerPayloadJson() ?? $_POST;
-            $this->responderJson($this->habitacionService->eliminar((int) ($datos['id'] ?? 0)));
-        }
+        $datos = $this->obtenerPayloadJson() ?? $_POST;
+        $this->responderServicio($this->habitacionService->eliminar((int) ($datos['id'] ?? 0)));
     }
 
     public function actualizarEstado($params = '')
     {
         $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
-        $this->responderJson($this->habitacionService->actualizarEstado((int) ($datos['id'] ?? 0), $datos['estado'] ?? '', $datos['motivo'] ?? ''));
+        $this->responderServicio($this->habitacionService->actualizarEstado((int) ($datos['id'] ?? 0), $datos['estado'] ?? '', $datos['motivo'] ?? ''));
     }
 
     public function terminarLimpieza($params = '')
     {
         $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
-        $this->responderJson($this->habitacionService->terminarLimpieza((int) ($datos['id'] ?? 0)));
+        $this->responderServicio($this->habitacionService->terminarLimpieza((int) ($datos['id'] ?? 0)));
     }
 
     public function notificarLimpiezaVencida($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
-        $this->responderJson($this->habitacionService->notificarLimpiezaVencida((int) ($datos['id'] ?? 0)));
+        $this->responderServicio($this->habitacionService->notificarLimpiezaVencida((int) ($datos['id'] ?? 0)));
     }
 
     public function extenderLimpieza($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
-        $this->responderJson($this->habitacionService->extenderLimpieza(
+        $this->responderServicio($this->habitacionService->extenderLimpieza(
             (int) ($datos['id'] ?? 0),
             (int) ($datos['minutos'] ?? 15)
         ));
@@ -132,16 +129,26 @@ class HabitacionController extends Controller
             $referencia
         );
 
+        [$payloadBase, $codigoHttp] = CodigoHTTP::prepararRespuesta($respuesta);
         $this->responderJson([
             'habitaciones' => $respuesta['data'],
-            'exito' => $respuesta['exito'],
-            'mensaje' => $respuesta['mensaje'] ?? '',
-        ]);
+            'exito' => $payloadBase['exito'],
+            'codigo' => $payloadBase['codigo'] ?? '',
+            'mensaje' => $payloadBase['mensaje'] ?? '',
+            'data' => $payloadBase['data'] ?? [],
+            'errores' => $payloadBase['errores'] ?? [],
+        ], $codigoHttp);
     }
 
     public function obtenerFiltros($params = '')
     {
         $respuesta = $this->habitacionService->obtenerFiltros();
         $this->responderJson($respuesta['data']);
+    }
+
+    private function responderServicio(array $respuesta): void
+    {
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($respuesta);
+        $this->responderJson($payload, $codigoHttp);
     }
 }

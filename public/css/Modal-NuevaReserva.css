@@ -131,6 +131,25 @@
   font-size: 14px;
 }
 
+.documento-reserva-fila {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 8px;
+  width: 100%;
+}
+
+.documento-reserva-fila #dni {
+  width: 100%;
+  min-width: 0;
+}
+
+.selector-documento-reserva {
+  width: 100%;
+  background: var(--bg-white);
+  color: var(--primary-dark);
+  font-weight: 700;
+}
+
 /* FILAS (para agrupar) */
 .form-row {
   display: flex;

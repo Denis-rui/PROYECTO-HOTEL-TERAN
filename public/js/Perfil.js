@@ -1,5 +1,26 @@
 // Guardar perfil personal
 document.getElementById('btnGuardarPerfil').addEventListener('click', async () => {
+  const email = document.getElementById('email');
+  const telefonoInput = document.getElementById('telefono');
+  const correo = email?.value.trim() || '';
+  const telefono = telefonoInput?.value.trim() || '';
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+    email?.classList.add('error');
+    window.Notificar?.('Ingresa un correo electrónico válido.', 'error');
+    return;
+  }
+
+  email?.classList.remove('error');
+
+  if (!/^9\d{8}$/.test(telefono)) {
+    telefonoInput?.classList.add('error');
+    window.Notificar?.('Ingresa un celular peruano válido: debe empezar con 9 y tener 9 dígitos.', 'error');
+    return;
+  }
+
+  telefonoInput?.classList.remove('error');
+
   const confirmado = await window.Confirmar?.('¿Estás seguro de guardar estos cambios?');
   if (!confirmado) return;
 

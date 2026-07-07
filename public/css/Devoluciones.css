@@ -11,16 +11,91 @@
   font-weight: bold;
 }
 
-.buscar {
+.buscar,
+.buscar-filtro {
   margin-bottom: 20px;
 }
 
-.buscar input {
+.buscar form,
+.devoluciones-filtros form {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+}
+
+.buscar input,
+.devoluciones-filtros .buscar,
+.devoluciones-filtros input[type="date"] {
   padding: 10px;
-  border: 1px solid var(--border);
+  border: none;
   border-radius: 5px;
   font-size: 14px;
-  width: 320px;
+  height: 40px;
+  box-sizing: border-box;
+}
+
+.devoluciones-filtros .buscar {
+  width: 300px;
+  min-width: 260px;
+  margin: 0;
+}
+
+.devoluciones-filtros input[type="date"] {
+  width: 150px;
+}
+
+.filtro-fecha-devolucion {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--primary-dark);
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.btn-filtro-devolucion {
+  border: none;
+  border-radius: 5px;
+  padding: 10px 14px;
+  background: var(--primary-dark);
+  color: var(--text-white);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 40px;
+  white-space: nowrap;
+}
+
+.btn-filtro-devolucion:hover {
+  filter: brightness(0.95);
+}
+
+.btn-filtro-secundario {
+  background: var(--primary);
+}
+
+.btn-filtro-limpiar {
+  background: var(--border-light);
+  color: var(--primary-dark);
+}
+
+.btn-filtro-limpiar:hover {
+  background: #d5d0c5;
+  filter: none;
+}
+
+@media (max-width: 900px) {
+  .devoluciones-filtros form {
+    align-items: stretch;
+  }
+
+  .devoluciones-filtros .buscar {
+    width: 100%;
+  }
 }
 
 .tabla {
@@ -62,4 +137,82 @@
 
 .tbl-devoluciones tbody tr:hover {
   background: var(--primary-bg);
+}
+
+/* DataTables agrega clases propias; estos selectores mantienen el acabado visual del módulo. */
+.tabla .tbl-devoluciones.dataTable {
+  width: 100% !important;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.tabla .tbl-devoluciones.dataTable thead th {
+  background: var(--primary-dark);
+  color: var(--text-white);
+  font-weight: 600;
+  padding: 14px 12px;
+  text-align: left;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  border-bottom: 0;
+}
+
+.tabla .tbl-devoluciones.dataTable tbody td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--primary-dark);
+  vertical-align: middle;
+}
+
+.tabla .tbl-devoluciones.dataTable tbody tr:nth-child(even) {
+  background: var(--bg-light);
+}
+
+.tabla .tbl-devoluciones.dataTable tbody tr:hover {
+  background: var(--primary-bg);
+}
+
+#tablaDevoluciones_wrapper .dt-layout-row:first-child .dt-layout-start {
+  padding-left: 12px;
+}
+
+#tablaDevoluciones_wrapper .dt-length,
+#tablaDevoluciones_wrapper .dt-length label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+#tablaDevoluciones_wrapper .dt-layout-row:last-child {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#tablaDevoluciones_wrapper .dt-layout-row:last-child .dt-layout-start,
+#tablaDevoluciones_wrapper .dt-layout-row:last-child .dt-layout-cell:empty {
+  display: none !important;
+}
+
+#tablaDevoluciones_wrapper .dt-layout-row:last-child .dt-layout-cell,
+#tablaDevoluciones_wrapper .dt-layout-row:last-child .dt-layout-end {
+  flex: 1 1 auto;
+  margin-left: 0 !important;
+  text-align: center;
+}
+
+#tablaDevoluciones_wrapper .dt-paging {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin: 20px auto 10px;
+}
+
+#tablaDevoluciones_wrapper .dt-layout-end {
+  width: 100%;
+  display: flex;
+  justify-content: center;
 }

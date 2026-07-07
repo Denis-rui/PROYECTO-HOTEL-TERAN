@@ -17,7 +17,7 @@
       <form id="formReserva">
         <!-- BUSCAR CLIENTE -->
         <div class="form-group">
-          <label for="buscarCliente">BUSCAR / SELECCIONAR CLIENTE</label>
+          <label for="buscarCliente">BUSCAR / SELECCIONAR CLIENTE <span class="campo-requerido">*</span></label>
           <input
             type="text"
             id="buscarCliente"
@@ -62,13 +62,19 @@
             </div>
 
             <div class="form-group">
-              <label for="dni" id="label-dni">DNI:</label>
-              <input
-                type="text"
-                id="dni"
-                name="dni"
-                placeholder="Documento"
-                readonly />
+              <label for="dni">DOCUMENTO:</label>
+              <div class="documento-reserva-fila">
+                <select id="tipoDocumentoClienteReserva" class="selector-documento-reserva" aria-label="Tipo de documento del cliente">
+                  <option value="dni">DNI</option>
+                  <option value="ruc">RUC</option>
+                </select>
+                <input
+                  type="text"
+                  id="dni"
+                  name="dni"
+                  placeholder="Documento"
+                  readonly />
+              </div>
             </div>
           </div>
 
@@ -99,7 +105,7 @@
         <!-- FECHAS -->
         <div class="form-row">
           <div class="form-group">
-            <label for="fechaEntrada">CHECK-IN (FECHA):</label>
+            <label for="fechaEntrada">CHECK-IN (FECHA): <span class="campo-requerido">*</span></label>
             <input type="date" id="fechaEntrada" name="fechaEntrada" required />
           </div>
 
@@ -111,7 +117,7 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label for="fechaSalida">CHECK-OUT (FECHA):</label>
+            <label for="fechaSalida">CHECK-OUT (FECHA): <span class="campo-requerido">*</span></label>
             <input type="date" id="fechaSalida" name="fechaSalida" required />
           </div>
 
@@ -139,7 +145,7 @@
 
         <div class="form-group habitaciones-reserva-bloque">
           <div class="habitaciones-reserva-encabezado">
-            <label>SELECCIONA HABITACIONES:</label>
+            <label>SELECCIONA HABITACIONES: <span class="campo-requerido">*</span></label>
             <small id="mensajeHabitacionesDisponibles">Solo se listan habitaciones disponibles, limpias y sin cruces de fechas.</small>
           </div>
 
@@ -161,6 +167,20 @@
               <div class="resumen-total-habitaciones">
                 <strong>Total estimado:</strong>
                 <span id="totalHabitacionesReserva">S/ 0.00</span>
+              </div>
+              <div id="contenedor-penalidad-edicion" style="display:none; margin-top: 8px; font-size: 0.9em; border-top: 1px dashed #ccc; padding-top: 8px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px; color: #c0392b;">
+                  <strong>Penalidad (25%):</strong>
+                  <span id="montoPenalidadEdicion">S/ 0.00</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px; color: #27ae60;">
+                  <strong>Total a devolver:</strong>
+                  <span id="montoDevolverEdicion" style="font-weight: bold;">S/ 0.00</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; border-top: 1px dotted #ccc; padding-top: 4px; color: #333;">
+                  <strong>Total:</strong>
+                  <span id="montoTotalDevolucionEdicion" style="font-weight: bold;">S/ 0.00</span>
+                </div>
               </div>
             </div>
           </div>

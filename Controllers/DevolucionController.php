@@ -2,10 +2,11 @@
 
 namespace Controllers;
 
-use Libraries\Core\Controller;
+use Libraries\Core\ApiController;
+use Helpers\CodigoHTTP;
 use Services\Devoluciones\DevolucionService; // Asegúrate de que la ruta coincida con tu namespace
 
-class DevolucionController extends Controller
+class DevolucionController extends ApiController
 {
     private DevolucionService $devolucionService;
 
@@ -23,17 +24,36 @@ class DevolucionController extends Controller
             exit();
         }
 
-        $busqueda = $_GET['busqueda'] ?? '';
-
-        // Llamamos al servicio en lugar del modelo
-        $respuesta = $this->devolucionService->listarDevoluciones($busqueda);
-
         $data['page_title'] = "Devoluciones";
-        // Si el servicio tuvo éxito, enviamos la data; si no, un arreglo vacío
-        $data['devoluciones'] = $respuesta['exito'] ? $respuesta['data'] : [];
-        $data['page_js'] = [];
+        $data['page_js'] = ['Devoluciones.js'];
 
         $this->views->render($this, 'index', $data);
+    }
+
+    public function datatable($params = '')
+    {
+        if (!isset($_SESSION['usuario'])) {
+            $this->responderJson([
+                'draw' => (int) ($_POST['draw'] ?? 0),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => 'Sesión no válida.',
+            ], 401);
+        }
+
+        try {
+            $this->responderJson($this->devolucionService->listarParaDataTable($_POST));
+        } catch (\Throwable $e) {
+            error_log('DevolucionController::datatable -> ' . $e->getMessage());
+            $this->responderJson([
+                'draw' => (int) ($_POST['draw'] ?? 0),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => 'No se pudieron cargar las devoluciones.',
+            ], 500);
+        }
     }
 
     public function registrar($params = '')
@@ -42,10 +62,9 @@ class DevolucionController extends Controller
         $datos = $this->obtenerPayloadJson() ?? [];
         $idUsuario = $_SESSION['id_usuario'] ?? null;
 
-        // El servicio ya devuelve el arreglo ['exito' => ..., 'mensaje' => ...]
-        // Así que podemos imprimirlo directamente en el json_encode
         $respuesta = $this->devolucionService->registrarDevolucion($datos, $idUsuario);
-        $this->responderJson($respuesta);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($respuesta);
+        $this->responderJson($payload, $codigoHttp);
     }
 
     public function actualizar($params = '')
@@ -55,7 +74,8 @@ class DevolucionController extends Controller
         $idUsuario = $_SESSION['id_usuario'] ?? null;
 
         $respuesta = $this->devolucionService->actualizarDevolucion($datos, $idUsuario);
-        $this->responderJson($respuesta);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($respuesta);
+        $this->responderJson($payload, $codigoHttp);
     }
 
     public function eliminar($params = '')
@@ -64,6 +84,7 @@ class DevolucionController extends Controller
         $datos = $this->obtenerPayloadJson() ?? [];
 
         $respuesta = $this->devolucionService->eliminarDevolucion((int) ($datos['id'] ?? 0));
-        $this->responderJson($respuesta);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($respuesta);
+        $this->responderJson($payload, $codigoHttp);
     }
 }

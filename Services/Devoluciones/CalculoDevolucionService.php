@@ -28,6 +28,8 @@ class CalculoDevolucionService
                     'exito' => false,
                     'codigo' => 'NO_ENCONTRADO',
                     'mensaje' => 'Reserva no encontrada.',
+                    'data' => null,
+                    'errores' => [],
                 ];
             }
 
@@ -36,6 +38,8 @@ class CalculoDevolucionService
                     'exito' => false,
                     'codigo' => 'CONFLICTO',
                     'mensaje' => 'No se puede cancelar ni devolver dinero de una reserva con checkout realizado.',
+                    'data' => null,
+                    'errores' => [],
                 ];
             }
 
@@ -53,7 +57,9 @@ class CalculoDevolucionService
                 2
             );
 
-            $montoPagado = round((float) $reserva->pagos->sum('monto'), 2);
+            $sumPagos = (float) $reserva->pagos->sum('monto');
+            $sumPenalidades = (float) \Models\Entities\Devolucion::where('id_reserva', $idReserva)->sum('monto_penalidad');
+            $montoPagado = round(max(0.0, $sumPagos - $sumPenalidades), 1);
 
             $huboHospedaje = !empty($reserva->checkin_real);
 
@@ -131,6 +137,7 @@ class CalculoDevolucionService
 
                     'fechas_documentadas' => array_keys($montos['fechas_documentadas']),
                 ],
+                'errores' => [],
             ];
         } catch (\Throwable $e) {
             error_log('CalculoDevolucionService::calcular -> ' . $e->getMessage());
@@ -139,6 +146,8 @@ class CalculoDevolucionService
                 'exito' => false,
                 'codigo' => 'ERROR_INTERNO',
                 'mensaje' => 'Ocurrió un error interno al calcular la devolución.',
+                'data' => null,
+                'errores' => [],
             ];
         }
     }

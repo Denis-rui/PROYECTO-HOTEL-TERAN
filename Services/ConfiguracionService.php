@@ -18,23 +18,36 @@ class ConfiguracionService
 
     public function obtenerHotel(int $id = 1): array
     {
-        $hotel = $this->configuracionModel->find($id);
+        try {
+            $hotel = $this->configuracionModel->find($id);
 
-        if (!$hotel) {
+            if (!$hotel) {
+                return [
+                    'exito' => false,
+                    'codigo' => 'NO_ENCONTRADO',
+                    'mensaje' => 'Configuración no encontrada.',
+                    'data' => null,
+                    'errores' => [],
+                ];
+            }
+
+            return [
+                'exito' => true,
+                'codigo' => 'OK',
+                'mensaje' => 'Configuración encontrada.',
+                'data' => $hotel->toArray(),
+                'errores' => [],
+            ];
+        } catch (\Throwable $e) {
+            error_log('Error al obtener configuración: ' . $e->getMessage());
             return [
                 'exito' => false,
-                'codigo' => 'NO_ENCONTRADO',
-                'mensaje' => 'Configuración no encontrada.',
+                'codigo' => 'ERROR_INTERNO',
+                'mensaje' => 'Ocurrió un error al cargar la configuración.',
                 'data' => null,
+                'errores' => [],
             ];
         }
-
-        return [
-            'exito' => true,
-            'codigo' => 'OK',
-            'mensaje' => 'Configuración encontrada.',
-            'data' => $hotel ? $hotel->toArray() : null,
-        ];
     }
 
     public function actualizarHotel(array $datos): array
@@ -48,6 +61,7 @@ class ConfiguracionService
                     'codigo' => 'NO_ENCONTRADO',
                     'mensaje' => 'Configuración no encontrada.',
                     'data' => null,
+                    'errores' => [],
                 ];
             }
 
@@ -71,7 +85,8 @@ class ConfiguracionService
                     'exito' => true,
                     'codigo' => 'ACTUALIZADO',
                     'mensaje' => 'Configuración actualizada correctamente.',
-                    'data' => $hotel->toArray() // Opcional: devolver los datos actualizados
+                    'data' => $hotel->toArray(),
+                    'errores' => [],
                 ];
             }
 
@@ -79,13 +94,17 @@ class ConfiguracionService
                 'exito' => false,
                 'codigo' => 'ERROR_GUARDADO',
                 'mensaje' => 'No se pudieron guardar los cambios en la base de datos.',
+                'data' => null,
+                'errores' => [],
             ];
         } catch (\Exception $e) {
             error_log('Error al actualizar configuración: ' . $e->getMessage());
             return [
                 'exito' => false,
-                'codigo' => 'EXCEPCION',
+                'codigo' => 'ERROR_INTERNO',
                 'mensaje' => 'Ocurrió un error al actualizar la configuración. Intente nuevamente.',
+                'data' => null,
+                'errores' => [],
             ];
         }
     }
@@ -97,22 +116,59 @@ class ConfiguracionService
 
     public function guardarTipoHabitacion(array $datos): array
     {
-        $id = isset($datos['id']) && $datos['id'] !== '' ? (int) $datos['id'] : null;
-        $tipo = trim((string) ($datos['tipo'] ?? ''));
-        $precio = $datos['precio_base'] ?? null;
+        try {
+            $id = isset($datos['id']) && $datos['id'] !== '' ? (int) $datos['id'] : null;
+            $tipo = trim((string) ($datos['tipo'] ?? ''));
+            $precio = $datos['precio_base'] ?? null;
 
-        if ($tipo === '' || !is_numeric($precio) || (float) $precio <= 0) {
-            return ['exito' => false, 'mensaje' => 'Datos incompletos'];
+            if ($tipo === '' || !is_numeric($precio) || (float) $precio <= 0) {
+                return [
+                    'exito' => false,
+                    'codigo' => 'VALIDACION_ERROR',
+                    'mensaje' => 'Ingrese un tipo de habitación y un precio válido.',
+                    'data' => null,
+                    'errores' => [
+                        'tipo' => $tipo === '' ? 'El tipo de habitación es obligatorio.' : null,
+                        'precio_base' => (!is_numeric($precio) || (float) $precio <= 0) ? 'El precio debe ser mayor a cero.' : null,
+                    ],
+                ];
+            }
+
+            $guardado = $this->tipoHabitacionModel->guardar($id, [
+                'tipo' => $tipo,
+                'precio_base' => (float) $precio,
+            ]);
+
+            if (!$guardado) {
+                return [
+                    'exito' => false,
+                    'codigo' => 'ERROR_GUARDADO',
+                    'mensaje' => 'No se pudo guardar el tipo de habitación.',
+                    'data' => null,
+                    'errores' => [],
+                ];
+            }
+
+            return [
+                'exito' => true,
+                'codigo' => $id !== null ? 'ACTUALIZADO' : 'CREADO',
+                'mensaje' => $id !== null ? 'Actualizado correctamente' : 'Creado correctamente',
+                'data' => [
+                    'id' => $id,
+                    'tipo' => $tipo,
+                    'precio_base' => (float) $precio,
+                ],
+                'errores' => [],
+            ];
+        } catch (\Throwable $e) {
+            error_log('Error al guardar tipo de habitación: ' . $e->getMessage());
+            return [
+                'exito' => false,
+                'codigo' => 'ERROR_INTERNO',
+                'mensaje' => 'Ocurrió un error al guardar el tipo de habitación.',
+                'data' => null,
+                'errores' => [],
+            ];
         }
-
-        $this->tipoHabitacionModel->guardar($id, [
-            'tipo' => $tipo,
-            'precio_base' => (float) $precio,
-        ]);
-
-        return [
-            'exito' => true,
-            'mensaje' => $id !== null ? 'Actualizado correctamente' : 'Creado correctamente',
-        ];
     }
 }

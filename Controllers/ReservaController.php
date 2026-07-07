@@ -3,7 +3,6 @@
 namespace Controllers;
 
 use Libraries\Core\ApiController;
-use Services\DashboardService;
 use Services\Reservas\CheckInReservaService;
 use Services\Reservas\CheckOutReservaService;
 use Services\Reservas\AusenciaReservaService;
@@ -12,6 +11,7 @@ use Services\Reservas\RegistrarReservaService;
 use Services\Reservas\ActualizarReservaService;
 use Services\Reservas\CambiarHabitacionService;
 use Services\Reservas\ConsultarReservaService;
+use Services\Reservas\RegistrarDevolucionPagoService;
 use Services\Pagos\RegistrarPagoService;
 use Services\Comprobantes\DocumentoElectronicoService;
 use Services\Devoluciones\CalculoDevolucionService;
@@ -69,9 +69,10 @@ class ReservaController extends ApiController
 
     public function emitirDocumentoElectronico($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
         $modelo = new DocumentoElectronicoService();
-        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva(
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta(
             $modelo->emitir($datos, $_SESSION['id_usuario'] ?? null),
             201
         );
@@ -81,13 +82,20 @@ class ReservaController extends ApiController
 
     public function registrar($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson();
         if (!is_array($datos)) {
-            $this->responderJson(['exito' => false, 'mensaje' => 'Datos inválidos.'], 400);
+            $this->responderJson([
+                'exito' => false,
+                'codigo' => 'DATOS_INCOMPLETOS',
+                'mensaje' => 'Datos inválidos.',
+                'data' => null,
+                'errores' => [],
+            ], 422);
         }
         $service = new RegistrarReservaService();
         $resultado = $service->registrarReserva($datos, $_SESSION['id_usuario'] ?? null);
-        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado, 201);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($resultado, 201);
         $this->responderJson($payload, $codigoHttp);
     }
 
@@ -95,13 +103,17 @@ class ReservaController extends ApiController
 
     public function actualizar($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson();
 
         if (!is_array($datos)) {
             $this->responderJson([
                 'exito' => false,
-                'mensaje' => 'Datos inválidos.'
-            ], 400);
+                'codigo' => 'DATOS_INCOMPLETOS',
+                'mensaje' => 'Datos inválidos.',
+                'data' => null,
+                'errores' => [],
+            ], 422);
         }
 
         $service = new ActualizarReservaService();
@@ -111,19 +123,23 @@ class ReservaController extends ApiController
             $_SESSION['id_usuario'] ?? null
         );
 
-        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($resultado);
         $this->responderJson($payload, $codigoHttp);
     }
 
     public function pago($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson();
 
         if (!is_array($datos)) {
             $this->responderJson([
                 'exito' => false,
-                'mensaje' => 'Datos inválidos.'
-            ], 400);
+                'codigo' => 'DATOS_INCOMPLETOS',
+                'mensaje' => 'Datos inválidos.',
+                'data' => null,
+                'errores' => [],
+            ], 422);
         }
 
         $service = new RegistrarPagoService();
@@ -139,12 +155,57 @@ class ReservaController extends ApiController
 
         );
 
-        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado, 201);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($resultado, 201);
+        $this->responderJson($payload, $codigoHttp);
+    }
+
+    public function registrarDevolucionPago($params = '')
+    {
+        $this->validarCsrf();
+        $datos = $this->obtenerPayloadJson();
+
+        if (!is_array($datos)) {
+            $this->responderJson([
+                'exito' => false,
+                'codigo' => 'DATOS_INCOMPLETOS',
+                'mensaje' => 'Datos inválidos.',
+                'data' => null,
+                'errores' => [],
+            ], 422);
+        }
+
+        $service = new RegistrarDevolucionPagoService();
+        $resultado = $service->registrar($datos, $_SESSION['id_usuario'] ?? null);
+
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($resultado, 201);
+        $this->responderJson($payload, $codigoHttp);
+    }
+
+    public function validarDevolucionPago($params = '')
+    {
+        $this->validarCsrf();
+        $datos = $this->obtenerPayloadJson();
+
+        if (!is_array($datos)) {
+            $this->responderJson([
+                'exito' => false,
+                'codigo' => 'DATOS_INCOMPLETOS',
+                'mensaje' => 'Datos inválidos.',
+                'data' => null,
+                'errores' => [],
+            ], 422);
+        }
+
+        $service = new RegistrarDevolucionPagoService();
+        $resultado = $service->validarSolicitud($datos);
+
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($resultado);
         $this->responderJson($payload, $codigoHttp);
     }
 
     public function checkin($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
         $idReserva = (int) ($datos['id_reserva'] ?? 0);
 
@@ -155,12 +216,30 @@ class ReservaController extends ApiController
             $_SESSION['id_usuario'] ?? null
         );
 
-        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($resultado);
+        $this->responderJson($payload, $codigoHttp);
+    }
+
+    public function preCheckin($params = '')
+    {
+        $this->validarCsrf();
+        $datos = $this->obtenerPayloadJson() ?? [];
+        $idReserva = (int) ($datos['id_reserva'] ?? 0);
+
+        $service = new CheckInReservaService();
+
+        $resultado = $service->registrarPreCheckIn(
+            $idReserva,
+            $_SESSION['id_usuario'] ?? null
+        );
+
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($resultado);
         $this->responderJson($payload, $codigoHttp);
     }
 
     public function checkout($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
 
         $idReserva = (int) ($datos['id_reserva'] ?? 0);
@@ -176,12 +255,13 @@ class ReservaController extends ApiController
             $motivoAutorizacion
         );
 
-        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($resultado);
         $this->responderJson($payload, $codigoHttp);
     }
 
     public function marcarAusente($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
         $idReserva = (int) ($datos['id_reserva'] ?? 0);
 
@@ -192,12 +272,13 @@ class ReservaController extends ApiController
             $_SESSION['id_usuario'] ?? null
         );
 
-        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($resultado);
         $this->responderJson($payload, $codigoHttp);
     }
 
     public function marcarRegreso($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
         $idReserva = (int) ($datos['id_reserva'] ?? 0);
 
@@ -208,7 +289,7 @@ class ReservaController extends ApiController
             $_SESSION['id_usuario'] ?? null
         );
 
-        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($resultado);
         $this->responderJson($payload, $codigoHttp);
     }
 
@@ -221,18 +302,14 @@ class ReservaController extends ApiController
         if (!$reserva) {
             $this->responderJson([
                 'exito' => false,
-                'mensaje' => 'Reserva no encontrada.'
+                'codigo' => 'NO_ENCONTRADO',
+                'mensaje' => 'Reserva no encontrada.',
+                'data' => null,
+                'errores' => [],
             ], 404);
         }
 
         $this->responderJson($reserva);
-    }
-
-    public function dashboard($params = '')
-    {
-        $dashboardService = new DashboardService();
-        $respuesta = $dashboardService->obtenerEstadisticas();
-        $this->responderJson($respuesta['data']);
     }
 
     public function notificaciones($params = '')
@@ -240,23 +317,16 @@ class ReservaController extends ApiController
         $notificacionService = new NotificacionService();
         $respuesta = $notificacionService->obtenerNotificacionesCheckout();
 
-        $this->responderJson($respuesta['data']);
-    }
-
-    public function calcularTotal($params = '')
-    {
-        $datos = $this->obtenerPayloadJson() ?? [];
-        $service = new ConsultarReservaService();
-        $resultado = $service->calcularTotal(
-            (int) ($datos['id_habitacion'] ?? 0),
-            $datos['check_in']  ?? '',
-            $datos['check_out'] ?? ''
-        );
-        $this->responderJson($resultado);
+        $this->responderJson($respuesta['data'] ?? [
+            'proximos' => [],
+            'vencidos' => [],
+            'notificaciones' => [],
+        ]);
     }
 
     public function cancelar($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
 
         $idReserva = (int) ($datos['id_reserva'] ?? 0);
@@ -270,12 +340,13 @@ class ReservaController extends ApiController
             $_SESSION['id_usuario'] ?? null
         );
 
-        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($resultado);
         $this->responderJson($payload, $codigoHttp);
     }
 
     public function eliminarPendiente($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
         $idReserva = (int) ($datos['id_reserva'] ?? 0);
 
@@ -285,15 +356,16 @@ class ReservaController extends ApiController
             $_SESSION['id_usuario'] ?? null
         );
 
-        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($resultado);
         $this->responderJson($payload, $codigoHttp);
     }
 
     public function calcularCancelacion($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
         $modelo = new CalculoDevolucionService();
-        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva(
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta(
             $modelo->calcular((int) ($datos['id_reserva'] ?? 0))
         );
         $this->responderJson($payload, $codigoHttp);
@@ -301,6 +373,7 @@ class ReservaController extends ApiController
 
     public function cambiarHabitacion($params = '')
     {
+        $this->validarCsrf();
         $datos = $this->obtenerPayloadJson() ?? [];
 
         $service = new CambiarHabitacionService();
@@ -314,7 +387,7 @@ class ReservaController extends ApiController
             $_SESSION['id_usuario'] ?? null
         );
 
-        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuestaReserva($resultado);
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($resultado);
         $this->responderJson($payload, $codigoHttp);
     }
 }

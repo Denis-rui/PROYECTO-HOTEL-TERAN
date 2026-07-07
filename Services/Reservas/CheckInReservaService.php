@@ -28,16 +28,10 @@ class CheckInReservaService
         try {
             $reservaActual = $this->reservaModel->obtenerReservaConHabitaciones($idReserva);
             if (!$reservaActual) {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'Reserva no encontrada.'
-                ];
+                return $this->respuesta(false, 'NO_ENCONTRADO', 'Reserva no encontrada.');
             }
-            if ($reservaActual->estado !== 'confirmada') {
-                return [
-                    'exito' => false,
-                    'mensaje' => 'Solo se puede confirmar check-in de reservas confirmadas.'
-                ];
+            if (!in_array($reservaActual->estado, ['confirmada', 'pre_checkin'], true)) {
+                return $this->respuesta(false, 'CONFLICTO', 'Solo se puede confirmar check-in de reservas confirmadas o en pre-check-in.');
             }
             foreach ($reservaActual->reservaHabitacion as $reservaHabitacion) {
                 if (!ReservaHabitacionHelper::esActiva($reservaHabitacion)) {
@@ -51,10 +45,15 @@ class CheckInReservaService
                 if ($ocupada && (int) $ocupada['id'] !== (int) $idReserva) {
                     $numeroHabitacion = $reservaHabitacion->habitacion->numero_habitacion ?? '';
 
-                    return [
-                        'exito' => false,
-                        'mensaje' => 'La habitación ' . $numeroHabitacion . ' está ocupada por otra reserva.',
-                    ];
+                    return $this->respuesta(false, 'CONFLICTO', 'La habitación ' . $numeroHabitacion . ' está ocupada por otra reserva.');
+                }
+
+                if ($this->esAntesCheckinNormal()) {
+                    $estadoHabitacion = strtolower((string) ($reservaHabitacion->habitacion->estado ?? ''));
+                    if (in_array($estadoHabitacion, ['mantenimiento', 'en limpieza'], true)) {
+                        $numeroHabitacion = $reservaHabitacion->habitacion->numero_habitacion ?? '';
+                        return $this->respuesta(false, 'CONFLICTO', 'Early check-in no disponible. La habitación ' . $numeroHabitacion . ' aún no está lista.');
+                    }
                 }
             }
 
@@ -74,12 +73,10 @@ class CheckInReservaService
             }
 
             DB::connection()->commit();
-            return [
-                'exito' => true,
-                'mensaje' => 'Check-in confirmado correctamente.',
+            return $this->respuesta(true, 'ACTUALIZADO', 'Check-in confirmado correctamente.', [
                 'checkin_real' => $fechaCheckin,
                 'reserva' => $this->reservaModel->obtenerReservaPorId($idReserva),
-            ];
+            ]);
         } catch (\Throwable $e) {
             error_log('CheckInReservaService::confirmarCheckIn -> ' . $e->getMessage());
             $conexion = DB::connection();
@@ -87,10 +84,64 @@ class CheckInReservaService
             if ($conexion->getPdo()->inTransaction()) {
                 $conexion->rollBack();
             }
-            return [
-                'exito' => false,
-                'mensaje' => 'No se pudo confirmar el check-in. Intente nuevamente.'
-            ];
+            return $this->respuesta(false, 'EXCEPCION', 'No se pudo confirmar el check-in. Intente nuevamente.');
         }
+    }
+
+    public function registrarPreCheckIn(int $idReserva, ?int $idUsuario = null): array
+    {
+        try {
+            $reservaActual = $this->reservaModel->obtenerReservaConHabitaciones($idReserva);
+            if (!$reservaActual) {
+                return $this->respuesta(false, 'NO_ENCONTRADO', 'Reserva no encontrada.');
+            }
+
+            if ($reservaActual->estado !== 'confirmada') {
+                return $this->respuesta(false, 'CONFLICTO', 'Solo se puede registrar pre-check-in de reservas confirmadas.');
+            }
+
+            if (!$this->esAntesCheckinNormal()) {
+                return $this->respuesta(false, 'CONFLICTO', 'Desde las 1:40 p. m. corresponde realizar check-in normal.');
+            }
+
+            $fechaPreCheckin = FechaHotelHelper::ahora();
+            $reservaActual->estado = 'pre_checkin';
+            $reservaActual->observaciones = trim(
+                (string) ($reservaActual->observaciones ?? '')
+                    . "\nPre-check-in registrado el "
+                    . $fechaPreCheckin
+                    . ($idUsuario ? ' por usuario #' . $idUsuario : '')
+                    . '. Cliente dejó pertenencias antes del check-in normal.'
+            );
+            $this->reservaModel->guardar($reservaActual);
+
+            return $this->respuesta(true, 'ACTUALIZADO', 'Pre-check-in registrado correctamente.', [
+                'fecha_pre_checkin' => $fechaPreCheckin,
+                'reserva' => $this->reservaModel->obtenerReservaPorId($idReserva),
+            ]);
+        } catch (\Throwable $e) {
+            error_log('CheckInReservaService::registrarPreCheckIn -> ' . $e->getMessage());
+            return $this->respuesta(false, 'EXCEPCION', 'No se pudo registrar el pre-check-in. Intente nuevamente.');
+        }
+    }
+
+    private function esAntesCheckinNormal(): bool
+    {
+        $ahora = new \DateTimeImmutable('now', new \DateTimeZone('America/Lima'));
+        $limite = $ahora->setTime(13, 40, 0);
+        return $ahora < $limite;
+    }
+
+    private function respuesta(bool $exito, string $codigo, string $mensaje, mixed $data = null, array $errores = []): array
+    {
+        $respuesta = [
+            'exito' => $exito,
+            'codigo' => $codigo,
+            'mensaje' => $mensaje,
+            'data' => $data,
+            'errores' => $errores,
+        ];
+
+        return is_array($data) ? array_merge($respuesta, $data) : $respuesta;
     }
 }

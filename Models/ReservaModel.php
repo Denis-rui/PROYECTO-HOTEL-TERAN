@@ -11,106 +11,6 @@ use Helpers\FormatearReservas as ReservaFormatter;
 
 class ReservaModel
 {
-    public function obtenerReservas(array $filtros = [], int $limite = 30): array
-    {
-        try {
-            $this->inactivarPendientesVencidas();
-
-            $busqueda = trim((string) ($filtros['busqueda'] ?? ''));
-            $estado = strtolower(trim((string) ($filtros['estado'] ?? '')));
-
-            $estadosPermitidos = [
-                'confirmada',
-                'pendiente',
-                'en_estadia',
-                'checkout_realizado',
-                'checkout_pendiente',
-                'ausente',
-                'cancelada',
-                'inactiva'
-            ];
-
-            $limite = max(30, $limite);
-
-            $query = Reserva::with([
-                'cliente',
-                'usuario',
-                'pagos',
-                'reservaHabitacion.habitacion'
-            ]);
-
-            if ($estado === '') {
-                $query->whereNotIn('estado', ['cancelada', 'inactiva']);
-            } elseif (!in_array($estado, ['cancelada', 'inactiva'], true)) {
-                $query->whereNotIn('estado', ['cancelada', 'inactiva']);
-            }
-
-            if ($busqueda !== '') {
-                $query->whereHas('cliente', function ($q) use ($busqueda) {
-                    $q->where(function ($subQuery) use ($busqueda) {
-                        $subQuery->whereRaw(
-                            "CONCAT(COALESCE(nombres, ''), ' ', COALESCE(apellido_paterno, ''), ' ', COALESCE(apellido_materno, '')) LIKE ?",
-                            ['%' . $busqueda . '%']
-                        )
-                            ->orWhere('documento', 'like', '%' . $busqueda . '%')
-                            ->orWhere('ruc', 'like', '%' . $busqueda . '%'); // Soporte para empresas por RUC
-                    });
-                });
-            }
-            if ($estado !== '' && in_array($estado, $estadosPermitidos, true)) {
-                $query->where('estado', $estado);
-            }
-
-            $query->select('reserva.*')
-                ->selectSub(
-                    ReservaHabitacion::selectRaw('MIN(reserva_habitacion.check_in)')
-                        ->whereColumn('reserva_habitacion.id_reserva', 'reserva.id')
-                        ->where(function ($q) {
-                            $q->whereNull('reserva_habitacion.estado')
-                                ->orWhere('reserva_habitacion.estado', 'activa');
-                        }),
-                    'primer_check_in'
-                );
-
-            $total = (clone $query)->count();
-
-            $reservas = $query
-                ->orderByRaw("
-                    CASE
-                        WHEN LOWER(reserva.estado) = 'pendiente' THEN 0
-                        WHEN LOWER(reserva.estado) IN ('en_estadia', 'checkout_pendiente', 'ausente') THEN 1
-                        WHEN LOWER(reserva.estado) = 'confirmada' THEN 2
-                        WHEN LOWER(reserva.estado) = 'checkout_realizado' THEN 3
-                        ELSE 4
-                    END ASC
-                ")
-                ->orderByRaw('primer_check_in IS NULL ASC')
-                ->orderByRaw('primer_check_in ASC')
-                ->orderByDesc('reserva.id')
-                ->limit($limite)
-                ->get()
-                ->map(fn($reserva) => ReservaFormatter::formatear($reserva))
-                ->values()
-                ->all();
-
-            return [
-                'items' => $reservas,
-                'total' => (int) $total,
-                'mostrados' => count($reservas),
-                'hay_mas' => $total > count($reservas),
-            ];
-        } catch (\Throwable $e) {
-            error_log('ReservaModel::obtenerReservas -> ' . $e->getMessage());
-            return [
-                'items' => [],
-                'total' => 0,
-                'mostrados' => 0,
-                'hay_mas' => false,
-                'error' => 'No se pudieron obtener las reservas.',
-            ];
-        }
-    }
-
     public function obtenerReservasDataTable(array $parametros): array
     {
         try {
@@ -169,6 +69,7 @@ class ReservaModel
     {
         $estadosPermitidos = [
             'confirmada',
+            'pre_checkin',
             'pendiente',
             'en_estadia',
             'checkout_realizado',
@@ -220,20 +121,12 @@ class ReservaModel
 
         return $query
             ->select('reserva.*')
+            ->selectRaw('reserva.check_in_programado as fecha_programada_orden')
             ->selectSub(
                 Cliente::selectRaw("TRIM(CONCAT_WS(' ', NULLIF(nombres, ''), NULLIF(apellido_paterno, ''), NULLIF(apellido_materno, '')))")
                     ->whereColumn('cliente.id', 'reserva.id_cliente')
                     ->limit(1),
                 'cliente_nombre_orden'
-            )
-            ->selectSub(
-                ReservaHabitacion::selectRaw('MIN(reserva_habitacion.check_in)')
-                    ->whereColumn('reserva_habitacion.id_reserva', 'reserva.id')
-                    ->where(function ($q) {
-                        $q->whereNull('reserva_habitacion.estado')
-                            ->orWhere('reserva_habitacion.estado', 'activa');
-                    }),
-                'primer_check_in'
             );
     }
 
@@ -244,38 +137,20 @@ class ReservaModel
         }
 
         if ($filtroHoy === 'checkin_hoy') {
-            $query->whereHas('reservaHabitacion', function ($q) {
-                $q->whereRaw('DATE(reserva_habitacion.check_in) = CURDATE()')
-                    ->where(function ($estadoHabitacion) {
-                        $estadoHabitacion->whereNull('reserva_habitacion.estado')
-                            ->orWhere('reserva_habitacion.estado', 'activa');
-                    });
-            });
+            $query->whereRaw('DATE(reserva.check_in_programado) = CURDATE()');
             return;
         }
 
         if ($filtroHoy === 'checkout_hoy') {
-            $query->whereHas('reservaHabitacion', function ($q) {
-                $q->whereRaw('DATE(reserva_habitacion.check_out) = CURDATE()')
-                    ->where(function ($estadoHabitacion) {
-                        $estadoHabitacion->whereNull('reserva_habitacion.estado')
-                            ->orWhere('reserva_habitacion.estado', 'activa');
-                    });
-            });
+            $query->whereRaw('DATE(reserva.check_out_programado) = CURDATE()');
             return;
         }
 
         if ($filtroHoy === 'checkout_vencido') {
             $query->whereIn('reserva.estado', ['en_estadia', 'checkout_pendiente', 'ausente'])
                 ->whereNull('reserva.checkout_real')
-                ->whereHas('reservaHabitacion', function ($q) {
-                    $q->whereNotNull('reserva_habitacion.check_out')
-                        ->whereRaw('NOW() > reserva_habitacion.check_out')
-                        ->where(function ($estadoHabitacion) {
-                            $estadoHabitacion->whereNull('reserva_habitacion.estado')
-                                ->orWhere('reserva_habitacion.estado', 'activa');
-                        });
-                });
+                ->whereNotNull('reserva.check_out_programado')
+                ->whereRaw('NOW() > reserva.check_out_programado');
             return;
         }
 
@@ -315,8 +190,8 @@ class ReservaModel
         // Para cliente/habitación dejamos el orden por prioridad porque requieren joins adicionales.
         $columnasOrdenables = [
             0 => 'cliente_nombre_orden',
-            2 => 'primer_check_in',
-            3 => 'primer_check_in',
+            2 => 'fecha_programada_orden',
+            3 => 'fecha_programada_orden',
             4 => 'estado',
         ];
 
@@ -339,13 +214,13 @@ class ReservaModel
                 CASE
                     WHEN LOWER(reserva.estado) = 'pendiente' THEN 0
                     WHEN LOWER(reserva.estado) IN ('en_estadia', 'checkout_pendiente', 'ausente') THEN 1
-                    WHEN LOWER(reserva.estado) = 'confirmada' THEN 2
+                    WHEN LOWER(reserva.estado) IN ('confirmada', 'pre_checkin') THEN 2
                     WHEN LOWER(reserva.estado) = 'checkout_realizado' THEN 3
                     ELSE 4
                 END ASC
             ")
-            ->orderByRaw('primer_check_in IS NULL ASC')
-            ->orderByRaw('primer_check_in ASC')
+            ->orderByRaw('fecha_programada_orden IS NULL ASC')
+            ->orderByRaw('fecha_programada_orden ASC')
             ->orderByDesc('reserva.id');
     }
 
