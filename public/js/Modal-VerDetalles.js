@@ -269,9 +269,9 @@
       : reserva.habitacion || "---";
     const pago = obtenerPagoNormalizado(reserva);
     const checkInMostrar =
-      reserva.checkin_real || reserva.check_in || reserva.check_in_programado;
+      reserva.checkin_real || reserva.check_in_programado || reserva.check_in;
     const checkOutMostrar =
-      reserva.checkout_real || reserva.check_out || reserva.check_out_programado;
+      reserva.checkout_real || reserva.check_out_programado || reserva.check_out;
 
     setText("#detalleReservaCodigo", reserva.codigo_reserva || reserva.id || "---");
     setText("#detalleReservaCliente", reserva.cliente || "---");

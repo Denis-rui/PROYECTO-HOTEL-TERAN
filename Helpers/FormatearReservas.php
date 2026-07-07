@@ -61,8 +61,8 @@ class FormatearReservas
         }
         $habitacionPrincipal = $habitaciones[0] ?? null;
         $totalPagado = (float) ($reserva->pagos->sum('monto') ?? 0);
-        $checkInProgramado = $reserva->check_in ?? ($relacionPrincipal->check_in ?? null);
-        $checkOutProgramado = $reserva->check_out ?? ($relacionPrincipal->check_out ?? null);
+        $checkInProgramado = $reserva->check_in_programado ?? ($relacionPrincipal->check_in ?? null);
+        $checkOutProgramado = $reserva->check_out_programado ?? ($relacionPrincipal->check_out ?? null);
         $checkIn = $reserva->checkin_real ?? $checkInProgramado;
         $checkOut = $reserva->checkout_real ?? $checkOutProgramado;
         $estado = $reserva->estado ?? '';
@@ -90,9 +90,9 @@ class FormatearReservas
         $zonaHoraria = new \DateTimeZone('America/Lima');
         $ahora = new \DateTimeImmutable('now', $zonaHoraria);
         $checkoutProgramadoFecha = null;
-        if ($checkOut) {
+        if ($checkOutProgramado) {
             try {
-                $checkoutProgramadoFecha = new \DateTimeImmutable((string) $checkOut, $zonaHoraria);
+                $checkoutProgramadoFecha = new \DateTimeImmutable((string) $checkOutProgramado, $zonaHoraria);
             } catch (\Exception $e) {
                 $checkoutProgramadoFecha = null;
             }

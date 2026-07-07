@@ -58,7 +58,7 @@ class DocumentoElectronicoService
 
         $fechaHasta = $this->fechaIso((string) (
             $datos['fecha_hasta']
-            ?? ($reserva['checkout_real'] ?? ($reserva['check_out_programado'] ?? ($reserva['check_out'] ?? '')))
+            ?? $this->fechaFinFacturable($reserva)
         ));
 
         $validacionFechas = $this->validarFechas($reserva, $fechaDesde, $fechaHasta);
@@ -405,64 +405,39 @@ class DocumentoElectronicoService
 
     private function fechaInicioFacturable(array $reserva): string
     {
-        $checkInReal = $this->fechaIso((string) ($reserva['checkin_real'] ?? ''));
-
-        if ($checkInReal !== '') {
-            return $checkInReal;
-        }
-
         $estado = strtolower((string) ($reserva['estado'] ?? ''));
+        $checkInReal = $this->fechaIso((string) ($reserva['checkin_real'] ?? ''));
         $tieneCheckout = $this->fechaIso((string) ($reserva['checkout_real'] ?? '')) !== ''
             || $estado === 'checkout_realizado';
 
-        if (!$tieneCheckout) {
+        if ($checkInReal === '' && !$tieneCheckout) {
             return '';
         }
 
-        $inicioReserva = $this->fechaIso((string) (
-            $reserva['check_in_programado'] ?? ($reserva['check_in'] ?? '')
-        ));
-
-        return $inicioReserva !== ''
-            ? $inicioReserva
-            : $this->fechaExtremaHabitaciones($reserva, 'check_in', 'min');
+        return $this->fechaInicioReservaProgramada($reserva);
     }
 
     private function fechaFinFacturable(array $reserva): string
     {
-        $checkout = $this->fechaIso((string) (
-            $reserva['checkout_real']
-            ?? ($reserva['check_out_programado'] ?? ($reserva['check_out'] ?? ''))
-        ));
-
-        return $checkout !== ''
-            ? $checkout
-            : $this->fechaExtremaHabitaciones($reserva, 'check_out', 'max');
+        return $this->fechaFinReservaProgramada($reserva);
     }
 
-    private function fechaExtremaHabitaciones(array $reserva, string $campo, string $modo): string
+    private function fechaInicioReservaProgramada(array $reserva): string
     {
-        $fechas = [];
+        $inicioReserva = $this->fechaIso((string) ($reserva['check_in_programado'] ?? ''));
 
-        foreach ((array) ($reserva['habitaciones_historial'] ?? ($reserva['habitaciones'] ?? [])) as $habitacion) {
-            if (!is_array($habitacion)) {
-                continue;
-            }
+        return $inicioReserva !== ''
+            ? $inicioReserva
+            : $this->fechaIso((string) ($reserva['check_in'] ?? ''));
+    }
 
-            $fecha = $this->fechaIso((string) ($habitacion[$campo] ?? ''));
+    private function fechaFinReservaProgramada(array $reserva): string
+    {
+        $finReserva = $this->fechaIso((string) ($reserva['check_out_programado'] ?? ''));
 
-            if ($fecha !== '') {
-                $fechas[] = $fecha;
-            }
-        }
-
-        if (empty($fechas)) {
-            return '';
-        }
-
-        sort($fechas);
-
-        return $modo === 'max' ? end($fechas) : $fechas[0];
+        return $finReserva !== ''
+            ? $finReserva
+            : $this->fechaIso((string) ($reserva['check_out'] ?? ''));
     }
 
     private function limpiarTexto(string $texto): string
@@ -531,8 +506,8 @@ class DocumentoElectronicoService
             if ($precioBruto <= 0) {
                 $subtotalHabitacion = (float) ($habitacion['subtotal'] ?? 0);
                 $diasHabitacion = max(1, $this->noches(
-                    (string) ($habitacion['check_in'] ?? ($reserva['check_in_programado'] ?? ($reserva['check_in'] ?? ''))),
-                    (string) ($habitacion['check_out'] ?? ($reserva['check_out_programado'] ?? ($reserva['check_out'] ?? '')))
+                    (string) ($habitacion['check_in'] ?? ''),
+                    (string) ($habitacion['check_out'] ?? '')
                 ));
                 $precioBruto = $diasHabitacion > 0 ? ($subtotalHabitacion / $diasHabitacion) : 0;
             }
@@ -631,14 +606,8 @@ class DocumentoElectronicoService
 
     private function rangoFacturableHabitacion(array $habitacion, array $reserva, string $fechaDesde, string $fechaHasta): ?array
     {
-        $desdeHabitacion = $this->fechaIso((string) (
-            $habitacion['check_in']
-            ?? ($reserva['check_in_programado'] ?? ($reserva['check_in'] ?? ''))
-        ));
-        $hastaHabitacion = $this->fechaIso((string) (
-            $habitacion['check_out']
-            ?? ($reserva['check_out_programado'] ?? ($reserva['check_out'] ?? ''))
-        ));
+        $desdeHabitacion = $this->fechaIso((string) ($habitacion['check_in'] ?? ''));
+        $hastaHabitacion = $this->fechaIso((string) ($habitacion['check_out'] ?? ''));
 
         if ($desdeHabitacion === '' || $hastaHabitacion === '') {
             return null;
@@ -662,9 +631,9 @@ class DocumentoElectronicoService
             return false;
         }
 
-        $finHabitaciones = $this->fechaExtremaHabitaciones($reserva, 'check_out', 'max');
+        $finReserva = $this->fechaFinReservaProgramada($reserva);
         $checkoutReal = $this->fechaIso((string) ($reserva['checkout_real'] ?? ''));
-        $limites = array_values(array_filter([$finHabitaciones, $checkoutReal]));
+        $limites = array_values(array_filter([$finReserva, $checkoutReal]));
 
         if (empty($limites)) {
             return false;
@@ -767,13 +736,9 @@ class DocumentoElectronicoService
     private function validarRangoDentroDeHabitaciones(array $habitacionesSeleccionadas,   array $reserva,  string $fechaDesde,  string $fechaHasta): array
     {
         foreach ($habitacionesSeleccionadas as $habitacionSeleccionada) {
-            $desdeHabitacion = $this->fechaIso((string) (
-                $habitacionSeleccionada['check_in'] ?? ($reserva['check_in'] ?? '')
-            ));
+            $desdeHabitacion = $this->fechaIso((string) ($habitacionSeleccionada['check_in'] ?? ''));
 
-            $hastaHabitacion = $this->fechaIso((string) (
-                $habitacionSeleccionada['check_out'] ?? ($reserva['check_out'] ?? '')
-            ));
+            $hastaHabitacion = $this->fechaIso((string) ($habitacionSeleccionada['check_out'] ?? ''));
 
             if (
                 $desdeHabitacion !== ''
@@ -965,12 +930,8 @@ class DocumentoElectronicoService
         $fechaIngresoReal = $this->fechaIso((string) ($reserva['checkin_real'] ?? ''));
         $fechaSalidaReal = $this->fechaIso((string) ($reserva['checkout_real'] ?? ''));
 
-        $rangoOriginal = $fechaDesde === $this->fechaIso((string) (
-            $reserva['check_in_programado'] ?? ($reserva['check_in'] ?? '')
-        ))
-            && $fechaHasta === $this->fechaIso((string) (
-                $reserva['check_out_programado'] ?? ($reserva['check_out'] ?? '')
-            ));
+        $rangoOriginal = $fechaDesde === $this->fechaInicioReservaProgramada($reserva)
+            && $fechaHasta === $this->fechaFinReservaProgramada($reserva);
 
         $fechaIngresoDocumento = $rangoOriginal && $fechaIngresoReal !== ''
             ? $fechaIngresoReal

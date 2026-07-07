@@ -48,15 +48,14 @@ class NotificacionService
             }
 
             if (!$esNotificacionLimpieza && ($tipo === 'checkout' || strpos($tipo, 'checkout_') === 0)) {
-                $claveCheckout = (int) $item['id_reserva'] . '|' . $idHabitacion;
-                if (!isset($clavesActivasCheckout[$claveCheckout])) {
+                if (!isset($clavesActivasCheckout[(int) $item['id_reserva']])) {
                     continue;
                 }
             }
 
             $claveNotificacion = $esNotificacionLimpieza && $idHabitacion > 0
                 ? 'limpieza|' . $idHabitacion
-                : $tipo . '|' . (int) $item['id_reserva'] . '|' . $idHabitacion;
+                : $tipo . '|' . (int) $item['id_reserva'];
 
             if (isset($clavesAgregadas[$claveNotificacion])) {
                 continue;

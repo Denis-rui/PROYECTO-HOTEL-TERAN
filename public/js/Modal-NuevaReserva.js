@@ -224,8 +224,12 @@ const aplicarReservaEdicion = (reserva) => {
   estado.reservaCheckOutOriginal =
     reserva.check_out_programado || reserva.check_out || "";
 
-  const checkIn = separarFechaHora(reserva.check_in);
-  const checkOut = separarFechaHora(reserva.check_out);
+  const checkIn = separarFechaHora(
+    reserva.check_in_programado || reserva.check_in,
+  );
+  const checkOut = separarFechaHora(
+    reserva.check_out_programado || reserva.check_out,
+  );
 
   if (estado.elementos?.fechaEntrada) {
     estado.elementos.fechaEntrada.value = checkIn.fecha;
@@ -243,6 +247,9 @@ const aplicarReservaEdicion = (reserva) => {
   estado.habitacionesSeleccionadas = Array.isArray(reserva.habitaciones)
     ? reserva.habitaciones.map(normalizarHabitacion)
     : [];
+  estado.habitacionesHistorial = Array.isArray(reserva.habitaciones_historial)
+    ? reserva.habitaciones_historial.map(normalizarHabitacion)
+    : estado.habitacionesSeleccionadas;
   estado.reservaEstado = String(reserva.estado || "").toLowerCase();
 
   bloquearCamposPorEstadoReserva();
@@ -287,6 +294,31 @@ const obtenerDiasEstadia = (checkIn, checkOut) => {
   }
 
   return Math.max(1, Math.ceil((fin - inicio) / 86400000));
+};
+
+const obtenerDiasEstadiaActiva = (checkIn, checkOut) => {
+  const dias = obtenerDiasEstadia(checkIn, checkOut);
+  const fechaCheckOut = String(checkOut || "").slice(0, 10);
+
+  return fechaCheckOut === obtenerFechaActualISO() ? Math.max(1, dias) : dias;
+};
+
+const obtenerFechaEfectivaCobroCambio = (tipoMotivo = "") => {
+  const ahora = new Date();
+  const fechaBase = new Date(
+    ahora.getFullYear(),
+    ahora.getMonth(),
+    ahora.getDate(),
+  );
+
+  if (tipoMotivo === "solicitud_cliente" && ahora.getHours() >= 12) {
+    fechaBase.setDate(fechaBase.getDate() + 1);
+  }
+
+  const anio = fechaBase.getFullYear();
+  const mes = String(fechaBase.getMonth() + 1).padStart(2, "0");
+  const dia = String(fechaBase.getDate()).padStart(2, "0");
+  return `${anio}-${mes}-${dia}`;
 };
 
 const obtenerHabitacionSeleccionadaPorId = (id) => {
@@ -339,8 +371,41 @@ const calcularTotalReserva = () => {
   const dias = obtenerDiasEstadia(checkIn, checkOut);
   if (dias === 0 || habitaciones.length === 0) return 0;
 
+  if (esEdicionEnEstadia()) {
+    const historial = Array.isArray(estado.habitacionesHistorial)
+      ? estado.habitacionesHistorial
+      : [];
+    const totalHistorico = historial
+      .filter((habitacion) => {
+        const estadoAsignacion = String(
+          habitacion.estado_asignacion || habitacion.estado || "activa",
+        ).toLowerCase();
+        return estadoAsignacion !== "activa";
+      })
+      .reduce(
+        (acumulado, habitacion) =>
+          acumulado + Number(habitacion.subtotal || 0),
+        0,
+      );
+
+    const totalActivo = habitaciones.reduce((acumulado, habitacion) => {
+      const inicioHabitacion = habitacion.check_in || checkIn;
+      const diasHabitacion = obtenerDiasEstadiaActiva(
+        inicioHabitacion,
+        checkOut,
+      );
+      const precio = Number(
+        habitacion.precio_aplicado || habitacion.precio || 0,
+      );
+      return acumulado + precio * diasHabitacion;
+    }, 0);
+
+    return totalHistorico + totalActivo;
+  }
+
   const sumaPrecio = habitaciones.reduce(
-    (acumulado, habitacion) => acumulado + Number(habitacion.precio || 0),
+    (acumulado, habitacion) =>
+      acumulado + Number(habitacion.precio_aplicado || habitacion.precio || 0),
     0,
   );
 
@@ -624,25 +689,31 @@ const confirmarCambioHabitacion = async () => {
   }
 
   const totalActual = Number(estado.reservaTotalOriginal || 0);
+  const precioActual = Number(actual.precio_aplicado || actual.precio || 0);
+  const precioNuevoReal = Number(nueva.precio || 0);
+  const precioNuevoAplicado =
+    tipoMotivo === "falla_hotel"
+      ? Math.min(precioActual, precioNuevoReal)
+      : precioNuevoReal;
+  const fechaEfectivaCobro = obtenerFechaEfectivaCobroCambio(tipoMotivo);
   const diasRestantes = obtenerDiasEstadia(
-    new Date().toISOString().slice(0, 10),
+    fechaEfectivaCobro,
     estado.elementos?.fechaSalida?.value || "",
   );
-  const diferencia =
-    tipoMotivo === "falla_hotel"
-      ? 0
-      : Math.max(
-          0,
-          (Number(nueva.precio || 0) -
-            Number(actual.precio_aplicado || actual.precio || 0)) *
-            diasRestantes,
-        );
+  const diferencia = (precioNuevoAplicado - precioActual) * diasRestantes;
   const nuevoTotal = totalActual + diferencia;
 
-  const nota =
-    tipoMotivo === "falla_hotel"
-      ? "<p>No se cobrará diferencia porque el cambio es responsabilidad del hotel.</p>"
-      : `<p>El cliente debe pagar S/ ${diferencia.toFixed(2)} adicionales.</p>`;
+  let nota = "";
+  if (tipoMotivo === "falla_hotel" && precioNuevoReal > precioActual) {
+    nota =
+      "<p>No se cobrará diferencia porque el cambio es responsabilidad del hotel.</p>";
+  } else if (diferencia > 0) {
+    nota = `<p>El cliente debe pagar S/ ${diferencia.toFixed(2)} adicionales.</p>`;
+  } else if (diferencia < 0) {
+    nota = `<p>Se genera un ajuste a favor del cliente de S/ ${Math.abs(diferencia).toFixed(2)}.</p>`;
+  } else {
+    nota = "<p>El cambio no modifica el total de la reserva.</p>";
+  }
 
   const resultado = await Swal.fire({
     title: "Cambio de habitación",
@@ -651,7 +722,8 @@ const confirmarCambioHabitacion = async () => {
         <p><strong>Habitación actual:</strong><br>${formatearHabitacionTexto(actual)}</p>
         <p><strong>Nueva habitación:</strong><br>${formatearHabitacionTexto(nueva)}</p>
         <p><strong>Motivo:</strong><br>${tipoMotivo === "falla_hotel" ? "Falla de habitación" : "Solicitud del cliente"} - ${motivo}</p>
-        <p><strong>Resumen económico:</strong><br>Total actual: S/ ${totalActual.toFixed(2)}<br>Nuevo total estimado: S/ ${nuevoTotal.toFixed(2)}<br>Diferencia: S/ ${diferencia.toFixed(2)}</p>
+        <p><strong>Fecha efectiva de cobro:</strong><br>${fechaEfectivaCobro}</p>
+        <p><strong>Resumen económico:</strong><br>Total actual: S/ ${totalActual.toFixed(2)}<br>Nuevo total estimado: S/ ${nuevoTotal.toFixed(2)}<br>Ajuste: S/ ${diferencia.toFixed(2)}</p>
         ${nota}
       </div>
     `,
@@ -1456,6 +1528,7 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
   estado.clientes = [];
   estado.habitacionesDisponibles = [];
   estado.habitacionesSeleccionadas = [];
+  estado.habitacionesHistorial = [];
   estado.habitacionCambioActual = null;
   estado.habitacionCambioNueva = null;
   estado.habitacionCambioPendiente = null;

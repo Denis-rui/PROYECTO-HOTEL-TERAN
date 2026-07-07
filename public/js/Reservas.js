@@ -50,9 +50,12 @@ const inicializarTablaReservas = () => {
         orderable: false,
         render: (_, __, reserva) => renderHabitaciones(reserva),
       },
-      { data: "check_in", render: renderFechaReserva },
       {
-        data: "check_out",
+        data: null,
+        render: (_, __, reserva) => renderFechaReserva(obtenerCheckInGeneral(reserva)),
+      },
+      {
+        data: null,
         render: (_, __, reserva) => renderCheckOut(reserva),
       },
       { data: "estado", render: renderEstadoReserva },
@@ -167,6 +170,12 @@ const formatearFechaReserva = (fecha) => {
 
 const renderFechaReserva = (fecha) => escaparHtml(formatearFechaReserva(fecha));
 
+const obtenerCheckInGeneral = (reserva = {}) =>
+  reserva.check_in_programado || reserva.check_in || "";
+
+const obtenerCheckOutGeneral = (reserva = {}) =>
+  reserva.check_out_programado || reserva.check_out || "";
+
 const renderHabitaciones = (reserva) => {
   const habitaciones = Array.isArray(reserva?.habitaciones)
     ? reserva.habitaciones
@@ -190,7 +199,7 @@ const renderHabitaciones = (reserva) => {
 };
 
 const renderCheckOut = (reserva) => {
-  const fecha = renderFechaReserva(reserva?.check_out);
+  const fecha = renderFechaReserva(obtenerCheckOutGeneral(reserva));
   const badges = [];
 
   if (Number(reserva?.minutos_checkout_vencido || 0) > 0) {
@@ -532,7 +541,7 @@ const configurarEventosReservas = () => {
         const id = reserva.id;
         const codigo = reserva.codigo_reserva || `#${id}`;
         const cliente = reserva.cliente || "";
-        const checkin = formatearFechaReserva(reserva.check_in);
+        const checkin = formatearFechaReserva(obtenerCheckInGeneral(reserva));
 
         let calculoCancelacion;
         try {

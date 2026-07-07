@@ -91,17 +91,15 @@
   const textoHabitacion = (habitacion) =>
     `Hab. ${habitacion?.numero_habitacion || "--"}${habitacion?.piso ? ` - Piso ${habitacion.piso}` : ""}`;
 
+  const obtenerCheckInGeneral = (reserva = {}) =>
+    fechaAInput(reserva?.check_in_programado || reserva?.check_in || "");
+
+  const obtenerCheckOutGeneral = (reserva = {}) =>
+    fechaAInput(reserva?.check_out_programado || reserva?.check_out || "");
+
   const calcularRangoFacturable = (reserva) => {
-    const desde = fechaMayor(
-      reserva?.checkin_real,
-      reserva?.check_in,
-      reserva?.check_in_programado,
-    );
-    const hasta = fechaMenor(
-      reserva?.checkout_real ||
-        reserva?.check_out ||
-        reserva?.check_out_programado,
-    );
+    const desde = obtenerCheckInGeneral(reserva);
+    const hasta = obtenerCheckOutGeneral(reserva);
 
     return { desde, hasta };
   };
@@ -129,14 +127,9 @@
     const cargo = toNumber(reserva?.cargo_checkout_tarde);
     if (cargo <= 0 || !fechaHasta) return false;
 
-    const finHabitaciones =
-      estado.habitaciones
-        .map((habitacion) => fechaAInput(habitacion?.check_out))
-        .filter(Boolean)
-        .sort()
-        .pop() || "";
+    const finReserva = obtenerCheckOutGeneral(reserva);
     const checkoutReal = fechaAInput(reserva?.checkout_real);
-    const limite = [finHabitaciones, checkoutReal].filter(Boolean).sort()[0];
+    const limite = [finReserva, checkoutReal].filter(Boolean).sort()[0];
 
     return Boolean(limite) && fechaHasta >= limite;
   };
@@ -621,10 +614,10 @@
       docElectronicoClienteDireccion:
         reserva.cliente_direccion || reserva.procedencia || "",
       docElectronicoFechaDesde: fechaAInput(
-        reserva.check_in || reserva.check_in_programado || "",
+        reserva.check_in_programado || reserva.check_in || "",
       ),
       docElectronicoFechaHasta: fechaAInput(
-        reserva.check_out || reserva.check_out_programado || "",
+        reserva.check_out_programado || reserva.check_out || "",
       ),
       docElectronicoTipoDocumento: "BOLETA",
     };
@@ -642,10 +635,7 @@
 
     actualizarNumeroDocumentoSunatDesdeCliente();
 
-    const rangoFacturable = calcularRangoFacturable(
-      reserva,
-      obtenerHabitacionesActivas(reserva),
-    );
+    const rangoFacturable = calcularRangoFacturable(reserva);
     const checkIn = rangoFacturable.desde;
     const checkOut = rangoFacturable.hasta;
     const fechaDesde = document.getElementById("docElectronicoFechaDesde");

@@ -43,26 +43,22 @@ class DashboardModel
             ->count();
 
         // ── Check-ins de hoy ──
-        $stats['checkins_hoy'] = (int) DB::table('reserva_habitacion as rh')
-            ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
-            ->whereRaw('DATE(rh.check_in) = CURDATE()')
+        $stats['checkins_hoy'] = (int) DB::table('reserva as r')
+            ->whereRaw('DATE(r.check_in_programado) = CURDATE()')
             ->whereIn('r.estado', ['confirmada', 'en_estadia'])
             ->count();
 
         // ── Check-outs de hoy ──
-        $stats['checkouts_hoy'] = (int) DB::table('reserva_habitacion as rh')
-            ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
-            ->whereRaw('DATE(rh.check_out) = CURDATE()')
+        $stats['checkouts_hoy'] = (int) DB::table('reserva as r')
+            ->whereRaw('DATE(r.check_out_programado) = CURDATE()')
             ->whereIn('r.estado', ['en_estadia', 'checkout_pendiente', 'checkout_realizado'])
             ->count();
 
         // ── Check-outs vencidos ──
-        $stats['checkouts_vencidos'] = (int) DB::table('reserva_habitacion as rh')
-            ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
+        $stats['checkouts_vencidos'] = (int) DB::table('reserva as r')
             ->whereIn('r.estado', ['en_estadia', 'checkout_pendiente'])
-            ->whereNotNull('rh.check_out')
-            ->whereRaw('NOW() > rh.check_out')
-            ->where('rh.activo', 1)
+            ->whereNotNull('r.check_out_programado')
+            ->whereRaw('NOW() > r.check_out_programado')
             ->count();
 
         // ── Ingreso del día ──
@@ -74,11 +70,11 @@ class DashboardModel
         $stats['total_procedencias'] = 0;
 
         // ── Estancia mínima en días ──
-        $stats['estancia_minima'] = (int) DB::table('reserva_habitacion as rh')
-            ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
+        $stats['estancia_minima'] = (int) DB::table('reserva as r')
             ->whereNotIn('r.estado', ['cancelada', 'no_show'])
-            ->whereNotNull('rh.check_out')
-            ->selectRaw('IFNULL(MIN(DATEDIFF(rh.check_out, rh.check_in)), 0) AS min_dias')
+            ->whereNotNull('r.check_in_programado')
+            ->whereNotNull('r.check_out_programado')
+            ->selectRaw('IFNULL(MIN(DATEDIFF(r.check_out_programado, r.check_in_programado)), 0) AS min_dias')
             ->value('min_dias');
 
         // ── Detalles de habitaciones en mantenimiento ──

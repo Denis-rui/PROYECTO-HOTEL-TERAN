@@ -120,20 +120,12 @@ class ReservaModel
 
         return $query
             ->select('reserva.*')
+            ->selectRaw('reserva.check_in_programado as fecha_programada_orden')
             ->selectSub(
                 Cliente::selectRaw("TRIM(CONCAT_WS(' ', NULLIF(nombres, ''), NULLIF(apellido_paterno, ''), NULLIF(apellido_materno, '')))")
                     ->whereColumn('cliente.id', 'reserva.id_cliente')
                     ->limit(1),
                 'cliente_nombre_orden'
-            )
-            ->selectSub(
-                ReservaHabitacion::selectRaw('MIN(reserva_habitacion.check_in)')
-                    ->whereColumn('reserva_habitacion.id_reserva', 'reserva.id')
-                    ->where(function ($q) {
-                        $q->whereNull('reserva_habitacion.estado')
-                            ->orWhere('reserva_habitacion.estado', 'activa');
-                    }),
-                'primer_check_in'
             );
     }
 
@@ -144,38 +136,20 @@ class ReservaModel
         }
 
         if ($filtroHoy === 'checkin_hoy') {
-            $query->whereHas('reservaHabitacion', function ($q) {
-                $q->whereRaw('DATE(reserva_habitacion.check_in) = CURDATE()')
-                    ->where(function ($estadoHabitacion) {
-                        $estadoHabitacion->whereNull('reserva_habitacion.estado')
-                            ->orWhere('reserva_habitacion.estado', 'activa');
-                    });
-            });
+            $query->whereRaw('DATE(reserva.check_in_programado) = CURDATE()');
             return;
         }
 
         if ($filtroHoy === 'checkout_hoy') {
-            $query->whereHas('reservaHabitacion', function ($q) {
-                $q->whereRaw('DATE(reserva_habitacion.check_out) = CURDATE()')
-                    ->where(function ($estadoHabitacion) {
-                        $estadoHabitacion->whereNull('reserva_habitacion.estado')
-                            ->orWhere('reserva_habitacion.estado', 'activa');
-                    });
-            });
+            $query->whereRaw('DATE(reserva.check_out_programado) = CURDATE()');
             return;
         }
 
         if ($filtroHoy === 'checkout_vencido') {
             $query->whereIn('reserva.estado', ['en_estadia', 'checkout_pendiente', 'ausente'])
                 ->whereNull('reserva.checkout_real')
-                ->whereHas('reservaHabitacion', function ($q) {
-                    $q->whereNotNull('reserva_habitacion.check_out')
-                        ->whereRaw('NOW() > reserva_habitacion.check_out')
-                        ->where(function ($estadoHabitacion) {
-                            $estadoHabitacion->whereNull('reserva_habitacion.estado')
-                                ->orWhere('reserva_habitacion.estado', 'activa');
-                        });
-                });
+                ->whereNotNull('reserva.check_out_programado')
+                ->whereRaw('NOW() > reserva.check_out_programado');
             return;
         }
 
@@ -215,8 +189,8 @@ class ReservaModel
         // Para cliente/habitación dejamos el orden por prioridad porque requieren joins adicionales.
         $columnasOrdenables = [
             0 => 'cliente_nombre_orden',
-            2 => 'primer_check_in',
-            3 => 'primer_check_in',
+            2 => 'fecha_programada_orden',
+            3 => 'fecha_programada_orden',
             4 => 'estado',
         ];
 
@@ -244,8 +218,8 @@ class ReservaModel
                     ELSE 4
                 END ASC
             ")
-            ->orderByRaw('primer_check_in IS NULL ASC')
-            ->orderByRaw('primer_check_in ASC')
+            ->orderByRaw('fecha_programada_orden IS NULL ASC')
+            ->orderByRaw('fecha_programada_orden ASC')
             ->orderByDesc('reserva.id');
     }
 

@@ -37,12 +37,23 @@ class CheckOutReservaService
                 return $this->respuesta(false, 'CONFLICTO', 'Solo se puede hacer checkout de reservas en estadía o checkout pendiente.');
             }
 
-            $primeraRelacion = $reservaActual->reservaHabitacion->first();
-            $checkOutProgramado = $primeraRelacion->check_out ?? null;
+            $checkOutProgramado = trim((string) ($reservaActual->check_out_programado ?? ''));
+
+            if ($checkOutProgramado === '') {
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'La reserva no tiene una fecha de checkout programada.');
+            }
+
+            $fechaCheckout = FechaHotelHelper::ahora();
+            $timestampCheckoutProgramado = strtotime($checkOutProgramado);
+            $timestampCheckoutReal = strtotime($fechaCheckout);
+
+            if ($timestampCheckoutProgramado === false || $timestampCheckoutReal === false) {
+                return $this->respuesta(false, 'VALIDACION_ERROR', 'La fecha de checkout programada no es válida.');
+            }
 
             $minutosDemora = max(
                 0,
-                (int) floor((time() - strtotime((string) $checkOutProgramado)) / 60)
+                (int) floor(($timestampCheckoutReal - $timestampCheckoutProgramado) / 60)
             );
 
             $cargoTarde = ReservaHelper::calcularCargoCheckoutTarde(
@@ -56,8 +67,6 @@ class CheckOutReservaService
                 0,
                 ((float) $reservaActual->total - $totalPagado) + $cargoTarde
             );
-
-            $fechaCheckout = FechaHotelHelper::ahora();
 
             if ($saldoFinal > 0.01 && !$autorizarSaldo) {
                 DB::connection()->beginTransaction();

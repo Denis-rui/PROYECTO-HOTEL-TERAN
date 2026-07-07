@@ -139,6 +139,8 @@ class ActualizarReservaService
                 'id_cliente' => (int) ($datos['cliente'] ?? $datos['id_cliente'] ?? $reservaActual->id_cliente),
                 'total' => $totalCalculado,
                 'observaciones' => $datos['observaciones'] ?? $reservaActual->observaciones,
+                'check_in_programado' => $checkIn,
+                'check_out_programado' => $checkOut,
             ]);
 
             $this->reservaHabitacionModel->eliminarPorReserva($idReserva);
@@ -231,11 +233,20 @@ class ActualizarReservaService
 
             $idsNuevos = array_values(array_diff($idsSolicitados, $idsActivos));
             $fechaAlta = FechaHotelHelper::ahora();
-            $totalCalculado = 0;
+            $totalHistorico = $this->calcularTotalRelacionesHistoricas($reservaActual->reservaHabitacion ?? []);
+            $totalCalculado = $totalHistorico;
             $totalAnterior = (float) ($reservaActual->total ?? 0);
             $totalPagado = (float) ($reservaActual->pagos->sum('monto') ?? 0);
-            $checkOutPrevistoAnterior = $this->obtenerFechaExtremaRelaciones($relacionesActivas, 'check_out', 'max');
-            $checkInProgramadoAnterior = $this->obtenerFechaExtremaRelaciones($relacionesActivas, 'check_in', 'min');
+            $checkOutPrevistoAnterior = trim((string) ($reservaActual->check_out_programado ?? ''));
+            if ($checkOutPrevistoAnterior === '') {
+                $checkOutPrevistoAnterior = $this->obtenerFechaExtremaRelaciones($relacionesActivas, 'check_out', 'max');
+            }
+
+            $checkInProgramadoAnterior = trim((string) ($reservaActual->check_in_programado ?? ''));
+            if ($checkInProgramadoAnterior === '') {
+                $checkInProgramadoAnterior = $this->obtenerFechaExtremaRelaciones($relacionesActivas, 'check_in', 'min');
+            }
+
             $fechaInicioEstadia = (string) ($reservaActual->checkin_real ?? $checkInProgramadoAnterior);
             $diasPrevios = ReservaHelper::obtenerDiasEstadia($fechaInicioEstadia, $checkOutPrevistoAnterior);
 
@@ -344,6 +355,7 @@ class ActualizarReservaService
 
             $reservaActual->total = $totalCalculado;
             $reservaActual->observaciones = $datos['observaciones'] ?? $reservaActual->observaciones;
+            $reservaActual->check_out_programado = $checkOut;
 
             $this->reservaModel->guardar($reservaActual);
 
@@ -446,6 +458,32 @@ class ActualizarReservaService
         sort($fechas);
 
         return $modo === 'max' ? end($fechas) : reset($fechas);
+    }
+
+    private function calcularTotalRelacionesHistoricas($relaciones): float
+    {
+        $total = 0.0;
+
+        foreach (($relaciones ?? []) as $relacion) {
+            if (!$relacion || ReservaHabitacionHelper::esActiva($relacion)) {
+                continue;
+            }
+
+            $subtotal = (float) ($relacion->subtotal ?? 0);
+
+            if ($subtotal <= 0) {
+                $precio = (float) ($relacion->precio_aplicado ?? 0);
+                $dias = ReservaHelper::obtenerDiasEstadia(
+                    $relacion->check_in ?? null,
+                    $relacion->check_out ?? null
+                );
+                $subtotal = $precio * max(0, $dias);
+            }
+
+            $total += $subtotal;
+        }
+
+        return $total;
     }
 
     private function obtenerIdsHabitacionesActuales($reservaActual): array

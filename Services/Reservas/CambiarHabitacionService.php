@@ -72,6 +72,7 @@ class CambiarHabitacionService
 
             $fechaCambio = FechaHotelHelper::ahora();
             $checkOut = $relacionActual->check_out ?? null;
+            $fechaEfectivaCobro = $this->obtenerFechaEfectivaCobro($fechaCambio, $tipoMotivo);
 
             if (
                 $tipoMotivo === 'solicitud_cliente'
@@ -106,16 +107,16 @@ class CambiarHabitacionService
             $precioNuevoReal = (float) ($habitacionNueva['precio'] ?? 0);
 
             $precioNuevoAplicado = $tipoMotivo === 'falla_hotel'
-                ? $precioAnterior
+                ? min($precioAnterior, $precioNuevoReal)
                 : $precioNuevoReal;
 
             $diasHabitacionAnterior = ReservaHelper::obtenerDiasEstadia(
                 $relacionActual->check_in,
-                $fechaCambio
+                $fechaEfectivaCobro
             );
 
             $diasHabitacionNueva = ReservaHelper::obtenerDiasEstadia(
-                $fechaCambio,
+                $fechaEfectivaCobro,
                 $checkOut
             );
 
@@ -126,7 +127,7 @@ class CambiarHabitacionService
 
             $totalAnterior = (float) ($reservaActual->total ?? 0);
 
-            $relacionActual->check_out = $fechaCambio;
+            $relacionActual->check_out = $fechaEfectivaCobro;
             $relacionActual->activo = 0;
             $relacionActual->estado = 'cambiada';
             $relacionActual->motivo_cambio = $tipoMotivo . ': ' . trim($motivo);
@@ -139,7 +140,7 @@ class CambiarHabitacionService
             $this->reservaHabitacionModel->crear([
                 'id_reserva' => $idReserva,
                 'id_habitacion' => $idHabitacionNueva,
-                'check_in' => $fechaCambio,
+                'check_in' => $fechaEfectivaCobro,
                 'check_out' => $checkOut,
                 'activo' => 1,
                 'tipo_asignacion' => 'cambio',
@@ -181,7 +182,10 @@ class CambiarHabitacionService
             return $this->respuesta(true, 'ACTUALIZADO', 'Cambio de habitación registrado correctamente.', [
                 'total_anterior' => $totalAnterior,
                 'total_nuevo' => $nuevoTotal,
-                'diferencia' => max(0, $nuevoTotal - $totalAnterior),
+                'diferencia' => round($nuevoTotal - $totalAnterior, 2),
+                'monto_adicional' => max(0, round($nuevoTotal - $totalAnterior, 2)),
+                'fecha_cambio_real' => $fechaCambio,
+                'fecha_efectiva_cobro' => $fechaEfectivaCobro,
                 'reserva' => $this->reservaModel->obtenerReservaPorId($idReserva),
             ]);
         } catch (\Throwable $e) {
@@ -193,6 +197,22 @@ class CambiarHabitacionService
             }
 
             return $this->respuesta(false, 'EXCEPCION', 'No se pudo cambiar la habitación. Intente nuevamente.');
+        }
+    }
+
+    private function obtenerFechaEfectivaCobro(string $fechaCambio, string $tipoMotivo): string
+    {
+        try {
+            $zonaHoraria = new \DateTimeZone('America/Lima');
+            $fecha = new \DateTimeImmutable($fechaCambio, $zonaHoraria);
+
+            if ($tipoMotivo === 'solicitud_cliente' && (int) $fecha->format('H') >= 12) {
+                return $fecha->modify('+1 day')->format('Y-m-d') . ' 12:00:00';
+            }
+
+            return $fecha->format('Y-m-d') . ' 12:00:00';
+        } catch (\Throwable $e) {
+            return $fechaCambio;
         }
     }
 

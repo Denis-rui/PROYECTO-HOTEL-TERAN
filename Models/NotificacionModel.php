@@ -23,14 +23,13 @@ class NotificacionModel
 
     public function obtenerClavesActivasCheckout(): array
     {
-        return DB::table('reserva_habitacion as rh')
-            ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
+        return DB::table('reserva as r')
             ->whereIn('r.estado', ReservaEntity::ESTADOS_EN_ESTADIA)
-            ->where('rh.activo', 1)
-            ->select(['r.id as id_reserva', 'rh.id_habitacion'])
+            ->whereNotNull('r.check_out_programado')
+            ->select(['r.id as id_reserva'])
             ->get()
             ->mapWithKeys(function ($item) {
-                return [$item->id_reserva . '|' . $item->id_habitacion => true];
+                return [(int) $item->id_reserva => true];
             })
             ->all();
     }
@@ -48,23 +47,26 @@ class NotificacionModel
 
     public function obtenerReservasEnCheckout(): array
     {
-        return DB::table('reserva_habitacion as rh')
-            ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
+        return DB::table('reserva as r')
             ->join('cliente as c', 'c.id', '=', 'r.id_cliente')
-            ->join('habitacion as h', 'h.id', '=', 'rh.id_habitacion')
+            ->leftJoin('reserva_habitacion as rh', function ($join) {
+                $join->on('rh.id_reserva', '=', 'r.id')
+                    ->where('rh.activo', '=', 1);
+            })
+            ->leftJoin('habitacion as h', 'h.id', '=', 'rh.id_habitacion')
             ->whereIn('r.estado', ReservaEntity::ESTADOS_EN_ESTADIA)
-            ->whereNotNull('rh.check_out')
-            ->where('rh.activo', 1)
-            ->orderBy('rh.check_out', 'asc')
+            ->whereNotNull('r.check_out_programado')
+            ->groupBy('r.id', 'c.id', 'c.nombres', 'c.apellido_paterno', 'c.apellido_materno', 'r.check_out_programado')
+            ->orderBy('r.check_out_programado', 'asc')
             ->selectRaw("
                         r.id AS id_reserva, 
                         c.id AS id_cliente, 
                         CONCAT(COALESCE(c.nombres, ''), ' ', COALESCE(c.apellido_paterno, ''), ' ', COALESCE(c.apellido_materno, '')) AS cliente, 
-                        h.id AS id_habitacion, 
-                        h.numero_habitacion AS habitacion, 
-                        rh.check_out, 
-                        TIMESTAMPDIFF(MINUTE, NOW(), rh.check_out) AS minutos_faltantes, 
-                        CASE WHEN NOW() > rh.check_out THEN TIMESTAMPDIFF(MINUTE, rh.check_out, NOW()) ELSE 0 END AS minutos_excedidos
+                        MIN(h.id) AS id_habitacion, 
+                        GROUP_CONCAT(DISTINCT h.numero_habitacion ORDER BY h.numero_habitacion SEPARATOR ', ') AS habitacion, 
+                        r.check_out_programado AS check_out, 
+                        TIMESTAMPDIFF(MINUTE, NOW(), r.check_out_programado) AS minutos_faltantes, 
+                        CASE WHEN NOW() > r.check_out_programado THEN TIMESTAMPDIFF(MINUTE, r.check_out_programado, NOW()) ELSE 0 END AS minutos_excedidos
                     ")
             ->get()
             ->map(fn($item) => (array) $item)

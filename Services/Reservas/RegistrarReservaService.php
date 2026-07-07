@@ -128,6 +128,8 @@ class RegistrarReservaService
                 'id_usuario' => $idUsuarioActual,
                 'observaciones' => $reserva['observaciones'] ?? null,
                 'fecha_creacion' => FechaHotelHelper::ahora(),
+                'check_in_programado' => $checkIn,
+                'check_out_programado' => $checkOut,
                 'checkin_real' => null,
                 'checkout_real' => null,
             ]);
