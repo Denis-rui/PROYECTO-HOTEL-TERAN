@@ -676,9 +676,24 @@ const cargarClientes = async (texto = "") => {
   }
   try {
     const res = await fetch(
-      BASE_URL + `Cliente/buscar&q=${encodeURIComponent(textoBusqueda)}`,
-      { signal: _controladorBusquedaClienteModal.signal },
+      BASE_URL + `Cliente/buscar?q=${encodeURIComponent(textoBusqueda)}`,
+      {
+        signal: _controladorBusquedaClienteModal.signal,
+        headers: {
+          Accept: "application/json",
+        },
+      },
     );
+
+    if (!res.ok) {
+      throw new Error(`Error HTTP ${res.status}`);
+    }
+
+    const contentType = res.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      throw new Error("La respuesta del servidor no es JSON.");
+    }
+
     const respuesta = await res.json();
     if (respuesta.error) {
       if (mensajeBusquedaCliente)

@@ -18,7 +18,7 @@ class ConfiguracionController extends ApiController
         $service = new ConfiguracionService();
         $data['hotel'] = $service->obtenerHotel();
         $data['tipos_habitacion'] = $service->obtenerTiposHabitacion();
-        $data['page_js'] = ['Configuraciones.js', 'Modal-TipoHabitacion.js'];
+        $data['page_js'] = ['Configuraciones.js'];
         $this->views->render($this, 'index', $data);
     }
 

@@ -98,7 +98,9 @@
       reserva?.check_in_programado,
     );
     const hasta = fechaMenor(
-      reserva?.checkout_real || reserva?.check_out || reserva?.check_out_programado,
+      reserva?.checkout_real ||
+        reserva?.check_out ||
+        reserva?.check_out_programado,
     );
 
     return { desde, hasta };
@@ -156,11 +158,19 @@
     fechaHasta.min = rango.desde;
     fechaHasta.max = rango.hasta;
 
-    if (!fechaDesde.value || fechaDesde.value < rango.desde || fechaDesde.value > rango.hasta) {
+    if (
+      !fechaDesde.value ||
+      fechaDesde.value < rango.desde ||
+      fechaDesde.value > rango.hasta
+    ) {
       fechaDesde.value = rango.desde;
     }
 
-    if (!fechaHasta.value || fechaHasta.value < rango.desde || fechaHasta.value > rango.hasta) {
+    if (
+      !fechaHasta.value ||
+      fechaHasta.value < rango.desde ||
+      fechaHasta.value > rango.hasta
+    ) {
       fechaHasta.value = rango.hasta;
     }
   };
@@ -193,7 +203,9 @@
     const contenedor = document.getElementById(
       "contenedorDocumentosElectronicosEmitidos",
     );
-    const lista = document.getElementById("listaDocumentosElectronicosEmitidos");
+    const lista = document.getElementById(
+      "listaDocumentosElectronicosEmitidos",
+    );
     const boton = document.getElementById("btnToggleDocumentosElectronicos");
 
     if (contenedor) contenedor.hidden = true;
@@ -205,7 +217,9 @@
   };
 
   const renderDocumentosElectronicosEmitidos = (documentos = []) => {
-    const lista = document.getElementById("listaDocumentosElectronicosEmitidos");
+    const lista = document.getElementById(
+      "listaDocumentosElectronicosEmitidos",
+    );
     if (!lista) return;
 
     if (!documentos.length) {
@@ -259,7 +273,9 @@
     const contenedor = document.getElementById(
       "contenedorDocumentosElectronicosEmitidos",
     );
-    const lista = document.getElementById("listaDocumentosElectronicosEmitidos");
+    const lista = document.getElementById(
+      "listaDocumentosElectronicosEmitidos",
+    );
     const boton = document.getElementById("btnToggleDocumentosElectronicos");
 
     if (!reserva?.id || !contenedor || !lista || !boton) return;
@@ -267,7 +283,9 @@
     const abrir = contenedor.hidden;
     contenedor.hidden = !abrir;
     boton.setAttribute("aria-expanded", abrir ? "true" : "false");
-    boton.textContent = abrir ? "Ocultar documentos emitidos" : "Ver documentos emitidos";
+    boton.textContent = abrir
+      ? "Ocultar documentos emitidos"
+      : "Ver documentos emitidos";
 
     if (!abrir || estado.documentosElectronicosCargados) return;
 
@@ -275,9 +293,8 @@
       '<div class="documento-electronico-emitido-vacio">Cargando documentos emitidos...</div>';
 
     try {
-      estado.documentosElectronicos = await cargarDocumentosElectronicosEmitidos(
-        reserva.id,
-      );
+      estado.documentosElectronicos =
+        await cargarDocumentosElectronicosEmitidos(reserva.id);
       estado.documentosElectronicosCargados = true;
       renderDocumentosElectronicosEmitidos(estado.documentosElectronicos);
     } catch (error) {
@@ -773,11 +790,14 @@
       }
 
       const documento = resultado.documento || {};
-      const enlaceDocumento = documento.enlace_del_pdf || documento.enlace || "";
+      const enlaceDocumento =
+        documento.enlace_del_pdf || documento.enlace || "";
       Swal.close();
       const avisoDocumento = await Swal.fire({
         icon: "success",
-        title: resultado.duplicado ? "Documento ya emitido" : "Documento emitido",
+        title: resultado.duplicado
+          ? "Documento ya emitido"
+          : "Documento emitido",
         text:
           resultado.mensaje || "Documento electrónico generado correctamente.",
         showCancelButton: Boolean(enlaceDocumento),
@@ -798,9 +818,8 @@
         "success",
       );
       if (estado.reserva?.id) {
-        estado.documentosElectronicos = await cargarDocumentosElectronicosEmitidos(
-          estado.reserva.id,
-        );
+        estado.documentosElectronicos =
+          await cargarDocumentosElectronicosEmitidos(estado.reserva.id);
         estado.documentosElectronicosCargados = true;
         renderDocumentosElectronicosEmitidos(estado.documentosElectronicos);
       }
@@ -1012,11 +1031,26 @@
 
     try {
       const respuesta = await fetch(
-        BASE_URL + `Cliente/buscar&q=${encodeURIComponent(textoBusqueda)}`,
-        { signal: controladorBusquedaCliente.signal },
+        BASE_URL + `Cliente/buscar?q=${encodeURIComponent(textoBusqueda)}`,
+        {
+          signal: controladorBusquedaCliente.signal,
+          headers: {
+            Accept: "application/json",
+          },
+        },
       );
+
+      if (!respuesta.ok) {
+        throw new Error(`Error HTTP ${respuesta.status}`);
+      }
+
+      const contentType = respuesta.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        throw new Error("La respuesta del servidor no es JSON.");
+      }
+
       const datos = await respuesta.json();
-      if (!respuesta.ok || datos.error) {
+      if (datos.error) {
         throw new Error(datos.error || "No se pudo buscar clientes.");
       }
 

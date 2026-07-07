@@ -35,7 +35,11 @@ class ClienteModel
                     ->orWhere('c.apellido_paterno', 'LIKE', "%$nombre%")
                     ->orWhere('c.apellido_materno', 'LIKE', "%$nombre%")
                     ->orWhere('c.documento', 'LIKE', "%$nombre%")
-                    ->orWhere('c.ruc', 'LIKE', "%$nombre%"); // También busca por RUC si aplica
+                    ->orWhere('c.ruc', 'LIKE', "%$nombre%") // También busca por RUC si aplica
+                    ->orWhereRaw(
+                        "CONCAT_WS(' ', c.nombres, c.apellido_paterno, c.apellido_materno) LIKE ?",
+                        ['%' . $nombre . '%']
+                    );
             });
         }
 
@@ -71,7 +75,11 @@ class ClienteModel
                     ->orWhere('c.apellido_paterno', 'like', '%' . $textoBusqueda . '%')
                     ->orWhere('c.apellido_materno', 'like', '%' . $textoBusqueda . '%')
                     ->orWhere('c.documento', 'like', '%' . $textoBusqueda . '%')
-                    ->orWhere('c.ruc', 'like', '%' . $textoBusqueda . '%');
+                    ->orWhere('c.ruc', 'like', '%' . $textoBusqueda . '%')
+                    ->orWhereRaw(
+                        "CONCAT_WS(' ', c.nombres, c.apellido_paterno, c.apellido_materno) LIKE ?",
+                        ['%' . $textoBusqueda . '%']
+                    );
             });
         }
 
