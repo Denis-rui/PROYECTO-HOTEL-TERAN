@@ -106,6 +106,7 @@
   const etiquetaEstado = (estado) => {
     const mapa = {
       confirmada: "Confirmada",
+      pre_checkin: "Pre-check-in",
       en_estadia: "En estadía",
       ausente: "Ausente",
       checkout_realizado: "Checkout realizado",

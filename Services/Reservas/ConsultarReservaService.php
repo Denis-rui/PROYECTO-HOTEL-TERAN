@@ -37,7 +37,7 @@ class ConsultarReservaService
         $estado = strtolower((string) ($reserva['estado'] ?? ''));
         $acciones = ['editar', 'pago', 'ver_detalles'];
 
-        if ($estado !== 'pendiente') {
+        if (in_array($estado, ['en_estadia', 'checkout_pendiente', 'checkout_realizado'], true)) {
             $acciones[] = 'emitir_documento';
         }
 
@@ -46,6 +46,10 @@ class ConsultarReservaService
         }
 
         if ($estado === 'confirmada') {
+            $acciones[] = $this->esAntesCheckinNormal() ? 'pre_checkin' : 'checkin';
+        }
+
+        if ($estado === 'pre_checkin' && !$this->esAntesCheckinNormal()) {
             $acciones[] = 'checkin';
         }
 
@@ -67,6 +71,11 @@ class ConsultarReservaService
 
         $reserva['acciones_disponibles'] = $acciones;
         return $reserva;
+    }
+
+    private function esAntesCheckinNormal(): bool
+    {
+        return (int) (new \DateTimeImmutable('now', new \DateTimeZone('America/Lima')))->format('H') < 14;
     }
 
     public function obtenerPorId(int $idReserva): ?array

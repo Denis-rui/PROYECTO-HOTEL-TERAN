@@ -220,6 +220,23 @@ class ReservaController extends ApiController
         $this->responderJson($payload, $codigoHttp);
     }
 
+    public function preCheckin($params = '')
+    {
+        $this->validarCsrf();
+        $datos = $this->obtenerPayloadJson() ?? [];
+        $idReserva = (int) ($datos['id_reserva'] ?? 0);
+
+        $service = new CheckInReservaService();
+
+        $resultado = $service->registrarPreCheckIn(
+            $idReserva,
+            $_SESSION['id_usuario'] ?? null
+        );
+
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($resultado);
+        $this->responderJson($payload, $codigoHttp);
+    }
+
     public function checkout($params = '')
     {
         $this->validarCsrf();

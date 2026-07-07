@@ -83,7 +83,7 @@ const establecerHorasPorDefectoEstadia = (forzar = false) => {
 
   if (horaEntrada) {
     if (forzar || !horaEntrada.value) {
-      horaEntrada.value = "12:00";
+      horaEntrada.value = "14:00";
     }
     horaEntrada.min = "";
   }
@@ -936,9 +936,9 @@ const cargarHabitacionesDisponibles = () => {
   const checkIn = estado.habitacionCambioActual
     ? `${fechaCambioISO} ${horaCambioISO}`
     : fechaEntrada && horaEntrada
-      ? `${fechaEntrada} 12:00:00`
+      ? `${fechaEntrada} ${horaEntrada}:00`
       : "";
-  const checkOut = fechaSalida && horaSalida ? `${fechaSalida} 12:00:00` : "";
+  const checkOut = fechaSalida && horaSalida ? `${fechaSalida} ${horaSalida}:00` : "";
 
   estado.habitacionesDisponibles = [];
   renderizarHabitacionesDisponibles();

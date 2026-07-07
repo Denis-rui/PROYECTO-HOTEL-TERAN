@@ -69,6 +69,7 @@ class ReservaModel
     {
         $estadosPermitidos = [
             'confirmada',
+            'pre_checkin',
             'pendiente',
             'en_estadia',
             'checkout_realizado',
@@ -213,7 +214,7 @@ class ReservaModel
                 CASE
                     WHEN LOWER(reserva.estado) = 'pendiente' THEN 0
                     WHEN LOWER(reserva.estado) IN ('en_estadia', 'checkout_pendiente', 'ausente') THEN 1
-                    WHEN LOWER(reserva.estado) = 'confirmada' THEN 2
+                    WHEN LOWER(reserva.estado) IN ('confirmada', 'pre_checkin') THEN 2
                     WHEN LOWER(reserva.estado) = 'checkout_realizado' THEN 3
                     ELSE 4
                 END ASC

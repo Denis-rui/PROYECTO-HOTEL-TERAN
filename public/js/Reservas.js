@@ -215,6 +215,7 @@ const textoEstadoReserva = (estado) => {
   const mapa = {
     pendiente: "Pendiente",
     confirmada: "Confirmada",
+    pre_checkin: "Pre-check-in",
     en_estadia: "En estadía",
     ausente: "Ausente",
     checkout_pendiente: "Checkout pendiente",
@@ -232,6 +233,7 @@ const claseEstadoReserva = (estado) => {
   const mapa = {
     pendiente: "estado-pendiente",
     confirmada: "estado-confirmada",
+    pre_checkin: "estado-confirmada",
     en_estadia: "estado-en-estadia",
     ausente: "estado-ausente",
     checkout_pendiente: "estado-checkout-pendiente",
@@ -310,6 +312,12 @@ const renderMenuAccionesReserva = (reserva) => {
   if (tieneAccionReserva(reserva, "marcar_regreso")) {
     opciones.push(
       '<button type="button" class="item-menu-opcion accion-marcar-regreso">Marcar regreso</button>',
+    );
+  }
+
+  if (tieneAccionReserva(reserva, "pre_checkin")) {
+    opciones.push(
+      '<button type="button" class="item-menu-opcion accion-pre-checkin">Pre-check-in</button>',
     );
   }
 
@@ -449,6 +457,22 @@ const configurarEventosReservas = () => {
         if (!confirmado) return;
 
         ejecutarAccionReserva("marcarRegreso", {
+          id_reserva: reserva.id,
+        });
+        return;
+      }
+
+      const accionPreCheckin = e.target.closest(".accion-pre-checkin");
+      if (accionPreCheckin) {
+        cerrarMenusOpciones();
+        const reserva = obtenerReservaDesdeEvento(accionPreCheckin);
+        if (!reserva) return;
+        const confirmado = await window.Confirmar(
+          "¿Registrar pre-check-in? El cliente dejó sus pertenencias, pero aún no ocupa la habitación.",
+        );
+        if (!confirmado) return;
+
+        ejecutarAccionReserva("preCheckin", {
           id_reserva: reserva.id,
         });
         return;

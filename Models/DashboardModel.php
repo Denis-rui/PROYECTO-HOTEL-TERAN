@@ -45,7 +45,7 @@ class DashboardModel
         // ── Check-ins de hoy ──
         $stats['checkins_hoy'] = (int) DB::table('reserva as r')
             ->whereRaw('DATE(r.check_in_programado) = CURDATE()')
-            ->whereIn('r.estado', ['confirmada', 'en_estadia'])
+            ->whereIn('r.estado', ['confirmada', 'pre_checkin', 'en_estadia'])
             ->count();
 
         // ── Check-outs de hoy ──
@@ -116,6 +116,7 @@ class DashboardModel
         $estadosVisibles = [
             'pendiente',
             'confirmada',
+            'pre_checkin',
             'checkin_realizado',
             'en_estadia',
             'checkout_pendiente',

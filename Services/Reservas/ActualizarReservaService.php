@@ -56,7 +56,7 @@ class ActualizarReservaService
                 );
             }
 
-            if ($estadoReserva !== 'confirmada') {
+            if (!in_array($estadoReserva, ['confirmada', 'pre_checkin'], true)) {
                 return $this->respuesta(false, 'CONFLICTO', 'Solo se puede editar una reserva confirmada o una estadía activa.');
             }
 

@@ -28,6 +28,7 @@ $valorEstado = (string) ($filtros['estado'] ?? '');
         <option value="ausente" <?= $valorEstado === 'ausente' ? 'selected' : '' ?>>Ausente</option>
         <option value="pendiente" <?= $valorEstado === 'pendiente' ? 'selected' : '' ?>>Pendiente</option>
         <option value="confirmada" <?= $valorEstado === 'confirmada' ? 'selected' : '' ?>>Confirmada</option>
+        <option value="pre_checkin" <?= $valorEstado === 'pre_checkin' ? 'selected' : '' ?>>Pre-check-in</option>
         <option value="en_estadia" <?= $valorEstado === 'en_estadia' ? 'selected' : '' ?>>En estadía</option>
         <option value="checkout_pendiente" <?= $valorEstado === 'checkout_pendiente' ? 'selected' : '' ?>>Checkout pendiente</option>
         <option value="checkout_realizado" <?= $valorEstado === 'checkout_realizado' ? 'selected' : '' ?>>Checkout</option>

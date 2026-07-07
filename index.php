@@ -73,6 +73,7 @@ $router->post('Reserva/pago', ['Reserva', 'pago']);
 $router->post('Reserva/validarDevolucionPago', ['Reserva', 'validarDevolucionPago']);
 $router->post('Reserva/registrarDevolucionPago', ['Reserva', 'registrarDevolucionPago']);
 $router->patch('Reserva/checkin', ['Reserva', 'checkin']);
+$router->patch('Reserva/preCheckin', ['Reserva', 'preCheckin']);
 $router->patch('Reserva/checkout', ['Reserva', 'checkout']);
 $router->patch('Reserva/marcarAusente', ['Reserva', 'marcarAusente']);
 $router->patch('Reserva/marcarRegreso', ['Reserva', 'marcarRegreso']);

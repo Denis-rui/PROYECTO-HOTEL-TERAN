@@ -9,6 +9,7 @@ class Reserva extends Eloquent
     public const ESTADOS_ACTIVOS = [
         'pendiente',
         'confirmada',
+        'pre_checkin',
         'checkin_realizado',
         'en_estadia',
         'checkout_pendiente',
@@ -17,6 +18,7 @@ class Reserva extends Eloquent
     public const ESTADOS_BLOQUEANTES = [
         'pendiente',
         'confirmada',
+        'pre_checkin',
         'checkin_realizado',
         'en_estadia',
         'checkout_pendiente',
@@ -33,6 +35,7 @@ class Reserva extends Eloquent
     public const ESTADOS_PRE_CHECKIN = [
         'pendiente',
         'confirmada',
+        'pre_checkin',
     ];
 
     public const ESTADOS_EN_ESTADIA = [
