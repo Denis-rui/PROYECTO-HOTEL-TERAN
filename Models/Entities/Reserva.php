@@ -1,4 +1,5 @@
 <?php
+
 namespace Models\Entities;
 
 use Illuminate\Database\Eloquent\Model as Eloquent;
@@ -42,11 +43,19 @@ class Reserva extends Eloquent
     protected $table = 'reserva';
     public $timestamps = false;
     protected $fillable = [
-        'id_cliente' , 'total', 'estado',
-        'codigo_reserva', 'id_usuario', 'observaciones',
+        'id_cliente',
+        'total',
+        'estado',
+        'codigo_reserva',
+        'id_usuario',
+        'observaciones',
         'fecha_creacion',
-        'minutos_demora_checkout', 'cargo_checkout_tarde',
-        'checkin_real', 'checkout_real'
+        'minutos_demora_checkout',
+        'cargo_checkout_tarde',
+        'checkin_real',
+        'checkout_real',
+        'check_in_programado',
+        'check_out_programado'
     ];
 
     public function cliente()
