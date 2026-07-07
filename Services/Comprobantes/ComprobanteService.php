@@ -171,7 +171,7 @@ class ComprobanteService
             'id_forma_pago' => $comprobante->id_forma_pago,
             'id_usuario' => $comprobante->id_usuario,
 
-            'cliente' => $cliente->nombre_completo ?? '',
+            'cliente' => $cliente ? trim($cliente->nombres . ' ' . $cliente->apellido_paterno . ' ' . $cliente->apellido_materno) : '',
             'correo_electronico' => $cliente->correo_electronico ?? '',
             'usuario' => $usuario->nombre_completo ?? '',
 

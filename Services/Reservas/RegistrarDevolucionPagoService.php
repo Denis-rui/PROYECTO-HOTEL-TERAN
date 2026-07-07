@@ -7,6 +7,7 @@ use Illuminate\Database\Capsule\Manager as DB;
 use Models\ComprobanteModel;
 use Models\Entities\DocumentoElectronico;
 use Models\Entities\Pago;
+use Models\Entities\Devolucion;
 use Models\PagoModel;
 use Models\ReservaModel;
 use Services\Comprobantes\ComprobanteService;
@@ -39,27 +40,47 @@ class RegistrarDevolucionPagoService
             $fechaDesde = $this->normalizarFecha($datos['fecha_desde_devuelta'] ?? '');
             $fechaHasta = $this->normalizarFecha($datos['fecha_hasta_devuelta'] ?? '');
 
-            $descripcion = sprintf(
-                'Devolución de dinero al cliente por disminución de estadía del %s al %s. Movimiento negativo de caja.',
+            $reserva = $this->reservaModel->obtenerReservaSimple($idReserva);
+            $tipoDevolucion = ($reserva && in_array(strtolower($reserva->estado), ['en_estadia', 'checkout_pendiente']))
+                ? 'disminución de estadía'
+                : 'modificación de reserva';
+
+            $descripcionOriginal = sprintf(
+                'Devolución de dinero al cliente por %s del %s al %s. Movimiento negativo de caja.',
+                $tipoDevolucion,
                 $fechaDesde,
                 $fechaHasta
             );
 
             $pagoExistente = Pago::where('id_reserva', $idReserva)
                 ->where('monto', -$monto)
-                ->where('descripcion', 'like', '%' . $fechaDesde . ' al ' . $fechaHasta . '%')
                 ->first();
 
             if ($pagoExistente) {
                 return $this->respuesta(false, 'CONFLICTO', 'Esta devolución ya fue registrada en pagos.');
             }
 
+            $devolucionModel = Devolucion::where('id_reserva', $idReserva)->first();
+
+            $descripcionPago = "";
+            $descripcionComprobante = "";
+
+            if ($devolucionModel && !empty($devolucionModel->descripcion)) {
+                $descripcionPago = $devolucionModel->descripcion;
+                $descripcionComprobante = $devolucionModel->descripcion;
+            } else {
+                $descripcionPago = $descripcionOriginal;
+                $descripcionComprobante = $descripcionOriginal;
+            }
+
+            $descripcionComprobante .= "\nImporte devuelto: -S/ " . number_format($monto, 2);
+
             DB::connection()->beginTransaction();
 
             $pago = $this->pagoModel->crear([
                 'id_reserva' => $idReserva,
                 'monto' => -$monto,
-                'descripcion' => $descripcion,
+                'descripcion' => $descripcionPago,
                 'fecha_pago' => FechaHotelHelper::ahora(),
                 'id_metodo_pago' => 1,
                 'id_usuario' => $idUsuario ?? ($_SESSION['id_usuario'] ?? null),
@@ -73,7 +94,7 @@ class RegistrarDevolucionPagoService
                 'id_pago' => (int) $pago->id,
                 'numero_ticket' => $this->comprobanteModel->generarNumeroTicket((int) $pago->id),
                 'fecha_emision' => FechaHotelHelper::ahora(),
-                'descripcion' => $descripcion . "\nImporte devuelto: -S/ " . number_format($monto, 2),
+                'descripcion' => $descripcionComprobante,
                 'total' => -$monto,
                 'id_forma_pago' => 1,
                 'id_usuario' => $idUsuario ?? ($_SESSION['id_usuario'] ?? null),

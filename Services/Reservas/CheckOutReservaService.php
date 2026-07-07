@@ -6,6 +6,7 @@ use Illuminate\Database\Capsule\Manager as DB;
 use Helpers\FechaHotelHelper;
 use Helpers\ReservaHabitacionHelper;
 use Helpers\ReservaHelper;
+use Models\Entities\Devolucion;
 use Models\Entities\Habitacion;
 use Models\HabitacionModel;
 use Models\NotificacionModel;
@@ -61,7 +62,9 @@ class CheckOutReservaService
                 (float) $reservaActual->total
             );
 
-            $totalPagado = (float) $reservaActual->pagos->sum('monto');
+            $sumPagos = (float) $reservaActual->pagos->sum('monto');
+            $sumPenalidades = (float) Devolucion::where('id_reserva', $reservaActual->id)->sum('monto_penalidad');
+            $totalPagado = max(0.0, $sumPagos - $sumPenalidades);
 
             $saldoFinal = max(
                 0,

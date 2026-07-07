@@ -9,6 +9,7 @@ use Helpers\ReservaHabitacionHelper;
 use Helpers\ReservaHelper;
 use Models\Entities\Devolucion;
 use Models\Entities\Habitacion;
+use Models\Entities\Hotel;
 use Models\Entities\Reserva as ReservaEntity;
 use Models\HabitacionModel;
 use Models\ReporteOcupacionModel;
@@ -125,11 +126,11 @@ class ActualizarReservaService
                 return $this->respuesta(false, 'VALIDACION_ERROR', 'Debe seleccionar al menos una habitación válida.');
             }
 
-            $totalPagado = (float) ($reservaActual->pagos->sum('monto') ?? 0);
-
-            if ($totalPagado > $totalCalculado + 0.00001) {
-                return $this->respuesta(false, 'VALIDACION_ERROR', 'No se puede dejar un total menor al monto ya pagado. Total pagado: S/ ' . number_format($totalPagado, 2));
-            }
+            $totalAnterior = (float) ($reservaActual->total ?? 0);
+            $sumPagos = (float) ($reservaActual->pagos->sum('monto') ?? 0);
+            $sumPenalidades = (float) Devolucion::where('id_reserva', $reservaActual->id)->sum('monto_penalidad');
+            $totalPagado = max(0.0, $sumPagos - $sumPenalidades);
+            $devolucion = null;
 
             $habitacionesAnteriores = $reservaActual->reservaHabitacion ?? [];
 
@@ -167,11 +168,70 @@ class ActualizarReservaService
                 $idReserva
             );
 
+            if ($totalPagado > $totalCalculado + 0.00001) {
+                $montoCancelado = max(0.0, $totalAnterior - $totalCalculado);
+                $hotel = Hotel::first();
+                $porcentaje = max(0.0, min(100.0, (float) ($hotel->porcentaje_penalidad_cancelacion ?? 25)));
+                $montoPenalidad = round($montoCancelado * ($porcentaje / 100), 1);
+                $montoDevolver = round(max(0.0, $totalPagado - ($totalCalculado + $montoPenalidad)), 1);
+
+                if ($montoDevolver > 0.00001) {
+                    $diasAnteriores = ReservaHelper::obtenerDiasEstadia($reservaActual->check_in_programado, $reservaActual->check_out_programado);
+                    $diasNoUsados = max(0, $diasAnteriores - $dias);
+                    $detalleCambios = $this->obtenerDescripcionCambios($reservaActual, $checkIn, $checkOut, $habitacionesNormalizadas);
+                    $descripcionDevolucion = sprintf(
+                        'Devolución por modificación de reserva (%s). Total anterior: S/ %s; nuevo total: S/ %s; pagado: S/ %s; penalidad (%s%%): S/ %s.',
+                        $detalleCambios,
+                        number_format($totalAnterior, 2),
+                        number_format($totalCalculado, 2),
+                        number_format($totalPagado, 2),
+                        $porcentaje,
+                        number_format($montoPenalidad, 2)
+                    );
+
+                    Devolucion::updateOrCreate(
+                        ['id_reserva' => $idReserva],
+                        [
+                            'id_reserva' => $idReserva,
+                            'fecha_cancelacion' => FechaHotelHelper::ahora(),
+                            'fecha_inicio' => $checkIn,
+                            'fecha_prevista' => $checkOut,
+                            'dias_usados' => max(1, $dias),
+                            'dias_no_usados' => $diasNoUsados,
+                            'total_no_ocupado' => $montoCancelado,
+                            'porcentaje_penalidad' => $porcentaje,
+                            'monto_penalidad' => $montoPenalidad,
+                            'monto_devuelto' => $montoDevolver,
+                            'id_usuario' => $idUsuarioActual,
+                            'descripcion' => $descripcionDevolucion,
+                        ]
+                    );
+
+                    $devolucion = [
+                        'monto_devuelto' => $montoDevolver,
+                        'monto_penalidad' => $montoPenalidad,
+                        'porcentaje_penalidad' => $porcentaje,
+                        'descripcion' => $descripcionDevolucion,
+                        'total_anterior' => round($totalAnterior, 2),
+                        'total_nuevo' => round($totalCalculado, 2),
+                        'total_pagado' => round($totalPagado, 2),
+                        'fecha_desde_devuelta' => substr($checkIn, 0, 10),
+                        'fecha_hasta_devuelta' => substr($checkOut, 0, 10),
+                        'dias_no_usados' => $diasNoUsados,
+                    ];
+                }
+            }
+
             DB::connection()->commit();
 
-            return $this->respuesta(true, 'ACTUALIZADO', 'Reserva actualizada correctamente.', [
+            $mensaje = $devolucion
+                ? 'Reserva actualizada correctamente. Devolución a realizar: S/ ' . number_format($devolucion['monto_devuelto'], 2) . '.'
+                : 'Reserva actualizada correctamente.';
+
+            return $this->respuesta(true, 'ACTUALIZADO', $mensaje, [
                 'id_reserva' => $idReserva,
                 'reserva' => $this->reservaModel->obtenerReservaPorId($idReserva),
+                'devolucion' => $devolucion,
             ]);
         } catch (\Throwable $e) {
             error_log('ActualizarReservaService::actualizarReserva -> ' . $e->getMessage());
@@ -184,7 +244,6 @@ class ActualizarReservaService
             return $this->respuesta(false, 'EXCEPCION', 'No se pudo actualizar la reserva. Intente nuevamente.');
         }
     }
-
     private function actualizarEstadiaActiva($reservaActual, array $datos, ?int $idUsuario = null): array
     {
         try {
@@ -236,7 +295,9 @@ class ActualizarReservaService
             $totalHistorico = $this->calcularTotalRelacionesHistoricas($reservaActual->reservaHabitacion ?? []);
             $totalCalculado = $totalHistorico;
             $totalAnterior = (float) ($reservaActual->total ?? 0);
-            $totalPagado = (float) ($reservaActual->pagos->sum('monto') ?? 0);
+            $sumPagos = (float) ($reservaActual->pagos->sum('monto') ?? 0);
+            $sumPenalidades = (float) Devolucion::where('id_reserva', $reservaActual->id)->sum('monto_penalidad');
+            $totalPagado = max(0.0, $sumPagos - $sumPenalidades);
             $checkOutPrevistoAnterior = trim((string) ($reservaActual->check_out_programado ?? ''));
             if ($checkOutPrevistoAnterior === '') {
                 $checkOutPrevistoAnterior = $this->obtenerFechaExtremaRelaciones($relacionesActivas, 'check_out', 'max');
@@ -359,19 +420,25 @@ class ActualizarReservaService
 
             $this->reservaModel->guardar($reservaActual);
 
-            $montoDevolver = round(max(0, $totalPagado - $totalCalculado), 2);
+            $montoCancelado = max(0.0, $totalAnterior - $totalCalculado);
+            $hotel = Hotel::first();
+            $porcentaje = max(0.0, min(100.0, (float) ($hotel->porcentaje_penalidad_cancelacion ?? 25)));
+            $montoPenalidad = round($montoCancelado * ($porcentaje / 100), 1);
+            $montoDevolver = round(max(0.0, $totalPagado - ($totalCalculado + $montoPenalidad)), 1);
             $devolucion = null;
 
             if ($montoDevolver > 0.00001) {
                 $diasNuevos = $this->obtenerDiasEstadiaActiva($fechaInicioEstadia, $checkOut);
                 $diasNoUsados = max(0, $diasPrevios - $diasNuevos);
                 $descripcionDevolucion = sprintf(
-                    'Devolución por disminución de días de estadía del %s al %s. Total anterior: S/ %s; nuevo total: S/ %s; pagado: S/ %s.',
+                    'Devolución por disminución de días de estadía del %s al %s. Total anterior: S/ %s; nuevo total: S/ %s; pagado: S/ %s; penalidad (%s%%): S/ %s.',
                     substr($checkOut, 0, 10),
                     substr(($checkOutPrevistoAnterior !== '' ? $checkOutPrevistoAnterior : $checkOut), 0, 10),
                     number_format($totalAnterior, 2),
                     number_format($totalCalculado, 2),
-                    number_format($totalPagado, 2)
+                    number_format($totalPagado, 2),
+                    $porcentaje,
+                    number_format($montoPenalidad, 2)
                 );
 
                 Devolucion::updateOrCreate(
@@ -383,9 +450,9 @@ class ActualizarReservaService
                         'fecha_prevista' => $checkOutPrevistoAnterior !== '' ? $checkOutPrevistoAnterior : $checkOut,
                         'dias_usados' => max(1, $diasNuevos),
                         'dias_no_usados' => $diasNoUsados,
-                        'total_no_ocupado' => $montoDevolver,
-                        'porcentaje_penalidad' => 0,
-                        'monto_penalidad' => 0,
+                        'total_no_ocupado' => $montoCancelado,
+                        'porcentaje_penalidad' => $porcentaje,
+                        'monto_penalidad' => $montoPenalidad,
                         'monto_devuelto' => $montoDevolver,
                         'id_usuario' => $idUsuarioActual,
                         'descripcion' => $descripcionDevolucion,
@@ -394,6 +461,8 @@ class ActualizarReservaService
 
                 $devolucion = [
                     'monto_devuelto' => $montoDevolver,
+                    'monto_penalidad' => $montoPenalidad,
+                    'porcentaje_penalidad' => $porcentaje,
                     'descripcion' => $descripcionDevolucion,
                     'total_anterior' => round($totalAnterior, 2),
                     'total_nuevo' => round($totalCalculado, 2),
@@ -506,6 +575,11 @@ class ActualizarReservaService
             $habitacionesNormalizadas
         )));
 
+        $reservaActual = $this->reservaModel->obtenerReservaSimple($idReserva);
+        $estadoHabitacionDestino = ($reservaActual && !empty($reservaActual->checkin_real))
+            ? 'Mantenimiento'
+            : 'Disponible';
+
         foreach ($habitacionesAnteriores as $itemHabitacion) {
             if (!$itemHabitacion || empty($itemHabitacion->id_habitacion)) {
                 continue;
@@ -526,22 +600,60 @@ class ActualizarReservaService
                 continue;
             }
 
-            $checkInFecha = substr(trim((string) ($itemHabitacion->check_in ?? '')), 0, 10);
-            $checkOutFecha = substr(trim((string) ($itemHabitacion->check_out ?? '')), 0, 10);
-            $hoy = FechaHotelHelper::hoy();
+            Habitacion::where('id', $idHabitacionAnterior)->update([
+                'estado' => $estadoHabitacionDestino,
+            ]);
+        }
+    }
 
-            if (
-                $checkInFecha !== ''
-                && $checkOutFecha !== ''
-                && $hoy >= $checkInFecha
-                && $hoy < $checkOutFecha
-            ) {
-                Habitacion::where('id', $idHabitacionAnterior)->update([
-                    'estado' => 'Mantenimiento',
-                ]);
+    private function obtenerDescripcionCambios($reservaActual, $checkIn, $checkOut, array $habitacionesNormalizadas): string
+    {
+        $cambios = [];
 
+        // 1. Comparar fechas de check-in / check-out
+        $checkInAnterior = substr($reservaActual->check_in_programado, 0, 10);
+        $checkOutAnterior = substr($reservaActual->check_out_programado, 0, 10);
+        $checkInNuevo = substr($checkIn, 0, 10);
+        $checkOutNuevo = substr($checkOut, 0, 10);
+
+        if ($checkInAnterior !== $checkInNuevo || $checkOutAnterior !== $checkOutNuevo) {
+            $cambios[] = sprintf(
+                'se redujeron fechas de estadía (antes: %s al %s, ahora: %s al %s)',
+                $checkInAnterior,
+                $checkOutAnterior,
+                $checkInNuevo,
+                $checkOutNuevo
+            );
+        }
+
+        // 2. Comparar habitaciones
+        $idsAnteriores = [];
+        $numsAnteriores = [];
+        foreach (($reservaActual->reservaHabitacion ?? []) as $rel) {
+            if (($rel->estado ?? 'activa') === 'activa') {
+                $idHab = (int) $rel->id_habitacion;
+                $idsAnteriores[] = $idHab;
+                $numsAnteriores[$idHab] = $rel->habitacion->numero_habitacion ?? $idHab;
             }
         }
+
+        $idsNuevos = array_map(fn($h) => (int) $h['id'], $habitacionesNormalizadas);
+
+        // Habitaciones eliminadas
+        $eliminadas = array_diff($idsAnteriores, $idsNuevos);
+        if (!empty($eliminadas)) {
+            $numsEliminadas = [];
+            foreach ($eliminadas as $id) {
+                $numsEliminadas[] = 'Hab. ' . ($numsAnteriores[$id] ?? $id);
+            }
+            $cambios[] = 'se eliminó habitación: ' . implode(', ', $numsEliminadas);
+        }
+
+        if (empty($cambios)) {
+            $cambios[] = 'modificación de reserva';
+        }
+
+        return implode(', ', $cambios);
     }
 
     private function respuesta(bool $exito, string $codigo, string $mensaje, mixed $data = null, array $errores = []): array

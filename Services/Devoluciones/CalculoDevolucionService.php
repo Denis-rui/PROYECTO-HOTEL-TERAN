@@ -57,7 +57,9 @@ class CalculoDevolucionService
                 2
             );
 
-            $montoPagado = round((float) $reserva->pagos->sum('monto'), 2);
+            $sumPagos = (float) $reserva->pagos->sum('monto');
+            $sumPenalidades = (float) \Models\Entities\Devolucion::where('id_reserva', $idReserva)->sum('monto_penalidad');
+            $montoPagado = round(max(0.0, $sumPagos - $sumPenalidades), 1);
 
             $huboHospedaje = !empty($reserva->checkin_real);
 

@@ -60,7 +60,11 @@ class FormatearReservas
             }
         }
         $habitacionPrincipal = $habitaciones[0] ?? null;
-        $totalPagado = (float) ($reserva->pagos->sum('monto') ?? 0);
+        $sumPagos = (float) ($reserva->pagos->sum('monto') ?? 0);
+        $sumPenalidades = (float) DB::table('devolucion')
+            ->where('id_reserva', $reserva->id)
+            ->sum('monto_penalidad');
+        $totalPagado = max(0.0, $sumPagos - $sumPenalidades);
         $checkInProgramado = $reserva->check_in_programado ?? ($relacionPrincipal->check_in ?? null);
         $checkOutProgramado = $reserva->check_out_programado ?? ($relacionPrincipal->check_out ?? null);
         $checkIn = $reserva->checkin_real ?? $checkInProgramado;

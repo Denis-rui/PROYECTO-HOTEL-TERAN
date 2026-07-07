@@ -223,6 +223,11 @@ const aplicarReservaEdicion = (reserva) => {
   );
   estado.reservaCheckOutOriginal =
     reserva.check_out_programado || reserva.check_out || "";
+  estado.reservaCheckInOriginal =
+    reserva.check_in_programado || reserva.check_in || "";
+  estado.reservaHabitacionesOriginalesIds = (reserva.habitaciones || []).map(
+    (h) => String(h.id)
+  );
 
   const checkIn = separarFechaHora(
     reserva.check_in_programado || reserva.check_in,
@@ -425,8 +430,41 @@ const sincronizarHabitaciones = () => {
     estado.elementos.contadorHabitacionesSeleccionadas.textContent = `${habitaciones.length} ${habitaciones.length === 1 ? "habitación" : "habitaciones"}`;
   }
 
+  const totalNuevo = calcularTotalReserva();
   if (estado.elementos?.totalHabitacionesReserva) {
-    estado.elementos.totalHabitacionesReserva.textContent = `S/ ${calcularTotalReserva().toFixed(2)}`;
+    estado.elementos.totalHabitacionesReserva.textContent = `S/ ${totalNuevo.toFixed(2)}`;
+  }
+
+  // Actualizar penalidad y devolución en caliente en el modal de edición
+  const contenedorPenalidad = document.getElementById("contenedor-penalidad-edicion");
+  const txtPenalidad = document.getElementById("montoPenalidadEdicion");
+  const txtDevolver = document.getElementById("montoDevolverEdicion");
+
+  if (contenedorPenalidad && txtPenalidad && txtDevolver) {
+    const esEstadia = estado.modo === "editar" && ["en_estadia", "checkout_pendiente"].includes(String(estado.reservaEstado || ""));
+    const esConfirmada = estado.modo === "editar" && ["confirmada", "pre_checkin"].includes(String(estado.reservaEstado || ""));
+
+    const totalAnterior = Number(estado.reservaTotalOriginal || 0);
+    const totalPagado = Number(estado.reservaTotalPagadoNeto || estado.reservaTotalPagado || 0);
+
+    if ((esEstadia || esConfirmada) && haCambiadoReserva() && totalPagado > totalNuevo) {
+      const montoCancelado = Math.max(0, totalAnterior - totalNuevo);
+      const montoPenalidad = redondearMonedaPeru(montoCancelado * 0.25);
+      const montoDevolver = redondearMonedaPeru(Math.max(0, totalPagado - (totalNuevo + montoPenalidad)));
+      const montoTotal = redondearMonedaPeru(montoPenalidad + montoDevolver);
+
+      txtPenalidad.textContent = `S/ ${montoPenalidad.toFixed(2)}`;
+      txtDevolver.textContent = `S/ ${montoDevolver.toFixed(2)}`;
+
+      const txtTotal = document.getElementById("montoTotalDevolucionEdicion");
+      if (txtTotal) {
+        txtTotal.textContent = `S/ ${montoTotal.toFixed(2)}`;
+      }
+
+      contenedorPenalidad.style.display = "block";
+    } else {
+      contenedorPenalidad.style.display = "none";
+    }
   }
 };
 
@@ -1265,27 +1303,72 @@ const validarPagoDevolucionReserva = async (idReserva, devolucion) => {
   return respuesta.ok ? resultado : { ...resultado, exito: false };
 };
 
+const haCambiadoReserva = () => {
+  const estado = obtenerEstadoModalReserva();
+  if (estado.modo !== "editar") return false;
+
+  const fechaEntrada = estado.elementos?.fechaEntrada?.value || "";
+  const horaEntrada = estado.elementos?.horaEntrada?.value || "";
+  const fechaSalida = estado.elementos?.fechaSalida?.value || "";
+  const horaSalida = estado.elementos?.horaSalida?.value || "";
+
+  const checkInActual = `${fechaEntrada} ${horaEntrada}`.replace("T", " ").slice(0, 16);
+  const checkOutActual = `${fechaSalida} ${horaSalida}`.replace("T", " ").slice(0, 16);
+
+  const checkInOrig = String(estado.reservaCheckInOriginal || "").replace("T", " ").slice(0, 16);
+  const checkOutOrig = String(estado.reservaCheckOutOriginal || "").replace("T", " ").slice(0, 16);
+
+  if (checkInActual !== checkInOrig) return true;
+  if (checkOutActual !== checkOutOrig) return true;
+
+  const origIds = estado.reservaHabitacionesOriginalesIds || [];
+  const actualIds = (estado.habitacionesSeleccionadas || []).map(h => String(h.id));
+
+  if (origIds.length !== actualIds.length) return true;
+
+  for (const id of actualIds) {
+    if (!origIds.includes(id)) return true;
+  }
+
+  if (estado.habitacionCambioPendiente) return true;
+
+  return false;
+};
+
+const redondearMonedaPeru = (valor) => Math.round(Number(valor || 0) * 10) / 10;
+
 const calcularDevolucionPreviaEdicion = (datosReserva) => {
   const estado = obtenerEstadoModalReserva();
+  const esEstadia = esEdicionEnEstadia();
+  const esConfirmada = estado.modo === "editar" && ["confirmada", "pre_checkin"].includes(String(estado.reservaEstado || ""));
 
-  if (!esEdicionEnEstadia()) return null;
+  if (!esEstadia && !esConfirmada) return null;
+  if (!haCambiadoReserva()) return null;
 
+  const totalAnterior = Number(estado.reservaTotalOriginal || 0);
   const totalNuevo = Number(datosReserva?.totalReserva || 0);
   const totalPagado = Number(
     estado.reservaTotalPagadoNeto || estado.reservaTotalPagado || 0,
   );
-  const montoDevuelto = Number((totalPagado - totalNuevo).toFixed(2));
+
+  const montoCancelado = Math.max(0, totalAnterior - totalNuevo);
+  const montoPenalidad = redondearMonedaPeru(montoCancelado * 0.25);
+  const montoDevuelto = redondearMonedaPeru(Math.max(0, totalPagado - (totalNuevo + montoPenalidad)));
 
   if (montoDevuelto <= 0) return null;
 
-  const fechaDesde = datosReserva?.checkOut || "";
-  const fechaHasta = String(estado.reservaCheckOutOriginal || "").slice(0, 10);
-  const descripcion = `Devolución por disminución de días de estadía del ${fechaDesde} al ${fechaHasta || fechaDesde}. Total anterior: S/ ${Number(estado.reservaTotalOriginal || 0).toFixed(2)}; nuevo total: S/ ${totalNuevo.toFixed(2)}; pagado: S/ ${totalPagado.toFixed(2)}.`;
+  const fechaDesde = esConfirmada ? (datosReserva?.checkIn || "") : (datosReserva?.checkOut || "");
+  const fechaHasta = esConfirmada ? (datosReserva?.checkOut || "") : (String(estado.reservaCheckOutOriginal || "").slice(0, 10));
+  const descripcion = esConfirmada
+    ? `Devolución por reducción de reserva. Total anterior: S/ ${totalAnterior.toFixed(2)}; nuevo total: S/ ${totalNuevo.toFixed(2)}; pagado: S/ ${totalPagado.toFixed(2)}; penalidad (25%): S/ ${montoPenalidad.toFixed(2)}.`
+    : `Devolución por disminución de días de estadía del ${fechaDesde} al ${fechaHasta || fechaDesde}. Total anterior: S/ ${totalAnterior.toFixed(2)}; nuevo total: S/ ${totalNuevo.toFixed(2)}; pagado: S/ ${totalPagado.toFixed(2)}; penalidad (25%): S/ ${montoPenalidad.toFixed(2)}.`;
 
   return {
     monto_devuelto: montoDevuelto,
+    monto_penalidad: montoPenalidad,
+    porcentaje_penalidad: 25,
     descripcion,
-    total_anterior: Number(estado.reservaTotalOriginal || 0),
+    total_anterior: totalAnterior,
     total_nuevo: totalNuevo,
     total_pagado: totalPagado,
     fecha_desde_devuelta: fechaDesde,
