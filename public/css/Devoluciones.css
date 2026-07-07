@@ -11,23 +11,91 @@
   font-weight: bold;
 }
 
-.buscar {
+.buscar,
+.buscar-filtro {
   margin-bottom: 20px;
 }
 
-.buscar form {
+.buscar form,
+.devoluciones-filtros form {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
+  width: 100%;
 }
 
-.buscar input {
+.buscar input,
+.devoluciones-filtros .buscar,
+.devoluciones-filtros input[type="date"] {
   padding: 10px;
   border: none;
   border-radius: 5px;
   font-size: 14px;
-  width: 320px;
+  height: 40px;
+  box-sizing: border-box;
+}
+
+.devoluciones-filtros .buscar {
+  width: 300px;
+  min-width: 260px;
+  margin: 0;
+}
+
+.devoluciones-filtros input[type="date"] {
+  width: 150px;
+}
+
+.filtro-fecha-devolucion {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--primary-dark);
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.btn-filtro-devolucion {
+  border: none;
+  border-radius: 5px;
+  padding: 10px 14px;
+  background: var(--primary-dark);
+  color: var(--text-white);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 40px;
+  white-space: nowrap;
+}
+
+.btn-filtro-devolucion:hover {
+  filter: brightness(0.95);
+}
+
+.btn-filtro-secundario {
+  background: var(--primary);
+}
+
+.btn-filtro-limpiar {
+  background: var(--border-light);
+  color: var(--primary-dark);
+}
+
+.btn-filtro-limpiar:hover {
+  background: #d5d0c5;
+  filter: none;
+}
+
+@media (max-width: 900px) {
+  .devoluciones-filtros form {
+    align-items: stretch;
+  }
+
+  .devoluciones-filtros .buscar {
+    width: 100%;
+  }
 }
 
 .tabla {

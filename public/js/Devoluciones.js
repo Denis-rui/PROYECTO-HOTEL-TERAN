@@ -5,6 +5,10 @@ const inicializarTablaDevoluciones = () => {
   if (!tabla || typeof DataTable === "undefined") return;
 
   const inputBusqueda = document.getElementById("inputBuscarDevolucion");
+  const fechaDesde = document.getElementById("fechaDesdeDevolucion");
+  const fechaHasta = document.getElementById("fechaHastaDevolucion");
+  const btnHoy = document.getElementById("btnDevolucionesHoy");
+  const btnLimpiar = document.getElementById("btnLimpiarFiltrosDevolucion");
   const tablaDevoluciones = new DataTable("#tablaDevoluciones", {
     processing: true,
     serverSide: true,
@@ -21,6 +25,8 @@ const inicializarTablaDevoluciones = () => {
       data: (datos) => {
         datos.csrf_token = typeof CSRF_TOKEN !== "undefined" ? CSRF_TOKEN : "";
         datos.busqueda = inputBusqueda?.value?.trim() || "";
+        datos.fecha_desde = fechaDesde?.value || "";
+        datos.fecha_hasta = fechaHasta?.value || "";
         return datos;
       },
     },
@@ -72,10 +78,32 @@ const inicializarTablaDevoluciones = () => {
     tablaDevoluciones.ajax.reload();
   });
 
+  btnHoy?.addEventListener("click", () => {
+    const hoy = obtenerFechaLocalISO();
+    if (fechaDesde) fechaDesde.value = hoy;
+    if (fechaHasta) fechaHasta.value = hoy;
+    tablaDevoluciones.ajax.reload();
+  });
+
+  btnLimpiar?.addEventListener("click", () => {
+    if (inputBusqueda) inputBusqueda.value = "";
+    if (fechaDesde) fechaDesde.value = "";
+    if (fechaHasta) fechaHasta.value = "";
+    tablaDevoluciones.ajax.reload();
+  });
+
   window.recargarTablaDevoluciones = () => {
     tablaDevoluciones.ajax.reload(null, false);
     return true;
   };
+};
+
+const obtenerFechaLocalISO = () => {
+  const ahora = new Date();
+  const zonaLocal = new Date(
+    ahora.getTime() - ahora.getTimezoneOffset() * 60000,
+  );
+  return zonaLocal.toISOString().slice(0, 10);
 };
 
 const escaparHtml = (valor) =>

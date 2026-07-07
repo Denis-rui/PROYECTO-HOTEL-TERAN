@@ -3,11 +3,26 @@
     <h2>Devoluciones</h2>
   </header>
 
-  <div class="buscar">
-    <form action="<?= BASE_URL ?>" method="GET">
+  <div class="buscar-filtro devoluciones-filtros">
+    <form id="formFiltrosDevolucion" action="<?= BASE_URL ?>" method="GET">
       <input type="hidden" name="url" value="Devolucion/index">
-      <input id="inputBuscarDevolucion" name="busqueda" type="text" placeholder="🔍 Buscar por cliente o N° reserva"
+      <input id="inputBuscarDevolucion" class="buscar" name="busqueda" type="text" placeholder="🔍 Buscar por cliente o N° reserva"
         value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>" />
+      <label class="filtro-fecha-devolucion">
+        Desde
+        <input id="fechaDesdeDevolucion" name="fecha_desde" type="date" />
+      </label>
+      <label class="filtro-fecha-devolucion">
+        Hasta
+        <input id="fechaHastaDevolucion" name="fecha_hasta" type="date" />
+      </label>
+      <button id="btnAplicarFiltrosDevolucion" type="submit" class="btn-filtro-devolucion">Aplicar</button>
+      <button id="btnDevolucionesHoy" type="button" class="btn-filtro-devolucion btn-filtro-secundario" title="Devoluciones realizadas hoy">
+        Hoy
+      </button>
+      <button id="btnLimpiarFiltrosDevolucion" type="button" class="btn-filtro-devolucion btn-filtro-limpiar">
+        Limpiar filtros
+      </button>
     </form>
   </div>
 

@@ -70,6 +70,8 @@ $router->post('Reserva/datatable', ['Reserva', 'datatable']);
 $router->post('Reserva/registrar', ['Reserva', 'registrar']);
 $router->put('Reserva/actualizar', ['Reserva', 'actualizar']);
 $router->post('Reserva/pago', ['Reserva', 'pago']);
+$router->post('Reserva/validarDevolucionPago', ['Reserva', 'validarDevolucionPago']);
+$router->post('Reserva/registrarDevolucionPago', ['Reserva', 'registrarDevolucionPago']);
 $router->patch('Reserva/checkin', ['Reserva', 'checkin']);
 $router->patch('Reserva/checkout', ['Reserva', 'checkout']);
 $router->patch('Reserva/marcarAusente', ['Reserva', 'marcarAusente']);

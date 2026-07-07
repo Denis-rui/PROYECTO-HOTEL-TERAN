@@ -16,11 +16,13 @@ class DevolucionModel
             $busquedaDataTable = trim((string) ($parametros['search']['value'] ?? ''));
             $busquedaPropia = trim((string) ($parametros['busqueda'] ?? ''));
             $busqueda = $busquedaPropia !== '' ? $busquedaPropia : $busquedaDataTable;
+            $fechaDesde = $this->normalizarFechaFiltro($parametros['fecha_desde'] ?? '');
+            $fechaHasta = $this->normalizarFechaFiltro($parametros['fecha_hasta'] ?? '');
 
             $queryTotal = $this->crearConsultaDevolucionesDataTable('');
             $total = (clone $queryTotal)->count();
 
-            $queryFiltrada = $this->crearConsultaDevolucionesDataTable($busqueda);
+            $queryFiltrada = $this->crearConsultaDevolucionesDataTable($busqueda, $fechaDesde, $fechaHasta);
             $filtrados = (clone $queryFiltrada)->count();
 
             $this->aplicarOrdenDataTable($queryFiltrada, $parametros);
@@ -49,7 +51,7 @@ class DevolucionModel
         }
     }
 
-    private function crearConsultaDevolucionesDataTable(string $busqueda)
+    private function crearConsultaDevolucionesDataTable(string $busqueda, string $fechaDesde = '', string $fechaHasta = '')
     {
         $query = Devolucion::query()
             ->leftJoin('reserva as r', 'r.id', '=', 'devolucion.id_reserva')
@@ -70,7 +72,26 @@ class DevolucionModel
             });
         }
 
+        if ($fechaDesde !== '') {
+            $query->where('devolucion.fecha_cancelacion', '>=', $fechaDesde . ' 00:00:00');
+        }
+
+        if ($fechaHasta !== '') {
+            $query->where('devolucion.fecha_cancelacion', '<=', $fechaHasta . ' 23:59:59');
+        }
+
         return $query;
+    }
+
+    private function normalizarFechaFiltro($fecha): string
+    {
+        $fecha = trim((string) $fecha);
+
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) {
+            return '';
+        }
+
+        return $fecha;
     }
 
     private function aplicarOrdenDataTable($query, array $parametros): void

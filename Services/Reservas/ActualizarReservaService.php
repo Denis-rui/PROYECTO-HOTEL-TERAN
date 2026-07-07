@@ -234,8 +234,9 @@ class ActualizarReservaService
             $totalCalculado = 0;
             $totalAnterior = (float) ($reservaActual->total ?? 0);
             $totalPagado = (float) ($reservaActual->pagos->sum('monto') ?? 0);
-            $checkOutPrevistoAnterior = (string) ($reservaActual->check_out ?? '');
-            $fechaInicioEstadia = (string) ($reservaActual->checkin_real ?? $reservaActual->check_in ?? '');
+            $checkOutPrevistoAnterior = $this->obtenerFechaExtremaRelaciones($relacionesActivas, 'check_out', 'max');
+            $checkInProgramadoAnterior = $this->obtenerFechaExtremaRelaciones($relacionesActivas, 'check_in', 'min');
+            $fechaInicioEstadia = (string) ($reservaActual->checkin_real ?? $checkInProgramadoAnterior);
             $diasPrevios = ReservaHelper::obtenerDiasEstadia($fechaInicioEstadia, $checkOutPrevistoAnterior);
 
             DB::connection()->beginTransaction();
@@ -353,7 +354,9 @@ class ActualizarReservaService
                 $diasNuevos = $this->obtenerDiasEstadiaActiva($fechaInicioEstadia, $checkOut);
                 $diasNoUsados = max(0, $diasPrevios - $diasNuevos);
                 $descripcionDevolucion = sprintf(
-                    'Devolución por disminución de días de estadía. Total anterior: S/ %s; nuevo total: S/ %s; pagado: S/ %s.',
+                    'Devolución por disminución de días de estadía del %s al %s. Total anterior: S/ %s; nuevo total: S/ %s; pagado: S/ %s.',
+                    substr($checkOut, 0, 10),
+                    substr(($checkOutPrevistoAnterior !== '' ? $checkOutPrevistoAnterior : $checkOut), 0, 10),
                     number_format($totalAnterior, 2),
                     number_format($totalCalculado, 2),
                     number_format($totalPagado, 2)
@@ -383,6 +386,9 @@ class ActualizarReservaService
                     'total_anterior' => round($totalAnterior, 2),
                     'total_nuevo' => round($totalCalculado, 2),
                     'total_pagado' => round($totalPagado, 2),
+                    'fecha_desde_devuelta' => substr($checkOut, 0, 10),
+                    'fecha_hasta_devuelta' => substr(($checkOutPrevistoAnterior !== '' ? $checkOutPrevistoAnterior : $checkOut), 0, 10),
+                    'dias_no_usados' => $diasNoUsados,
                 ];
             }
 
@@ -419,6 +425,27 @@ class ActualizarReservaService
         }
 
         return $dias;
+    }
+
+    private function obtenerFechaExtremaRelaciones(array $relaciones, string $campo, string $modo): string
+    {
+        $fechas = [];
+
+        foreach ($relaciones as $relacion) {
+            $fecha = trim((string) ($relacion->{$campo} ?? ''));
+
+            if ($fecha !== '') {
+                $fechas[] = $fecha;
+            }
+        }
+
+        if (empty($fechas)) {
+            return '';
+        }
+
+        sort($fechas);
+
+        return $modo === 'max' ? end($fechas) : reset($fechas);
     }
 
     private function obtenerIdsHabitacionesActuales($reservaActual): array

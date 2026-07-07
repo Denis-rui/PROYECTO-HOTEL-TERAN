@@ -5,11 +5,11 @@
     <div class="filtros-cli">
       <div class="filtro-usuarios">
 
-        <label for="buscarUsuarioInput">Buscar:</label>
         <input 
           type="text"
           id="buscarUsuarioInput"
-          placeholder="Busca un usuario ..."
+          class="buscar"
+          placeholder="🔍 Buscar usuario"
           autocomplete="off"
         >
 

@@ -11,6 +11,7 @@ use Services\Reservas\RegistrarReservaService;
 use Services\Reservas\ActualizarReservaService;
 use Services\Reservas\CambiarHabitacionService;
 use Services\Reservas\ConsultarReservaService;
+use Services\Reservas\RegistrarDevolucionPagoService;
 use Services\Pagos\RegistrarPagoService;
 use Services\Comprobantes\DocumentoElectronicoService;
 use Services\Devoluciones\CalculoDevolucionService;
@@ -155,6 +156,50 @@ class ReservaController extends ApiController
         );
 
         [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($resultado, 201);
+        $this->responderJson($payload, $codigoHttp);
+    }
+
+    public function registrarDevolucionPago($params = '')
+    {
+        $this->validarCsrf();
+        $datos = $this->obtenerPayloadJson();
+
+        if (!is_array($datos)) {
+            $this->responderJson([
+                'exito' => false,
+                'codigo' => 'DATOS_INCOMPLETOS',
+                'mensaje' => 'Datos inválidos.',
+                'data' => null,
+                'errores' => [],
+            ], 422);
+        }
+
+        $service = new RegistrarDevolucionPagoService();
+        $resultado = $service->registrar($datos, $_SESSION['id_usuario'] ?? null);
+
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($resultado, 201);
+        $this->responderJson($payload, $codigoHttp);
+    }
+
+    public function validarDevolucionPago($params = '')
+    {
+        $this->validarCsrf();
+        $datos = $this->obtenerPayloadJson();
+
+        if (!is_array($datos)) {
+            $this->responderJson([
+                'exito' => false,
+                'codigo' => 'DATOS_INCOMPLETOS',
+                'mensaje' => 'Datos inválidos.',
+                'data' => null,
+                'errores' => [],
+            ], 422);
+        }
+
+        $service = new RegistrarDevolucionPagoService();
+        $resultado = $service->validarSolicitud($datos);
+
+        [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta($resultado);
         $this->responderJson($payload, $codigoHttp);
     }
 

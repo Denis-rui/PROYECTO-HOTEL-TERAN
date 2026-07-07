@@ -182,6 +182,70 @@
     return "-";
   };
 
+  const tipoDocumentoClienteNormalizado = (cliente = {}) =>
+    String(
+      cliente.documento_tipo_nombre ||
+        cliente.tipo_documento_nombre ||
+        "",
+    ).toLowerCase();
+
+  const obtenerNumeroClientePorTipoSunat = (cliente = {}, tipoSunat = "-") => {
+    const tipoCliente = tipoDocumentoClienteNormalizado(cliente);
+    const documento = String(cliente.documento || "").trim();
+    const ruc = String(cliente.ruc || "").trim();
+
+    if (tipoSunat === "6") {
+      return ruc || (tipoCliente.includes("ruc") ? documento : "");
+    }
+
+    if (tipoSunat === "1") {
+      return tipoCliente.includes("dni") || documento.length === 8
+        ? documento
+        : "";
+    }
+
+    if (tipoSunat === "4") {
+      return tipoCliente.includes("extranjer") ? documento : "";
+    }
+
+    if (tipoSunat === "7") {
+      return tipoCliente.includes("pasaporte") ? documento : "";
+    }
+
+    if (tipoSunat === "0") {
+      return tipoCliente.includes("no domiciliado") ? documento : "";
+    }
+
+    return "";
+  };
+
+  const establecerClienteDocumentoActual = (cliente = {}) => {
+    window.__docElectronicoClienteActual = {
+      documento: cliente.documento || "",
+      ruc: cliente.ruc || "",
+      documento_tipo_nombre:
+        cliente.documento_tipo_nombre || cliente.tipo_documento_nombre || "",
+    };
+  };
+
+  const actualizarNumeroDocumentoSunatDesdeCliente = (cliente = null) => {
+    const clienteActual = cliente || window.__docElectronicoClienteActual || {};
+    const tipo = document.getElementById(
+      "docElectronicoClienteTipoDocumento",
+    )?.value || "-";
+    const numero = document.getElementById("docElectronicoClienteNumero");
+
+    if (!numero) return;
+
+    numero.value = obtenerNumeroClientePorTipoSunat(clienteActual, tipo);
+    numero.dispatchEvent(new Event("input", { bubbles: true }));
+    numero.dispatchEvent(new Event("change", { bubbles: true }));
+  };
+
+  window.actualizarNumeroDocumentoSunatDesdeCliente =
+    actualizarNumeroDocumentoSunatDesdeCliente;
+  window.establecerClienteDocumentoActual = establecerClienteDocumentoActual;
+
   const obtenerModal = () => ({
     overlay: document.getElementById("contenedor-modal-documento-electronico"),
     modal: document.getElementById("modalDocumentoElectronico"),
@@ -537,6 +601,11 @@
 
   const poblarFormulario = (reserva) => {
     estado.reserva = reserva;
+    establecerClienteDocumentoActual({
+      documento: reserva.documento || "",
+      ruc: reserva.ruc || "",
+      documento_tipo_nombre: reserva.documento_tipo_nombre || "",
+    });
 
     const campos = {
       docElectronicoIdReserva: reserva.id || "",
@@ -544,9 +613,9 @@
         reserva.codigo_reserva || reserva.id || "---",
       docElectronicoClienteNombre: reserva.cliente || "",
       docElectronicoClienteTipoDocumento: tipoDocumentoPorNumero(
-        reserva.documento || "",
+        reserva.documento || reserva.ruc || "",
       ),
-      docElectronicoClienteNumero: reserva.documento || "",
+      docElectronicoClienteNumero: "",
       docElectronicoClienteEmail:
         reserva.correo_electronico || reserva.email || "",
       docElectronicoClienteDireccion:
@@ -570,6 +639,8 @@
         campo.textContent = valor;
       }
     });
+
+    actualizarNumeroDocumentoSunatDesdeCliente();
 
     const rangoFacturable = calcularRangoFacturable(
       reserva,
@@ -872,6 +943,9 @@
       toggleDocumentosElectronicosEmitidos,
     );
     form?.addEventListener("submit", emitirDocumentoElectronico);
+    clienteTipo?.addEventListener("change", () => {
+      actualizarNumeroDocumentoSunatDesdeCliente();
+    });
 
     overlay?.addEventListener("click", (evento) => {
       if (evento.target === overlay) {
@@ -955,15 +1029,13 @@
   };
 
   const seleccionarClienteDocumento = (cliente) => {
+    window.establecerClienteDocumentoActual?.(cliente);
     actualizarCampoCliente("docElectronicoClienteNombre", cliente.nombre || "");
     actualizarCampoCliente(
       "docElectronicoClienteTipoDocumento",
       obtenerTipoSunatCliente(cliente),
     );
-    actualizarCampoCliente(
-      "docElectronicoClienteNumero",
-      cliente.documento || "",
-    );
+    window.actualizarNumeroDocumentoSunatDesdeCliente?.(cliente);
     actualizarCampoCliente("docElectronicoClienteEmail", cliente.correo || "");
     actualizarCampoCliente(
       "docElectronicoClienteDireccion",
@@ -1010,7 +1082,7 @@
             role="option"
           >
             <strong>${escapeClienteHtml(cliente.nombre || "Sin nombre")}</strong>
-            <span>${escapeClienteHtml(cliente.tipo_documento_nombre || "Documento")}: ${escapeClienteHtml(cliente.documento || "---")}</span>
+            <span>${escapeClienteHtml(cliente.tipo_documento_nombre || "Documento")}: ${escapeClienteHtml(cliente.documento || "---")}${cliente.ruc ? ` · RUC: ${escapeClienteHtml(cliente.ruc)}` : ""}</span>
             <small>${escapeClienteHtml(cliente.correo || "Sin correo")} · ${escapeClienteHtml(cliente.procedencia || "Sin procedencia")}</small>
           </button>
         `,

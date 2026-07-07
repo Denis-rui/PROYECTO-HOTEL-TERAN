@@ -65,6 +65,39 @@
     }).format(fecha);
   };
 
+  const formatTimeOnly = (valor, fallback = "12:00") => {
+    if (!valor) return fallback;
+
+    const texto = String(valor);
+    const partes = texto.match(/[ T](\d{2}):(\d{2})/);
+    if (partes) return `${partes[1]}:${partes[2]}`;
+
+    const fecha = new Date(texto.replace(" ", "T"));
+    if (Number.isNaN(fecha.getTime())) return fallback;
+
+    return new Intl.DateTimeFormat("es-PE", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(fecha);
+  };
+
+  const obtenerPagoNormalizado = (reserva) => {
+    const total = Math.max(
+      0,
+      toNumber(reserva.total) + toNumber(reserva.cargo_checkout_tarde),
+    );
+    const totalPagadoNeto = Math.max(
+      0,
+      toNumber(reserva.total_pagado_neto) ||
+        toNumber(reserva.total_pagado) - toNumber(reserva.total_devuelto),
+    );
+    const saldo = Math.max(0, total - totalPagadoNeto);
+    const porcentaje = total > 0 ? Math.min(100, Math.round((totalPagadoNeto / total) * 100)) : 0;
+
+    return { saldo, porcentaje };
+  };
+
   const normalizarEstado = (estado) =>
     String(estado || "")
       .trim()
@@ -159,7 +192,7 @@
     if (!contenedor) return;
 
     const documentos = generarDocumentosBase(reserva);
-    const porcentajePago = toNumber(reserva.porcentaje_pago);
+    const { porcentaje: porcentajePago } = obtenerPagoNormalizado(reserva);
 
     if (contador) {
       contador.textContent = `${documentos.length} emitido${documentos.length === 1 ? "" : "s"}`;
@@ -234,12 +267,17 @@
           .filter(Boolean)
           .join(" | ")
       : reserva.habitacion || "---";
+    const pago = obtenerPagoNormalizado(reserva);
+    const checkInMostrar =
+      reserva.checkin_real || reserva.check_in || reserva.check_in_programado;
+    const checkOutMostrar =
+      reserva.checkout_real || reserva.check_out || reserva.check_out_programado;
 
     setText("#detalleReservaCodigo", reserva.codigo_reserva || reserva.id || "---");
     setText("#detalleReservaCliente", reserva.cliente || "---");
     setText("#detalleReservaEstado", etiquetaEstado(reserva.estado));
-    setText("#detalleReservaPago", `${toNumber(reserva.porcentaje_pago)}%`);
-    setText("#detalleReservaSaldo", formatMoney(reserva.saldo_pendiente));
+    setText("#detalleReservaPago", `${pago.porcentaje}%`);
+    setText("#detalleReservaSaldo", formatMoney(pago.saldo));
     setText("#detalleReservaClienteNombre", reserva.cliente || "---");
     setText(
       "#detalleReservaClienteDocumento",
@@ -323,20 +361,24 @@
       }
     }
     setText("#detalleReservaHabitaciones", habitacionesTexto);
-    setText("#detalleReservaCheckIn", formatDateOnly(reserva.check_in));
+    setText("#detalleReservaCheckIn", formatDateOnly(checkInMostrar));
     setText(
       "#detalleReservaHoraEntrada",
-      reserva.hora_entrada || reserva.horaEntrada || "---",
+      reserva.hora_entrada ||
+        reserva.horaEntrada ||
+        formatTimeOnly(checkInMostrar),
     );
-    setText("#detalleReservaCheckOut", formatDateOnly(reserva.check_out));
+    setText("#detalleReservaCheckOut", formatDateOnly(checkOutMostrar));
     setText(
       "#detalleReservaHoraSalida",
-      reserva.hora_salida || reserva.horaSalida || "---",
+      reserva.hora_salida ||
+        reserva.horaSalida ||
+        formatTimeOnly(checkOutMostrar),
     );
     setText("#detalleReservaTotal", formatMoney(reserva.total));
     setText(
       "#detalleReservaSaldoDetalle",
-      `Saldo pendiente: ${formatMoney(reserva.saldo_pendiente)}`,
+      `Saldo pendiente: ${formatMoney(pago.saldo)}`,
     );
     setText(
       "#detalleReservaUsuario",

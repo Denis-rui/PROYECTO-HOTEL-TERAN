@@ -240,6 +240,26 @@ class UsuarioService
 
     private function validarReglasNegocio(array $datos, ?int $ignorarId = null): ?string
     {
+        $correo = trim((string) ($datos['correo'] ?? ''));
+
+        if ($correo === '') {
+            return 'El correo electrónico es obligatorio.';
+        }
+
+        if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+            return 'El correo electrónico no tiene un formato válido.';
+        }
+
+        $telefono = trim((string) ($datos['telefono'] ?? ''));
+
+        if ($telefono === '') {
+            return 'El teléfono es obligatorio.';
+        }
+
+        if (!preg_match('/^9\d{8}$/', $telefono)) {
+            return 'El teléfono debe ser un celular peruano válido: debe empezar con 9 y tener 9 dígitos.';
+        }
+
         // 1. Validar Mayoría de Edad
         if (!empty($datos['fecha_nacimiento'])) {
             $fecha = DateTime::createFromFormat('Y-m-d', $datos['fecha_nacimiento']);
@@ -254,7 +274,7 @@ class UsuarioService
         if ($this->usuarioModel->existeValorUnico('nombre_usuario', $datos['nombre_usuario'] ?? '', $ignorarId)) {
             return 'El nombre de usuario ya está registrado.';
         }
-        if ($this->usuarioModel->existeValorUnico('correo', $datos['correo'] ?? '', $ignorarId)) {
+        if ($this->usuarioModel->existeValorUnico('correo', $correo, $ignorarId)) {
             return 'El correo electrónico ya está registrado.';
         }
         if ($this->usuarioModel->existeValorUnico('dni', $datos['dni'] ?? '', $ignorarId)) {
