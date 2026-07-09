@@ -34,6 +34,15 @@ class LoginService
                 return $this->respuesta(false, 'VALIDACION_ERROR', 'Contraseña incorrecta');
             }
 
+            // 2.1 Migración Silenciosa de Hash (si era MD5, texto plano o necesita re-hash)
+            if (
+                !password_verify($contrasenia, $contraseniaGuardada) || 
+                password_needs_rehash($contraseniaGuardada, PASSWORD_DEFAULT)
+            ) {
+                $nuevoHash = password_hash($contrasenia, PASSWORD_DEFAULT);
+                $this->usuarioModel->actualizar($user->id, ['contrasenia' => $nuevoHash]);
+            }
+
             // 3. Validar el rol (insensible a mayúsculas y espacios)
             $rolUsuario = $user->rol->rol ?? '';
             if (strcasecmp(trim($tipousuario), trim((string) $rolUsuario)) !== 0) {
