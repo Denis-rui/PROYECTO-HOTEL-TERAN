@@ -1067,7 +1067,7 @@ const cargarHabitacionesDisponibles = () => {
     }
   }
 
-  return fetch(BASE_URL + `Habitacion/disponiblesPorRango&${params.toString()}`)
+  return fetch(BASE_URL + `Habitacion/disponiblesPorRango?${params.toString()}`)
     .then((res) => res.json())
     .then((respuesta) => {
       const habitaciones = Array.isArray(respuesta)
