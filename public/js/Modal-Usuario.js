@@ -84,7 +84,7 @@ const validarFormularioUsuario = (datosUsuario) => {
     telefono: /^\d{9}$/,
     dni: /^\d{8}$/,
     rol: /^(administrador|recepcionista)$/,
-    password: /^.{5,}$/,
+    password: /^(?=.*[A-Za-z])(?=.*\d).{8,}$/,
   };
 
   if (!reglas.nombre.test(datosUsuario.nombre)) {
@@ -129,7 +129,7 @@ const validarFormularioUsuario = (datosUsuario) => {
     modoFormularioUsuario === "nuevo" &&
     !reglas.password.test(datosUsuario.password)
   ) {
-    return "Contrasena invalida. Minimo 5 caracteres.";
+    return "Contrasena invalida. Minimo 8 caracteres, utilice letras y numeros.";
   }
 
   if (
@@ -137,7 +137,7 @@ const validarFormularioUsuario = (datosUsuario) => {
     datosUsuario.password &&
     !reglas.password.test(datosUsuario.password)
   ) {
-    return "Contrasena invalida. Minimo 5 caracteres.";
+    return "Contrasena invalida. Minimo 8 caracteres, utilice letras y numeros.";
   }
 
   return "";

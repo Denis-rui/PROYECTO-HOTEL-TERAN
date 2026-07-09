@@ -196,6 +196,13 @@ class UsuarioService
             ]);
         }
 
+        $errorComplejidad = $this->validarComplejidadContrasenia($claveNueva);
+        if ($errorComplejidad) {
+            return $this->respuesta(false, 'VALIDACION_ERROR', $errorComplejidad, null, [
+                'clave_nueva' => $errorComplejidad,
+            ]);
+        }
+
         $user = $this->usuarioModel->obtenerPorNombreUsuario($nombreUsuario);
         if (!$user) return $this->respuesta(false, 'NO_ENCONTRADO', 'Usuario no encontrado.');
 
@@ -211,7 +218,7 @@ class UsuarioService
         ]);
 
         $this->usuarioModel->actualizar($user->id, [
-            'contrasenia' => md5($claveNueva) // Mantenemos tu estándar de encriptación
+            'contrasenia' => password_hash($claveNueva, PASSWORD_DEFAULT)
         ]);
 
         return $this->respuesta(true, 'ACTUALIZADO', 'Contraseña actualizada correctamente.', ['id' => (int) $user->id]);
@@ -281,13 +288,31 @@ class UsuarioService
             return 'El DNI ya está registrado en el sistema.';
         }
 
+        // 3. Validar Complejidad de Contraseña (si se envía)
+        $clave = $datos['contrasenia'] ?? $datos['password'] ?? null;
+        if (!empty($clave)) {
+            $errorComplejidad = $this->validarComplejidadContrasenia($clave);
+            if ($errorComplejidad) return $errorComplejidad;
+        }
+
         return null; // Todo en orden
+    }
+
+    private function validarComplejidadContrasenia(string $contrasenia): ?string
+    {
+        if (strlen($contrasenia) < 8) {
+            return 'La contraseña debe tener al menos 8 caracteres.';
+        }
+        if (!preg_match('/[A-Za-z]/', $contrasenia) || !preg_match('/\d/', $contrasenia)) {
+            return 'La contraseña debe contener al menos una letra y un número.';
+        }
+        return null;
     }
 
     private function normalizarContrasenia(?string $contrasenia): ?string
     {
         $contrasenia = trim((string) $contrasenia);
-        return $contrasenia === '' ? null : md5($contrasenia);
+        return $contrasenia === '' ? null : password_hash($contrasenia, PASSWORD_DEFAULT);
     }
 
     private function manejarExcepcion(Exception $e, string $accion): array
