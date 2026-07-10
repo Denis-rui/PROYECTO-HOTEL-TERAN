@@ -84,7 +84,7 @@
           <button type="button" id="btnCancelarHabitacion" class="btn-secundario">
             Cancelar
           </button>
-          <button type="submit" id="btnSubmitHabitacion" class="btn-primario">
+          <button type="button" id="btnSubmitHabitacion" class="btn-primario">
             Guardar
           </button>
         </div>

@@ -119,9 +119,39 @@ window.eliminarHabitacion = async (id, numero) => {
   }
 };
 
+function validarDatosHabitacionModal(dataObj) {
+  const numeroHabitacion = String(dataObj.numero_habitacion || "").trim();
+  const piso = Number(dataObj.piso);
+  const capacidad = Number(dataObj.capacidad);
+
+  if (!/^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$/.test(numeroHabitacion)) {
+    return {
+      campo: "numeroHabitacion",
+      mensaje: "El numero de habitacion solo puede contener letras, numeros y guiones internos.",
+    };
+  }
+
+  if (!Number.isInteger(piso) || piso < 1) {
+    return {
+      campo: "pisoHabitacion",
+      mensaje: "El piso debe ser un numero entero mayor a cero.",
+    };
+  }
+
+  if (!Number.isInteger(capacidad) || capacidad < 1) {
+    return {
+      campo: "capacidadHabitacion",
+      mensaje: "La capacidad debe ser un numero entero mayor a cero.",
+    };
+  }
+
+  return null;
+}
+
 // Guardar / Actualizar 
 document.addEventListener("click", async (e) => {
   if (e.target.id !== "btnSubmitHabitacion") return;
+  e.preventDefault();
 
   const form = document.getElementById("formNuevaHabitacion");
   if (!form) return;
@@ -137,6 +167,13 @@ document.addEventListener("click", async (e) => {
   }
 
   const dataObj   = Object.fromEntries(new FormData(form).entries());
+  const errorValidacion = validarDatosHabitacionModal(dataObj);
+  if (errorValidacion) {
+    document.getElementById(errorValidacion.campo)?.focus();
+    Notificar(errorValidacion.mensaje, "error");
+    return;
+  }
+
   const esEdicion = dataObj.id && dataObj.id !== "";
   const url       = BASE_URL + (esEdicion ? "Habitacion/editar" : "Habitacion/registrar");
   const metodo    = esEdicion ? "PUT" : "POST";

@@ -17,6 +17,8 @@ class NotificacionService
     public function obtenerPendientes($limite = 30): array
     {
         $limite = max(1, (int) $limite);
+        (new HabitacionService())->notificarLimpiezasVencidas();
+
         $clavesActivasCheckout = $this->notificacionModel->obtenerClavesActivasCheckout();
         $notificacionesDb = $this->notificacionModel->obtenerNoLeidas(max(200, $limite * 10));
 
