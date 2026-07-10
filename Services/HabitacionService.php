@@ -30,15 +30,20 @@ class HabitacionService
                 ]);
             }
 
+            $validacion = $this->validarDatosHabitacion($datos);
+            if (!$validacion['valido']) {
+                return $this->respuesta(false, 'VALIDACION_ERROR', $validacion['mensaje'], null, $validacion['errores']);
+            }
+
             $estadoNorm = $this->normalizarEstado($datos['estado'] ?? 'Disponible');
 
             $datosGuardar = [
-                'numero_habitacion' => $numeroHabitacion,
-                'piso' => (int) ($datos['piso'] ?? 1),
+                'numero_habitacion' => $validacion['datos']['numero_habitacion'],
+                'piso' => $validacion['datos']['piso'],
                 'id_tipo_habitacion' => $datos['id_tipo_habitacion'] ?? null,
                 'estado' => $estadoNorm,
                 'descripcion_habitacion' => $datos['descripcion_habitacion'] ?? $datos['descripcion'] ?? '',
-                'capacidad' => (int) ($datos['capacidad'] ?? 1),
+                'capacidad' => $validacion['datos']['capacidad'],
                 'activo' => (int) ($datos['activo'] ?? 1),
             ];
 
@@ -78,13 +83,23 @@ class HabitacionService
                 return $this->respuesta(false, 'CONFLICTO', 'No se puede editar porque está en mantenimiento.');
             }
 
+            $datosParaValidar = array_merge([
+                'numero_habitacion' => $habitacion->numero_habitacion,
+                'piso' => $habitacion->piso,
+                'capacidad' => $habitacion->capacidad,
+            ], $datos);
+            $validacion = $this->validarDatosHabitacion($datosParaValidar);
+            if (!$validacion['valido']) {
+                return $this->respuesta(false, 'VALIDACION_ERROR', $validacion['mensaje'], null, $validacion['errores']);
+            }
+
             $datosActualizar = [
-                'numero_habitacion' => $datos['numero_habitacion'] ?? $habitacion->numero_habitacion,
-                'piso' => (int) ($datos['piso'] ?? $habitacion->piso),
+                'numero_habitacion' => $validacion['datos']['numero_habitacion'],
+                'piso' => $validacion['datos']['piso'],
                 'id_tipo_habitacion' => $datos['id_tipo_habitacion'] ?? $habitacion->id_tipo_habitacion,
                 'estado' => $this->normalizarEstado($datos['estado'] ?? $habitacion->estado),
                 'descripcion_habitacion' => $datos['descripcion_habitacion'] ?? $datos['descripcion'] ?? $habitacion->descripcion_habitacion,
-                'capacidad' => (int) ($datos['capacidad'] ?? $habitacion->capacidad),
+                'capacidad' => $validacion['datos']['capacidad'],
             ];
 
             $this->habitacionModel->actualizar($id, $datosActualizar);
@@ -225,8 +240,8 @@ class HabitacionService
             if (!$habitacion) return $this->respuesta(false, 'NO_ENCONTRADO', 'Habitación no encontrada.');
 
             $estadoActual = strtolower($habitacion->estado);
-            if ($estadoActual !== 'mantenimiento' && $estadoActual !== 'en limpieza') {
-                return $this->respuesta(false, 'CONFLICTO', 'La habitación no está en Mantenimiento o Limpieza.');
+            if ($estadoActual !== 'en limpieza') {
+                return $this->respuesta(false, 'CONFLICTO', 'La habitacion no esta en limpieza.');
             }
 
             $this->habitacionModel->actualizar($id, [
@@ -285,6 +300,54 @@ class HabitacionService
         }
     }
 
+    public function notificarLimpiezasVencidas(): array
+    {
+        try {
+            $habitaciones = $this->habitacionModel
+                ->whereRaw('LOWER(estado) = ?', ['en limpieza'])
+                ->whereNotNull('limpieza_inicio')
+                ->whereRaw('limpieza_inicio <= DATE_SUB(NOW(), INTERVAL 1 HOUR)')
+                ->get();
+
+            $registradas = 0;
+
+            foreach ($habitaciones as $habitacion) {
+                $numero = $habitacion->numero_habitacion ?? $habitacion->id;
+                $guardado = $this->notificacionModel->guardarNotificacion(
+                    [
+                        'tipo' => 'limpieza_vencida',
+                        'id_reserva' => null,
+                        'id_habitacion' => (int) $habitacion->id,
+                        'leida' => 0,
+                    ],
+                    [
+                        'tipo' => 'limpieza_vencida',
+                        'titulo' => 'Limpieza vencida - Hab. ' . $numero,
+                        'mensaje' => 'La habitacion ' . $numero . ' supero el tiempo de limpieza. Confirma la limpieza o extiende el tiempo.',
+                        'id_reserva' => null,
+                        'id_habitacion' => (int) $habitacion->id,
+                        'id_cliente' => null,
+                        'leida' => 0,
+                        'prioridad' => 'critica',
+                    ]
+                );
+
+                if ($guardado) {
+                    $registradas++;
+                }
+            }
+
+            return $this->respuesta(true, 'OK', 'Alertas de limpieza vencida revisadas.', [
+                'registradas' => $registradas,
+            ]);
+        } catch (Exception $e) {
+            error_log("Error al revisar limpiezas vencidas: " . $e->getMessage());
+            return $this->respuesta(false, 'ERROR_INTERNO', 'Error al revisar limpiezas vencidas.', [
+                'registradas' => 0,
+            ]);
+        }
+    }
+
     public function extenderLimpieza(int $id, int $minutos = 15): array
     {
         try {
@@ -328,6 +391,39 @@ class HabitacionService
             'data' => $data,
             'errores' => array_filter($errores, fn($error) => $error !== null),
         ], $extra);
+    }
+
+    private function validarDatosHabitacion(array $datos): array
+    {
+        $errores = [];
+        $numeroHabitacion = trim((string) ($datos['numero_habitacion'] ?? ''));
+        $piso = filter_var($datos['piso'] ?? null, FILTER_VALIDATE_INT);
+        $capacidad = filter_var($datos['capacidad'] ?? null, FILTER_VALIDATE_INT);
+
+        if ($numeroHabitacion === '') {
+            $errores['numero_habitacion'] = 'El numero de habitacion es obligatorio.';
+        } elseif (!preg_match('/^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$/', $numeroHabitacion)) {
+            $errores['numero_habitacion'] = 'El numero de habitacion solo puede contener letras, numeros y guiones internos.';
+        }
+
+        if ($piso === false || $piso < 1) {
+            $errores['piso'] = 'El piso debe ser un numero entero mayor a cero.';
+        }
+
+        if ($capacidad === false || $capacidad < 1) {
+            $errores['capacidad'] = 'La capacidad debe ser un numero entero mayor a cero.';
+        }
+
+        return [
+            'valido' => empty($errores),
+            'mensaje' => 'Verifique los datos de la habitacion.',
+            'errores' => $errores,
+            'datos' => [
+                'numero_habitacion' => $numeroHabitacion,
+                'piso' => $piso === false ? 0 : $piso,
+                'capacidad' => $capacidad === false ? 0 : $capacidad,
+            ],
+        ];
     }
 
     // El normalizador se vino al servicio porque es lógica de formateo
