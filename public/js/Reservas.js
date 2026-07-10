@@ -603,17 +603,18 @@ const configurarEventosReservas = () => {
         }
 
         const dinero = (valor) => `S/ ${Number(valor || 0).toFixed(2)}`;
+        const dataDev = calculoCancelacion.data || {};
         Swal.fire({
           title: `Cancelar reserva ${codigo}`,
           html: `
             <p style="margin:0 0 8px; text-align:left;"><strong>Cliente:</strong> ${cliente}</p>
             <p style="margin:0 0 12px; text-align:left;"><strong>Check-in:</strong> ${checkin}</p>
             <div style="margin:0 0 14px; padding:10px; border:1px solid #ded8c9; text-align:left; font-size:13px;">
-              <p style="margin:0 0 5px;"><strong>Monto pagado:</strong> ${dinero(calculoCancelacion.monto_pagado)}</p>
-              <p style="margin:0 0 5px;"><strong>Noches hospedadas:</strong> ${dinero(calculoCancelacion.monto_usado)}</p>
-              <p style="margin:0 0 5px;"><strong>Noches con boleta/factura:</strong> ${dinero(calculoCancelacion.monto_documentado)}</p>
-              <p style="margin:0 0 5px;"><strong>Penalidad (${Number(calculoCancelacion.porcentaje_penalidad || 0)}%):</strong> ${dinero(calculoCancelacion.monto_penalidad)}</p>
-              <p style="margin:0;"><strong>Monto a devolver:</strong> ${dinero(calculoCancelacion.monto_devuelto)}</p>
+              <p style="margin:0 0 5px;"><strong>Monto pagado:</strong> ${dinero(dataDev.monto_pagado)}</p>
+              <p style="margin:0 0 5px;"><strong>Noches hospedadas:</strong> ${dinero(dataDev.monto_usado)}</p>
+              <p style="margin:0 0 5px;"><strong>Noches con boleta/factura:</strong> ${dinero(dataDev.monto_documentado)}</p>
+              <p style="margin:0 0 5px;"><strong>Penalidad (${Number(dataDev.porcentaje_penalidad || 0)}%):</strong> ${dinero(dataDev.monto_penalidad)}</p>
+              <p style="margin:0;"><strong>Monto a devolver:</strong> ${dinero(dataDev.monto_devuelto)}</p>
             </div>
             <select id="motivoCancelacionReserva" class="swal2-input" style="margin:0; width:100%;">
               <option value="">Motivo de cancelación</option>
