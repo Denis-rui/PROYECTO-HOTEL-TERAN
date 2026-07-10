@@ -12,6 +12,7 @@ use Models\ReporteOcupacionModel;
 use Models\ReservaHabitacionModel;
 use Models\ReservaModel;
 use Services\Comprobantes\ComprobanteService;
+use Services\ConfiguracionService;
 
 class RegistrarReservaService
 {
@@ -21,6 +22,7 @@ class RegistrarReservaService
     private ReporteOcupacionModel $reporteOcupacionModel;
     private PagoModel $pagoModel;
     private ComprobanteService $comprobanteService;
+    private ConfiguracionService $configuracionService;
 
     public function __construct()
     {
@@ -30,6 +32,7 @@ class RegistrarReservaService
         $this->reporteOcupacionModel = new ReporteOcupacionModel();
         $this->pagoModel = new PagoModel();
         $this->comprobanteService = new ComprobanteService();
+        $this->configuracionService = new ConfiguracionService();
     }
 
     public function registrarReserva(array $reserva, ?int $idUsuario = null): array
@@ -108,10 +111,16 @@ class RegistrarReservaService
                 return $this->respuesta(false, 'VALIDACION_ERROR', 'Debe registrar un pago inicial para realizar la reserva.');
             }
 
-            $montoMinimoInicial = round($totalCalculado * 0.5, 2);
+            $hotelConfig = $this->configuracionService->obtenerHotel(1);
+            $porcentajeAdelanto = 50; 
+            if ($hotelConfig['exito'] && isset($hotelConfig['data']['porcentaje_adelanto'])) {
+                $porcentajeAdelanto = (float) $hotelConfig['data']['porcentaje_adelanto'];
+            }
+
+            $montoMinimoInicial = round($totalCalculado * ($porcentajeAdelanto / 100), 2);
 
             if (!$esPagoPendiente && $montoPagoInicial < $montoMinimoInicial) {
-                return $this->respuesta(false, 'VALIDACION_ERROR', 'El pago inicial debe ser al menos el 50% del total de la reserva. Monto mínimo: S/ ' . number_format($montoMinimoInicial, 2));
+                return $this->respuesta(false, 'VALIDACION_ERROR', "El pago inicial debe ser al menos el {$porcentajeAdelanto}% del total de la reserva. Monto mínimo: S/ " . number_format($montoMinimoInicial, 2));
             }
 
             if (!$esPagoPendiente && $montoPagoInicial > $totalCalculado) {
