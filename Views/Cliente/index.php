@@ -76,7 +76,7 @@ $obtenerCampoCliente = static function ($cliente, string $campo, $defecto = '') 
               <td><?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'observaciones', '')) ?></td>
               <td>
                 <button type="button" class="btnVerPerfil" data-id="<?= $idCliente ?>" title="Ver perfil">&#128065;</button>
-                <button type="button" class="btnEditarCliente" data-id="<?= $idCliente ?>" data-tipo-documento="<?= htmlspecialchars((string) $obtenerCampoCliente($cliente, 'id_tipo_documento', '')) ?>" title="Editar">&#9998;</button>
+                <button type="button" class="btnEditarCliente" data-id="<?= $idCliente ?>" data-tipo-documento="<?= \Libraries\Core\Auth::xss((string) $obtenerCampoCliente($cliente, 'id_tipo_documento', '')) ?>" title="Editar">&#9998;</button>
                 <?php if ($estaActivo): ?>
                   <button type="button" class="btnInhabilitarCliente" data-id="<?= $idCliente ?>" title="Inhabilitar">&#128683;</button>
                 <?php else: ?>

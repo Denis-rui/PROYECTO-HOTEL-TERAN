@@ -8,7 +8,7 @@
     ksort($porPiso);
     ?>
     <?php foreach ($porPiso as $piso => $habitacionesPiso): ?>
-        <h3 class="titulo-piso">Piso <?= htmlspecialchars($piso) ?></h3>
+        <h3 class="titulo-piso">Piso <?= \Libraries\Core\Auth::xss($piso) ?></h3>
         <div class="carrusel-piso-wrapper">
             <button class="btn-carrusel btn-carrusel-izq" onclick="desplazarCarrusel(this, -1)"
                 title="Anterior">&#10094;</button>
@@ -37,27 +37,35 @@
                     ?>
                     <div class="tarjeta-habitacion <?= $claseEstado ?>" <?= $esLimpieza ? 'data-limpieza-id="' . (int) $hab['id'] . '" data-segundos="' . $segundosRestantes . '"' : '' ?>>
                         <div class="habitacion-cabecera">
-                            <div class="habitacion-numero"><?= htmlspecialchars($hab["numero_habitacion"]); ?></div>
+                            <div class="habitacion-numero"><?= \Libraries\Core\Auth::xss($hab["numero_habitacion"]); ?></div>
                             <div class="habitacion-cabecera-botones">
                                 <button class="btn-editar-habitacion" title="Editar habitación"
-                                    onclick="editarHabitacion(this, <?= (int) $hab['id'] ?>, '<?= htmlspecialchars($hab['numero_habitacion'], ENT_QUOTES) ?>', <?= (int) $hab['piso'] ?>, <?= (int) $hab['id_tipo_habitacion'] ?>, <?= (int) $hab['capacidad'] ?>, '<?= htmlspecialchars($hab['descripcion'] ?? '', ENT_QUOTES) ?>')">
+                                    type="button"
+                                    data-id="<?= (int) $hab['id'] ?>"
+                                    data-numero="<?= \Libraries\Core\Auth::xss($hab['numero_habitacion']) ?>"
+                                    data-piso="<?= (int) $hab['piso'] ?>"
+                                    data-id-tipo="<?= (int) $hab['id_tipo_habitacion'] ?>"
+                                    data-capacidad="<?= (int) $hab['capacidad'] ?>"
+                                    data-descripcion="<?= \Libraries\Core\Auth::xss($hab['descripcion'] ?? '') ?>">
                                     ✏️
                                 </button>
                                 <button class="btn-eliminar-habitacion" title="Eliminar habitación"
-                                    onclick="eliminarHabitacion(<?= (int) $hab['id'] ?>, '<?= htmlspecialchars($hab['numero_habitacion'], ENT_QUOTES) ?>')">
+                                    type="button"
+                                    data-id="<?= (int) $hab['id'] ?>"
+                                    data-numero="<?= \Libraries\Core\Auth::xss($hab['numero_habitacion']) ?>">
                                     🗑️
                                 </button>
                             </div>
                         </div>
 
-                        <div class="habitacion-tipo"><?= htmlspecialchars($hab['tipo_nombre']); ?> · Cap.
-                            <?= htmlspecialchars($hab['capacidad']); ?></div>
+                        <div class="habitacion-tipo"><?= \Libraries\Core\Auth::xss($hab['tipo_nombre']); ?> · Cap.
+                            <?= \Libraries\Core\Auth::xss($hab['capacidad']); ?></div>
                         <div class="habitacion-precio">S/ <?= number_format($hab['precio'], 0); ?> / Dia</div>
-                        <div class="habitacion-descripcion"><?= htmlspecialchars($hab['descripcion'] ?: 'Sin descripción'); ?></div>
+                        <div class="habitacion-descripcion"><?= \Libraries\Core\Auth::xss($hab['descripcion'] ?: 'Sin descripción'); ?></div>
 
                         <div class="habitacion-status-badges">
                             <div class="badge-status operativo">
-                                <?= $esLimpieza ? 'Mantenimiento' : ucfirst(htmlspecialchars($estadoBD)) ?>
+                                <?= $esLimpieza ? 'Mantenimiento' : ucfirst(\Libraries\Core\Auth::xss($estadoBD)) ?>
                             </div>
                         </div>
 
@@ -73,23 +81,28 @@
                                 </div>
                                 <?php if ($limpiezaVencida): ?>
                                     <button class="btn-terminar-limpieza"
-                                        onclick="terminarLimpieza(<?= (int) $hab['id'] ?>, '<?= htmlspecialchars($hab['numero_habitacion'], ENT_QUOTES) ?>')">
+                                        type="button"
+                                        data-id="<?= (int) $hab['id'] ?>"
+                                        data-numero="<?= \Libraries\Core\Auth::xss($hab['numero_habitacion']) ?>">
                                         Confirmar limpieza
                                     </button>
                                     <button class="btn-extender-limpieza"
-                                        onclick="extenderLimpieza(<?= (int) $hab['id'] ?>, '<?= htmlspecialchars($hab['numero_habitacion'], ENT_QUOTES) ?>', 15)">
+                                        type="button"
+                                        data-id="<?= (int) $hab['id'] ?>"
+                                        data-numero="<?= \Libraries\Core\Auth::xss($hab['numero_habitacion']) ?>"
+                                        data-minutos="15">
                                         Extender 15 min
                                     </button>
                                 <?php else: ?>
                                     <button class="btn-terminar-limpieza"
-                                        onclick="terminarLimpieza(<?= (int) $hab['id'] ?>, '<?= htmlspecialchars($hab['numero_habitacion'], ENT_QUOTES) ?>')">
+                                        onclick="terminarLimpieza(<?= (int) $hab['id'] ?>, '<?= \Libraries\Core\Auth::xss($hab['numero_habitacion']) ?>')">
                                         ✅ Terminé antes
                                     </button>
                                 <?php endif; ?>
                             </div>
                         <?php else: ?>
                             <div class="habitacion-acciones">
-                                <select class="selector-estado" onchange="cambiarEstado(<?= (int) $hab['id'] ?>, this.value)">
+                                <select class="selector-estado" data-id="<?= (int) $hab['id'] ?>">
                                     <option value="" disabled selected>Cambiar estado</option>
                                     <option value="Disponible">Disponible</option>
                                     <option value="Mantenimiento">Mantenimiento</option>

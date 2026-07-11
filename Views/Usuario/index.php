@@ -60,9 +60,9 @@
             <tr data-estado="<?= $estado ?>">
 
               <td><?= $id ?></td>
-              <td><?= htmlspecialchars($nombre_usuario) ?></td>
-              <td><?= htmlspecialchars($nombre_completo) ?></td>
-              <td><?= htmlspecialchars($rol) ?></td>
+              <td><?= $nombre_usuario ?></td>
+              <td><?= $nombre_completo ?></td>
+              <td><?= $rol ?></td>
               <td>
                 <span class="badge <?= $estado == 'activo' ? 'badge-activo' : 'badge-inactivo' ?>">
                   <?= ucfirst($estado) ?>
@@ -73,13 +73,13 @@
                   type="button"
                   class="btnEditarUsuario"
                   data-id="<?= (int) $id ?>"
-                  data-nombre="<?= htmlspecialchars($nombre_completo, ENT_QUOTES, 'UTF-8') ?>"
-                  data-usuario="<?= htmlspecialchars($nombre_usuario, ENT_QUOTES, 'UTF-8') ?>"
-                  data-correo="<?= htmlspecialchars($correo, ENT_QUOTES, 'UTF-8') ?>"
-                  data-telefono="<?= htmlspecialchars($telefono, ENT_QUOTES, 'UTF-8') ?>"
-                  data-dni="<?= htmlspecialchars($dni, ENT_QUOTES, 'UTF-8') ?>"
-                  data-fecha-nacimiento="<?= htmlspecialchars($fecha_nacimiento, ENT_QUOTES, 'UTF-8') ?>"
-                  data-usuario-rol="<?= htmlspecialchars($rol, ENT_QUOTES, 'UTF-8') ?>">✏️</button>
+                  data-nombre="<?= \Libraries\Core\Auth::xss($nombre_completo) ?>"
+                  data-usuario="<?= \Libraries\Core\Auth::xss($nombre_usuario) ?>"
+                  data-correo="<?= \Libraries\Core\Auth::xss($correo) ?>"
+                  data-telefono="<?= \Libraries\Core\Auth::xss($telefono) ?>"
+                  data-dni="<?= \Libraries\Core\Auth::xss($dni) ?>"
+                  data-fecha-nacimiento="<?= \Libraries\Core\Auth::xss($fecha_nacimiento) ?>"
+                  data-usuario-rol="<?= \Libraries\Core\Auth::xss($rol) ?>">✏️</button>
                 <button type="button" class="btnEliminarUsuario" data-id="<?= $id ?>">🗑️</button>
               </td>
             </tr>
