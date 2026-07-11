@@ -1748,7 +1748,9 @@ window.abrirModalReserva = async (modo = "nuevo", datos = null) => {
     estado.elementos.fechaEntrada?.addEventListener("change", () => {
       actualizarMinimosFecha();
       ajustarCheckoutPorDefecto();
-      limpiarSeleccionHabitaciones();
+      if (estado.modo !== "editar") {
+        limpiarSeleccionHabitaciones();
+      }
       cargarHabitacionesDisponibles();
     });
 
