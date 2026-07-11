@@ -1,7 +1,10 @@
 <?php
+$configServiceReserva = new \Services\ConfiguracionService();
+$hotelConfigReserva = $configServiceReserva->obtenerHotel(1);
+$porcentajePenalidad = $hotelConfigReserva['exito'] && isset($hotelConfigReserva['data']['porcentaje_penalidad_cancelacion']) ? $hotelConfigReserva['data']['porcentaje_penalidad_cancelacion'] : 25;
 ?>
 
-<section id="contenedor-modal-reserva" class="modal-reserva-overlay" style="display: none;">
+<section id="contenedor-modal-reserva" class="modal-reserva-overlay" style="display: none;" data-porcentaje-penalidad="<?= htmlspecialchars((string)$porcentajePenalidad) ?>">
   <div id="modalReserva" class="modal">
     <div class="modal-contenido">
       <header class="modal-reserva-cabecera">
