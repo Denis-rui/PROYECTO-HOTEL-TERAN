@@ -480,8 +480,12 @@ const sincronizarHabitaciones = () => {
     const totalPagado = Number(estado.reservaTotalPagadoNeto || estado.reservaTotalPagado || 0);
 
     if ((esEstadia || esConfirmada) && haCambiadoReserva() && totalPagado > totalNuevo) {
+      const modalElement = document.getElementById("contenedor-modal-reserva");
+      const porcentajePenalidad = modalElement && modalElement.dataset.porcentajePenalidad ? parseFloat(modalElement.dataset.porcentajePenalidad) : 25;
+      const factorPenalidad = porcentajePenalidad / 100;
+      
       const montoCancelado = Math.max(0, totalAnterior - totalNuevo);
-      const montoPenalidad = redondearMonedaPeru(montoCancelado * 0.25);
+      const montoPenalidad = redondearMonedaPeru(montoCancelado * factorPenalidad);
       const excesoDevolvible = Math.max(0, totalPagado - totalNuevo);
       const montoDevolver = redondearMonedaPeru(Math.min(montoCancelado - montoPenalidad, excesoDevolvible));
       const montoTotal = redondearMonedaPeru(montoPenalidad + montoDevolver);
@@ -1384,8 +1388,12 @@ const calcularDevolucionPreviaEdicion = (datosReserva) => {
     estado.reservaTotalPagadoNeto || estado.reservaTotalPagado || 0,
   );
 
+  const modalElement = document.getElementById("contenedor-modal-reserva");
+  const porcentajePenalidad = modalElement && modalElement.dataset.porcentajePenalidad ? parseFloat(modalElement.dataset.porcentajePenalidad) : 25;
+  const factorPenalidad = porcentajePenalidad / 100;
+
   const montoCancelado = Math.max(0, totalAnterior - totalNuevo);
-  const montoPenalidad = redondearMonedaPeru(montoCancelado * 0.25);
+  const montoPenalidad = redondearMonedaPeru(montoCancelado * factorPenalidad);
   const excesoDevolvible = Math.max(0, totalPagado - totalNuevo);
   const montoDevuelto = redondearMonedaPeru(Math.min(montoCancelado - montoPenalidad, excesoDevolvible));
 
@@ -1394,13 +1402,13 @@ const calcularDevolucionPreviaEdicion = (datosReserva) => {
   const fechaDesde = esConfirmada ? (datosReserva?.checkIn || "") : (datosReserva?.checkOut || "");
   const fechaHasta = esConfirmada ? (datosReserva?.checkOut || "") : (String(estado.reservaCheckOutOriginal || "").slice(0, 10));
   const descripcion = esConfirmada
-    ? `Devolución por reducción de reserva. Total anterior: S/ ${totalAnterior.toFixed(2)}; nuevo total: S/ ${totalNuevo.toFixed(2)}; pagado: S/ ${totalPagado.toFixed(2)}; penalidad (25%): S/ ${montoPenalidad.toFixed(2)}.`
-    : `Devolución por disminución de días de estadía del ${fechaDesde} al ${fechaHasta || fechaDesde}. Total anterior: S/ ${totalAnterior.toFixed(2)}; nuevo total: S/ ${totalNuevo.toFixed(2)}; pagado: S/ ${totalPagado.toFixed(2)}; penalidad (25%): S/ ${montoPenalidad.toFixed(2)}.`;
+    ? `Devolución por reducción de reserva. Total anterior: S/ ${totalAnterior.toFixed(2)}; nuevo total: S/ ${totalNuevo.toFixed(2)}; pagado: S/ ${totalPagado.toFixed(2)}; penalidad (${porcentajePenalidad}%): S/ ${montoPenalidad.toFixed(2)}.`
+    : `Devolución por disminución de días de estadía del ${fechaDesde} al ${fechaHasta || fechaDesde}. Total anterior: S/ ${totalAnterior.toFixed(2)}; nuevo total: S/ ${totalNuevo.toFixed(2)}; pagado: S/ ${totalPagado.toFixed(2)}; penalidad (${porcentajePenalidad}%): S/ ${montoPenalidad.toFixed(2)}.`;
 
   return {
     monto_devuelto: montoDevuelto,
     monto_penalidad: montoPenalidad,
-    porcentaje_penalidad: 25,
+    porcentaje_penalidad: porcentajePenalidad,
     descripcion,
     total_anterior: totalAnterior,
     total_nuevo: totalNuevo,

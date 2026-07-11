@@ -1,4 +1,9 @@
-<section class="modal-pago-section" id="contenedor-modal-pago" style="display: none;">
+<?php
+$configServicePago = new \Services\ConfiguracionService();
+$hotelConfigPago = $configServicePago->obtenerHotel(1);
+$porcentajeAdelantoModal = $hotelConfigPago['exito'] && isset($hotelConfigPago['data']['porcentaje_adelanto']) ? $hotelConfigPago['data']['porcentaje_adelanto'] : 50;
+?>
+<section class="modal-pago-section" id="contenedor-modal-pago" style="display: none;" data-porcentaje-adelanto="<?= htmlspecialchars((string)$porcentajeAdelantoModal) ?>">
     <div id="modalPago" class="modal-pago">
         <div class="modal-pago-contenido">
             <!-- CERRAR -->

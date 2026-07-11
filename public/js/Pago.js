@@ -112,11 +112,15 @@ const poblarCamposOcultosReserva = (datos = {}) => {
         etiquetaPolitica.textContent = "(Saldo pendiente)";
       }
     } else {
+      const modalElement = document.getElementById("contenedor-modal-pago");
+      const porcentajeAdelanto = modalElement && modalElement.dataset.porcentajeAdelanto ? parseFloat(modalElement.dataset.porcentajeAdelanto) : 50;
+      const factorAdelanto = porcentajeAdelanto / 100;
+      
       const hoy = new Date().toISOString().split("T")[0];
       const esHoy = datos.checkIn === hoy;
-      sugerido = esHoy ? saldo : Math.max(0, total * 0.5 - pagado);
+      sugerido = esHoy ? saldo : Math.max(0, total * factorAdelanto - pagado);
       if (etiquetaPolitica) {
-        etiquetaPolitica.textContent = "(50% por reserva anticipada)";
+        etiquetaPolitica.textContent = `(${porcentajeAdelanto}% por reserva anticipada)`;
       }
     }
 
@@ -134,12 +138,15 @@ const poblarCamposOcultosReserva = (datos = {}) => {
   }
 
   if (inputMonto) {
+    const modalElement = document.getElementById("contenedor-modal-pago");
+    const factorAdelanto = (modalElement && modalElement.dataset.porcentajeAdelanto ? parseFloat(modalElement.dataset.porcentajeAdelanto) : 50) / 100;
+
     inputMonto.max = saldoDisponible > 0 ? saldoDisponible.toFixed(2) : "";
     inputMonto.min = datos.idReserva
       ? "0.01"
       : Math.max(
           0.01,
-          Number((Number(datos.totalReserva || 0) * 0.5).toFixed(2)),
+          Number((Number(datos.totalReserva || 0) * factorAdelanto).toFixed(2)),
         );
   }
 
@@ -287,10 +294,13 @@ const configurarEventosPago = () => {
         const totalReserva = parseFloat(
           document.getElementById("pagoTotalReserva")?.value || "0",
         );
-        const minimoInicial = totalReserva * 0.5;
+        const modalElement = document.getElementById("contenedor-modal-pago");
+        const porcentajeAdelanto = modalElement && modalElement.dataset.porcentajeAdelanto ? parseFloat(modalElement.dataset.porcentajeAdelanto) : 50;
+        const factorAdelanto = porcentajeAdelanto / 100;
+        const minimoInicial = totalReserva * factorAdelanto;
         if (montoNumerico < minimoInicial) {
           window.Alerta(
-            `El pago inicial debe ser al menos el 50% del total. Monto mínimo: S/ ${minimoInicial.toFixed(2)}`,
+            `El pago inicial debe ser al menos el ${porcentajeAdelanto}% del total. Monto mínimo: S/ ${minimoInicial.toFixed(2)}`,
             "advertencia",
           );
           return;
