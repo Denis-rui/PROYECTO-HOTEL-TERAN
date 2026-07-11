@@ -60,10 +60,23 @@ class RegistrarPagoService
             }
 
             if (strtolower((string) ($reserva['estado'] ?? '')) === 'pendiente') {
-                $reservaEntidad = $this->reservaModel->obtenerReservaSimple($idReserva);
-                if ($reservaEntidad) {
-                    $reservaEntidad->estado = 'confirmada';
-                    $this->reservaModel->guardar($reservaEntidad);
+                $configuracionService = new \Services\ConfiguracionService();
+                $hotelConfig = $configuracionService->obtenerHotel(1);
+                $porcentajeAdelanto = 50; 
+                if ($hotelConfig['exito'] && isset($hotelConfig['data']['porcentaje_adelanto'])) {
+                    $porcentajeAdelanto = (float) $hotelConfig['data']['porcentaje_adelanto'];
+                }
+
+                $totalReserva = (float) ($reserva['total'] ?? 0);
+                $montoMinimoRequerido = round($totalReserva * ($porcentajeAdelanto / 100), 2);
+                $totalPagadoHastaAhora = (float) ($reserva['total_pagado'] ?? 0) + $monto;
+
+                if ($totalPagadoHastaAhora >= $montoMinimoRequerido) {
+                    $reservaEntidad = $this->reservaModel->obtenerReservaSimple($idReserva);
+                    if ($reservaEntidad) {
+                        $reservaEntidad->estado = 'confirmada';
+                        $this->reservaModel->guardar($reservaEntidad);
+                    }
                 }
             }
 
