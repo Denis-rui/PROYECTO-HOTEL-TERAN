@@ -18,12 +18,12 @@ class LoginService
         try {
             $user = $this->usuarioModel->obtenerPorNombreUsuario($usuario);
 
-            // 1. Validar si el usuario existe
+            //Validar si el usuario existe
             if (!$user) {
                 return $this->respuesta(false, 'NO_ENCONTRADO', 'Usuario no encontrado');
             }
 
-            // 2. Validar la contraseña (incluyendo legacy MD5 y texto plano)
+            // Validar la contraseña 
             $contraseniaGuardada = $user->contrasenia;
             $contraseniaValida =
                 password_verify($contrasenia, $contraseniaGuardada)
@@ -34,7 +34,13 @@ class LoginService
                 return $this->respuesta(false, 'VALIDACION_ERROR', 'Contraseña incorrecta');
             }
 
-            // 2.1 Migración Silenciosa de Hash (si era MD5, texto plano o necesita re-hash)
+
+            // Validar el rol 
+            $rolUsuario = $user->rol->rol ?? '';
+            if (strcasecmp(trim($tipousuario), trim((string) $rolUsuario)) !== 0) {
+                return $this->respuesta(false, 'NO_AUTORIZADO', 'Rol de usuario no coincide');
+            }
+            // Migración Silenciosa de Hash
             if (
                 !password_verify($contrasenia, $contraseniaGuardada) || 
                 password_needs_rehash($contraseniaGuardada, PASSWORD_DEFAULT)
@@ -42,13 +48,6 @@ class LoginService
                 $nuevoHash = password_hash($contrasenia, PASSWORD_DEFAULT);
                 $this->usuarioModel->actualizar($user->id, ['contrasenia' => $nuevoHash]);
             }
-
-            // 3. Validar el rol (insensible a mayúsculas y espacios)
-            $rolUsuario = $user->rol->rol ?? '';
-            if (strcasecmp(trim($tipousuario), trim((string) $rolUsuario)) !== 0) {
-                return $this->respuesta(false, 'NO_AUTORIZADO', 'Rol de usuario no coincide');
-            }
-
             // 4. Retornar el arreglo de éxito solo con los datos necesarios para la sesión
             return $this->respuesta(true, 'OK', 'Autenticación correcta.', [
                 'usuario' => [

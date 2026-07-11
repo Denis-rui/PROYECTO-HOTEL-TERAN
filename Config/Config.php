@@ -2,7 +2,17 @@
 
 $env = parse_ini_file(__DIR__ . '/../.env');
 
-define('BASE_URL', $env['BASE_URL']);
+$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    ? 'https'
+    : 'http';
+
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+
+define(
+    'BASE_URL',
+    $scheme . '://' . $host . '/DAW-II/Proyecto-Hotel-TERAN/'
+);
+
 define('DB_HOST', $env['DB_HOST']);
 define('DB_PORT', $env['DB_PORT']);
 define('DB_NAME', $env['DB_NAME']);

@@ -100,8 +100,41 @@ class CheckInReservaService
                 return $this->respuesta(false, 'CONFLICTO', 'Solo se puede registrar pre-check-in de reservas confirmadas.');
             }
 
-            if (!$this->esAntesCheckinNormal()) {
-                return $this->respuesta(false, 'CONFLICTO', 'Desde las 1:40 p. m. corresponde realizar check-in normal.');
+            // Validar ventana horaria del pre-check-in según la fecha de ingreso
+            $zona = new \DateTimeZone('America/Lima');
+            $ahora = new \DateTimeImmutable('now', $zona);
+            $fechaCheckinProgramado = $reservaActual->check_in_programado;
+
+            if ($fechaCheckinProgramado) {
+                $checkinDate = new \DateTimeImmutable($fechaCheckinProgramado, $zona);
+                $hoyStr = $ahora->format('Y-m-d');
+                $checkinStr = $checkinDate->format('Y-m-d');
+
+                if ($hoyStr < $checkinStr) {
+                    return $this->respuesta(false, 'CONFLICTO', 'El pre-check-in solo está disponible el mismo día de ingreso a partir de las 12:00 p. m. Se recomienda actualizar la fecha de check-in de la reserva si el cliente llegó antes.');
+                }
+
+                if ($hoyStr === $checkinStr) {
+                    $inicioPreCheckin = $ahora->setTime(12, 0, 0);
+                    $finPreCheckin = $ahora->setTime(13, 40, 0);
+
+                    if ($ahora < $inicioPreCheckin) {
+                        return $this->respuesta(false, 'CONFLICTO', 'El pre-check-in estará disponible a partir de las 12:00 p. m. del día de ingreso. Se recomienda actualizar la fecha de check-in de la reserva si el cliente llegó antes.');
+                    }
+
+                    if ($ahora >= $finPreCheckin) {
+                        return $this->respuesta(false, 'CONFLICTO', 'Desde las 1:40 p. m. corresponde realizar check-in normal.');
+                    }
+                }
+
+                if ($hoyStr > $checkinStr) {
+                    return $this->respuesta(false, 'CONFLICTO', 'Desde las 1:40 p. m. corresponde realizar check-in normal.');
+                }
+            } else {
+                // Sin fecha programada, usar la lógica general
+                if (!$this->esAntesCheckinNormal()) {
+                    return $this->respuesta(false, 'CONFLICTO', 'Desde las 1:40 p. m. corresponde realizar check-in normal.');
+                }
             }
 
             $fechaPreCheckin = FechaHotelHelper::ahora();

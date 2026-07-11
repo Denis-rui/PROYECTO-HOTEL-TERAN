@@ -5,7 +5,7 @@ ob_start();
 session_start([
     'cookie_lifetime' => 0,
     'cookie_path' => '/',
-    'cookie_domain' => 'localhost',
+    // 'cookie_domain' => 'localhost',
     'cookie_secure' => false,
     'cookie_httponly' => true,
     'cookie_samesite' => 'Lax'
