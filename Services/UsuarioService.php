@@ -243,8 +243,7 @@ class UsuarioService
         }
     }
 
-    // ── MÉTODOS PRIVADOS (REGLAS DE NEGOCIO) ──
-
+    //  REGLAS DE NEGOCIO
     private function validarReglasNegocio(array $datos, ?int $ignorarId = null): ?string
     {
         $correo = trim((string) ($datos['correo'] ?? ''));
