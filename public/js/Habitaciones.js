@@ -251,8 +251,60 @@ function inicializarCarruseles() {
   });
 }
 
+function inicializarAccionesHabitaciones() {
+  const grid = document.querySelector(".grid-habitaciones");
+  if (!grid) return;
+
+  grid.addEventListener("click", (event) => {
+    const editarBtn = event.target.closest(".btn-editar-habitacion");
+    if (editarBtn) {
+      editarHabitacion(
+        editarBtn,
+        Number(editarBtn.dataset.id),
+        editarBtn.dataset.numero,
+        Number(editarBtn.dataset.piso),
+        Number(editarBtn.dataset.idTipo),
+        Number(editarBtn.dataset.capacidad),
+        editarBtn.dataset.descripcion || ""
+      );
+      return;
+    }
+
+    const eliminarBtn = event.target.closest(".btn-eliminar-habitacion");
+    if (eliminarBtn) {
+      eliminarHabitacion(Number(eliminarBtn.dataset.id), eliminarBtn.dataset.numero || "");
+      return;
+    }
+
+    const terminarBtn = event.target.closest(".btn-terminar-limpieza");
+    if (terminarBtn) {
+      terminarLimpieza(Number(terminarBtn.dataset.id), terminarBtn.dataset.numero || "");
+      return;
+    }
+
+    const extenderBtn = event.target.closest(".btn-extender-limpieza");
+    if (extenderBtn) {
+      extenderLimpieza(
+        Number(extenderBtn.dataset.id),
+        extenderBtn.dataset.numero || "",
+        Number(extenderBtn.dataset.minutos) || 15
+      );
+      return;
+    }
+  });
+
+  grid.addEventListener("change", (event) => {
+    const select = event.target.closest(".selector-estado");
+    if (!select) return;
+    const id = Number(select.dataset.id);
+    if (!id) return;
+    cambiarEstado(id, select.value);
+  });
+}
+
 // Inicializar todo al cargar la página
 document.addEventListener("DOMContentLoaded", () => {
   inicializarCarruseles();
   iniciarCountdownsLimpieza();
+  inicializarAccionesHabitaciones();
 });

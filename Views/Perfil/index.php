@@ -7,11 +7,11 @@
     </span>
 
     <h3 class="perfil-cargo">
-        <?= htmlspecialchars($_SESSION['rol'] ?? 'Usuario') ?>
+        <?= \Libraries\Core\Auth::xss($_SESSION['rol'] ?? 'Usuario') ?>
     </h3>
 
     <span class="perfil-rol">
-        <?= htmlspecialchars($_SESSION['usuario'] ?? '') ?>
+        <?= \Libraries\Core\Auth::xss($_SESSION['usuario'] ?? '') ?>
     </span>
 
     <hr>

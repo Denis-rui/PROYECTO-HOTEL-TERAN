@@ -28,7 +28,7 @@
               <?php if (!empty($filtros['tipos'])): ?>
                 <?php foreach ($filtros['tipos'] as $tipo): ?>
                   <option value="<?= htmlspecialchars($tipo['id']) ?>">
-                    <?= htmlspecialchars($tipo['tipo']) ?>
+                    <?= \Libraries\Core\Auth::xss($tipo['tipo']) ?>
                   </option>
                 <?php endforeach; ?>
               <?php endif; ?>
