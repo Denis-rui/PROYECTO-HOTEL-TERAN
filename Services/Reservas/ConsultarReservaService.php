@@ -42,7 +42,11 @@ class ConsultarReservaService
         }
 
         if ($estado === 'pendiente') {
-            $acciones[] = 'eliminar_pendiente';
+            if (($reserva['porcentaje_pago'] ?? 0) > 0) {
+                $acciones[] = 'cancelar';
+            } else {
+                $acciones[] = 'eliminar_pendiente';
+            }
         }
 
         if ($estado === 'confirmada') {
