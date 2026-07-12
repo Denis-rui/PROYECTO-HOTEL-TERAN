@@ -80,11 +80,13 @@ $tipos = $data['tipos_habitacion'] ?? [];
       <div class="form-campo">
         <label for="porcentaje_adelanto" class="form-label">ADELANTO PARA RESERVA (%)</label>
         <input id="porcentaje_adelanto" type="number" name="porcentaje_adelanto" class="form-input" value="<?= $hotel['porcentaje_adelanto'] ?? 50 ?>" min="0" max="100" />
+        <span id="error-porcentaje_adelanto" class="error" aria-live="polite"></span>
         <small>(Por defecto 50% según política)</small>
       </div>
       <div class="form-campo">
         <label for="porcentaje_penalidad" class="form-label">PENALIDAD POR CANCELACIÓN (%)</label>
         <input id="porcentaje_penalidad" type="number" name="porcentaje_penalidad" class="form-input" value="<?= $hotel['porcentaje_penalidad_cancelacion'] ?? 25 ?>" min="0" max="100" />
+        <span id="error-porcentaje_penalidad" class="error" aria-live="polite"></span>
         <small>(Por defecto 25% según política)</small>
       </div>
     </div>
