@@ -35,7 +35,7 @@ $estadosTotales = json_encode(array_column($graficoEstados, 'total'), JSON_UNESC
       <div class="widget-icon">🛏️</div>
       <div class="widget-info">
         <p class="widget-label">Habitaciones disponibles</p>
-        <strong id="statHabitacionesDisponibles"><?= htmlspecialchars($stats['habitaciones_disponibles'] ?? 0) ?></strong>
+        <strong id="statHabitacionesDisponibles"><?= \Libraries\Core\Auth::xss($stats['habitaciones_disponibles'] ?? 0) ?></strong>
       </div>
     </div>
 
@@ -43,7 +43,7 @@ $estadosTotales = json_encode(array_column($graficoEstados, 'total'), JSON_UNESC
       <div class="widget-icon">🗓️</div>
       <div class="widget-info">
         <p class="widget-label">Reservas Activas</p>
-        <strong id="statReservasActivas"><?= htmlspecialchars($stats['reservas_activas'] ?? 0) ?></strong>
+        <strong id="statReservasActivas"><?= \Libraries\Core\Auth::xss($stats['reservas_activas'] ?? 0) ?></strong>
       </div>
     </div>
 
@@ -51,7 +51,7 @@ $estadosTotales = json_encode(array_column($graficoEstados, 'total'), JSON_UNESC
       <div class="widget-icon">💰📈</div>
       <div class="widget-info">
         <p class="widget-label">Ingreso del día</p>
-        <strong id="statIngresoDia">S/ <?= htmlspecialchars(number_format((float) ($stats['ingreso_dia'] ?? 0), 2)) ?></strong>
+        <strong id="statIngresoDia">S/ <?= \Libraries\Core\Auth::xss(number_format((float) ($stats['ingreso_dia'] ?? 0), 2)) ?></strong>
       </div>
     </div>
   </section>
@@ -65,7 +65,7 @@ $estadosTotales = json_encode(array_column($graficoEstados, 'total'), JSON_UNESC
           <span>➔</span>
         </div>
         <p>Check in (hoy)</p>
-        <strong id="statCheckinsHoy"><?= htmlspecialchars($stats['checkins_hoy'] ?? 0) ?></strong>
+        <strong id="statCheckinsHoy"><?= \Libraries\Core\Auth::xss($stats['checkins_hoy'] ?? 0) ?></strong>
       </div>
 
       <div class="activity-pill pill-purple">
@@ -73,7 +73,7 @@ $estadosTotales = json_encode(array_column($graficoEstados, 'total'), JSON_UNESC
           <span>⬅</span>
         </div>
         <p>Check out (hoy)</p>
-        <strong id="statCheckoutsHoy"><?= htmlspecialchars($stats['checkouts_hoy'] ?? 0) ?></strong>
+        <strong id="statCheckoutsHoy"><?= \Libraries\Core\Auth::xss($stats['checkouts_hoy'] ?? 0) ?></strong>
       </div>
 
     </div>
@@ -92,7 +92,7 @@ $estadosTotales = json_encode(array_column($graficoEstados, 'total'), JSON_UNESC
                   <span>Habitaciones en mantenimiento</span>
                   <span class="chevron-icon">›</span>
                 </div>
-                <span class="summary-value" id="statMantenimiento"><?= htmlspecialchars($stats['habitaciones_mantenimiento'] ?? 0) ?></span>
+                <span class="summary-value" id="statMantenimiento"><?= \Libraries\Core\Auth::xss($stats['habitaciones_mantenimiento'] ?? 0) ?></span>
               </div>
 
               <div class="mante-accordion-content" id="manteDetalle">
@@ -100,8 +100,8 @@ $estadosTotales = json_encode(array_column($graficoEstados, 'total'), JSON_UNESC
                   <div class="mante-grid">
                     <?php foreach ($stats['detalles_mantenimiento'] as $det): ?>
                       <div class="mante-row">
-                        <span class="mante-hab">Hab. <?= htmlspecialchars($det['numero_habitacion']) ?>:</span>
-                        <span class="mante-razon"><?= htmlspecialchars($det['motivo']) ?></span>
+                        <span class="mante-hab">Hab. <?= \Libraries\Core\Auth::xss($det['numero_habitacion']) ?>:</span>
+                        <span class="mante-razon"><?= \Libraries\Core\Auth::xss($det['motivo']) ?></span>
                       </div>
                     <?php endforeach; ?>
                   </div>
@@ -115,14 +115,14 @@ $estadosTotales = json_encode(array_column($graficoEstados, 'total'), JSON_UNESC
                 <span class="summary-icon">📍</span>
                 <span>Lugar de procedencia</span>
               </div>
-              <span class="summary-value"><?= htmlspecialchars($stats['total_procedencias'] ?? 0) ?></span>
+              <span class="summary-value"><?= \Libraries\Core\Auth::xss($stats['total_procedencias'] ?? 0) ?></span>
             </li>
             <li>
               <div class="summary-item-left">
                 <span class="summary-icon">🏠</span>
                 <span>Estancia mas corta(dias)</span>
               </div>
-              <span class="summary-value"><?= htmlspecialchars($stats['estancia_minima'] ?? 0) ?></span>
+              <span class="summary-value"><?= \Libraries\Core\Auth::xss($stats['estancia_minima'] ?? 0) ?></span>
             </li>
             <li>
               <div class="summary-item-left">
@@ -140,9 +140,9 @@ $estadosTotales = json_encode(array_column($graficoEstados, 'total'), JSON_UNESC
       <h3 class="section-title">Notificaciones</h3>
       <div id="panelNotificacionesCheckout" class="panel-notificaciones">
         <?php foreach (($notificaciones['notificaciones'] ?? []) as $notificacion): ?>
-          <div class="notificacion-dashboard <?= htmlspecialchars($notificacion['prioridad']) ?>">
-            <strong><?= htmlspecialchars($notificacion['titulo']) ?></strong>
-            <span><?= htmlspecialchars($notificacion['mensaje']) ?></span>
+          <div class="notificacion-dashboard <?= \Libraries\Core\Auth::xss($notificacion['prioridad']) ?>">
+            <strong><?= \Libraries\Core\Auth::xss($notificacion['titulo']) ?></strong>
+            <span><?= \Libraries\Core\Auth::xss($notificacion['mensaje']) ?></span>
           </div>
         <?php endforeach; ?>
       </div>

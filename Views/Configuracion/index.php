@@ -69,7 +69,7 @@ $tipos = $data['tipos_habitacion'] ?? [];
 
       <div class="form-campo form-campo--full">
         <label for="descripcion" class="form-label">DESCRIPCIÓN / SLOGAN</label>
-        <textarea id="descripcion" name="descripcion" class="form-textarea"><?= htmlspecialchars($hotel['descripcion'] ?? '') ?></textarea>
+        <textarea id="descripcion" name="descripcion" class="form-textarea"><?= \Libraries\Core\Auth::xss($hotel['descripcion'] ?? '') ?></textarea>
       </div>
     </div>
 
@@ -111,10 +111,10 @@ $tipos = $data['tipos_habitacion'] ?? [];
         <?php foreach ($tipos as $tipo): ?>
           <tr>
             <td><?= $tipo['id'] ?></td>
-            <td><strong><?= htmlspecialchars($tipo['tipo']) ?></strong></td>
+            <td><strong><?= \Libraries\Core\Auth::xss($tipo['tipo']) ?></strong></td>
             <td>S/ <?= number_format($tipo['precio_base'], 2) ?></td>
             <td>
-              <button class="btn-editar-tipo" data-id="<?= $tipo['id'] ?>" data-tipo="<?= htmlspecialchars($tipo['tipo']) ?>" data-precio="<?= $tipo['precio_base'] ?>">✏️</button>
+              <button class="btn-editar-tipo" data-id="<?= $tipo['id'] ?>" data-tipo="<?= \Libraries\Core\Auth::xss($tipo['tipo']) ?>" data-precio="<?= $tipo['precio_base'] ?>">✏️</button>
             </td>
           </tr>
         <?php endforeach; ?>

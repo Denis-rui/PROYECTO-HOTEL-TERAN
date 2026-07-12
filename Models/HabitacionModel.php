@@ -30,6 +30,11 @@ class HabitacionModel extends Eloquent
         return self::create($datos);
     }
 
+    public function obtenerPorNumero(string $numeroHabitacion)
+    {
+        return self::where('numero_habitacion', $numeroHabitacion)->first();
+    }
+
     public function actualizar(int $id, array $datos)
     {
         return self::where('id', $id)->update($datos);

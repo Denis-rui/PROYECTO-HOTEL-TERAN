@@ -246,7 +246,12 @@ class UsuarioService
     //  REGLAS DE NEGOCIO
     private function validarReglasNegocio(array $datos, ?int $ignorarId = null): ?string
     {
+        $nombreUsuario = trim((string) ($datos['nombre_usuario'] ?? ''));
         $correo = trim((string) ($datos['correo'] ?? ''));
+
+        if ($nombreUsuario === '') {
+            return 'El nombre de usuario es obligatorio.';
+        }
 
         if ($correo === '') {
             return 'El correo electrónico es obligatorio.';

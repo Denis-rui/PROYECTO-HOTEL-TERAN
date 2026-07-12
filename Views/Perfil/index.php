@@ -7,11 +7,11 @@
     </span>
 
     <h3 class="perfil-cargo">
-        <?= htmlspecialchars($_SESSION['rol'] ?? 'Usuario') ?>
+        <?= \Libraries\Core\Auth::xss($_SESSION['rol'] ?? 'Usuario') ?>
     </h3>
 
     <span class="perfil-rol">
-        <?= htmlspecialchars($_SESSION['usuario'] ?? '') ?>
+        <?= \Libraries\Core\Auth::xss($_SESSION['usuario'] ?? '') ?>
     </span>
 
     <hr>
@@ -44,7 +44,7 @@
 
         <div class="form-campo">
           <label for="usuario" class="form-label">USUARIO (LOGIN)</label>
-          <input type="text" id="usuario" name="usuario" class="form-input" value="<?= htmlspecialchars($perfil['nombre_usuario'] ?? '') ?>">
+          <input type="text" id="usuario" name="usuario" class="form-input" required value="<?= htmlspecialchars($perfil['nombre_usuario'] ?? '') ?>">
         </div>
 
         <div class="form-campo">
