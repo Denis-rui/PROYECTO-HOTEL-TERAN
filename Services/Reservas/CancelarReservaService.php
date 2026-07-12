@@ -143,16 +143,6 @@ class CancelarReservaService
 
             $this->reservaModel->guardar($reservaActual);
 
-            foreach ($reservaActual->reservaHabitacion as $reservaHabitacion) {
-                if (!ReservaHabitacionHelper::esActiva($reservaHabitacion)) {
-                    continue;
-                }
-
-                Habitacion::where('id', (int) $reservaHabitacion->id_habitacion)->update([
-                    'estado' => 'Disponible',
-                ]);
-            }
-
             DB::connection()->commit();
 
             return $this->respuesta(true, 'ELIMINADO', 'Reserva pendiente eliminada correctamente.');
