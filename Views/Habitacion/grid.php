@@ -16,11 +16,11 @@
                 <?php foreach ($habitacionesPiso as $hab): ?>
                     <?php
                     $estadoBD = $hab['estado'] ?? '';
-                    $esLimpieza = (strtolower($estadoBD) === 'en limpieza') && !empty($hab['limpieza_inicio']);
+                    $esLimpieza = strtolower($estadoBD) === 'en limpieza';
+                    $tieneInicioLimpieza = $esLimpieza && !empty($hab['limpieza_inicio']);
 
-                    // Para la tarjeta, "En Limpieza" se muestra como "mantenimiento" (estilo naranja)
                     if ($esLimpieza) {
-                        $claseEstado = 'mantenimiento';
+                        $claseEstado = 'en_limpieza';
                     } else {
                         $claseEstado = strtolower($estadoBD);
                         if (strpos($claseEstado, 'mantenim') !== false)
@@ -28,14 +28,14 @@
                     }
 
                     $segundosRestantes = 0;
-                    if ($esLimpieza) {
+                    if ($tieneInicioLimpieza) {
                         $inicio = strtotime($hab['limpieza_inicio']);
                         $fin = $inicio + 3600;
                         $segundosRestantes = max(0, $fin - time());
                     }
-                    $limpiezaVencida = $esLimpieza && $segundosRestantes <= 0;
+                    $limpiezaVencida = $tieneInicioLimpieza && $segundosRestantes <= 0;
                     ?>
-                    <div class="tarjeta-habitacion <?= $claseEstado ?>" <?= $esLimpieza ? 'data-limpieza-id="' . (int) $hab['id'] . '" data-segundos="' . $segundosRestantes . '"' : '' ?>>
+                    <div class="tarjeta-habitacion <?= $claseEstado ?>" <?= $tieneInicioLimpieza ? 'data-limpieza-id="' . (int) $hab['id'] . '" data-segundos="' . $segundosRestantes . '"' : '' ?>>
                         <div class="habitacion-cabecera">
                             <div class="habitacion-numero"><?= htmlspecialchars($hab["numero_habitacion"]); ?></div>
                             <div class="habitacion-cabecera-botones">
@@ -57,11 +57,11 @@
 
                         <div class="habitacion-status-badges">
                             <div class="badge-status operativo">
-                                <?= $esLimpieza ? 'Mantenimiento' : ucfirst(htmlspecialchars($estadoBD)) ?>
+                                <?= ucfirst(htmlspecialchars($estadoBD)) ?>
                             </div>
                         </div>
 
-                        <?php if ($esLimpieza): ?>
+                        <?php if ($tieneInicioLimpieza): ?>
                             <div class="limpieza-timer-bloque <?= $limpiezaVencida ? 'limpieza-vencida' : '' ?>">
                                 <div class="limpieza-icono"><?= $limpiezaVencida ? 'Limpieza vencida' : '🧹 En Limpieza' ?></div>
                                 <div class="limpieza-countdown" id="timer-<?= (int) $hab['id'] ?>">

@@ -75,7 +75,7 @@ class HabitacionService
 
             // 1. Bloquear si tiene reservas activas
             if ($this->habitacionModel->obtenerReservaActiva($id)) {
-                return $this->respuesta(false, 'CONFLICTO', 'No se puede editar la habitación porque está reservada.');
+                return $this->respuesta(false, 'CONFLICTO', 'No se puede editar la habitación porque tiene reservas activas asociadas.');
             }
 
             // 2. Bloquear si está en mantenimiento
@@ -126,7 +126,7 @@ class HabitacionService
             if (!$habitacion) return $this->respuesta(false, 'NO_ENCONTRADO', 'Habitación no encontrada.');
 
             if ($this->habitacionModel->obtenerReservaActiva($id)) {
-                return $this->respuesta(false, 'CONFLICTO', 'No se puede eliminar la habitación porque está reservada. Primero cambia su estado.');
+                return $this->respuesta(false, 'CONFLICTO', 'No se puede eliminar la habitación porque tiene reservas activas asociadas.');
             }
 
             if (strtolower($habitacion->estado) === 'mantenimiento') {
@@ -150,7 +150,7 @@ class HabitacionService
             if (!$habitacion) return $this->respuesta(false, 'NO_ENCONTRADO', 'Habitación no encontrada.');
 
             if ($nuevoEstado === 'Disponible') {
-                $bloqueante = $this->habitacionModel->obtenerBloqueante($id);
+                $bloqueante = $this->reporteOcupacionModel->obtenerReser_EstadiaHab($id);
                 if ($bloqueante) {
                     $detalle = (array) $bloqueante;
                     if (!empty($detalle['check_out'])) {
@@ -212,7 +212,8 @@ class HabitacionService
         string $checkOut,
         ?string $tipo = null,
         ?string $piso = null,
-        array $referencia = []
+        array $referencia = [],
+        ?int $idReservaExcluir = null
     ): array {
         try {
             return $this->respuesta(
@@ -224,7 +225,8 @@ class HabitacionService
                     $checkOut,
                     $tipo,
                     $piso,
-                    $referencia
+                    $referencia,
+                    $idReservaExcluir
                 )
             );
         } catch (Exception $e) {
@@ -242,6 +244,10 @@ class HabitacionService
             $estadoActual = strtolower($habitacion->estado);
             if ($estadoActual !== 'en limpieza') {
                 return $this->respuesta(false, 'CONFLICTO', 'La habitacion no esta en limpieza.');
+            }
+
+            if ($this->reporteOcupacionModel->obtenerReser_EstadiaHab($id)) {
+                return $this->respuesta(false, 'CONFLICTO', 'La habitación todavía tiene una estancia activa.');
             }
 
             $this->habitacionModel->actualizar($id, [
@@ -436,8 +442,8 @@ class HabitacionService
             'ocupado' => 'Ocupada',
             'mantenimiento' => 'Mantenimiento',
             'mantenimie' => 'Mantenimiento',
-            'reservada' => 'Reservada',
-            'reservado' => 'Reservada',
+            'en limpieza' => 'En Limpieza',
+            'limpieza' => 'En Limpieza',
         ];
         return $mapa[$estado] ?? 'Disponible';
     }

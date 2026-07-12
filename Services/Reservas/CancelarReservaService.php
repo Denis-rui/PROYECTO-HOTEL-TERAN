@@ -3,6 +3,7 @@
 namespace Services\Reservas;
 
 use Illuminate\Database\Capsule\Manager as DB;
+use Helpers\FechaHotelHelper;
 use Helpers\ReservaHabitacionHelper;
 use Models\Entities\Devolucion;
 use Models\Entities\Habitacion;
@@ -60,20 +61,21 @@ class CancelarReservaService
 
             $this->reservaModel->guardar($reservaActual);
 
-            $estadoHabitacionDestino = !empty($reservaActual->checkin_real)
-                ? 'Mantenimiento'
-                : 'Disponible';
+            if (!empty($reservaActual->checkin_real)) {
+                $inicioLimpieza = FechaHotelHelper::ahora();
 
-            foreach ($reservaActual->reservaHabitacion as $reservaHabitacion) {
-                if (!ReservaHabitacionHelper::esActiva($reservaHabitacion)) {
-                    continue;
+                foreach ($reservaActual->reservaHabitacion as $reservaHabitacion) {
+                    if (!ReservaHabitacionHelper::esActiva($reservaHabitacion)) {
+                        continue;
+                    }
+
+                    $idHabitacion = (int) $reservaHabitacion->id_habitacion;
+
+                    Habitacion::where('id', $idHabitacion)->update([
+                        'estado' => 'En Limpieza',
+                        'limpieza_inicio' => $inicioLimpieza,
+                    ]);
                 }
-
-                $idHabitacion = (int) $reservaHabitacion->id_habitacion;
-
-                Habitacion::where('id', $idHabitacion)->update([
-                    'estado' => $estadoHabitacionDestino,
-                ]);
             }
 
             Devolucion::create(

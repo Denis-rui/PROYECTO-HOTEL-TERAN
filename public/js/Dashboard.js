@@ -126,7 +126,7 @@ const inicializarGraficoHabitaciones = (datos) => {
       datasets: [
         {
           data: totales,
-          backgroundColor: ["#2f855a", "#c53030", "#805ad5", "#d69e2e", "#3182ce"],
+          backgroundColor: ["#2f855a", "#c53030", "#d69e2e", "#3182ce"],
           borderColor: "#ffffff",
           borderWidth: 2,
           hoverOffset: 6,

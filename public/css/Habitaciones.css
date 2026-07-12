@@ -93,7 +93,7 @@ select {
 .tarjeta-habitacion.disponible { border-color: var(--success); }
 .tarjeta-habitacion.ocupada, .tarjeta-habitacion.ocupado { border-color: var(--danger); }
 .tarjeta-habitacion.mantenimiento { border-color: var(--warning); }
-.tarjeta-habitacion.reservada { border-color: var(--text-muted); }
+.tarjeta-habitacion.en_limpieza { border-color: var(--warning); }
 
 /* Número Habitación */
 .habitacion-numero {
@@ -107,7 +107,7 @@ select {
 .tarjeta-habitacion.disponible .habitacion-numero { background-color: var(--success); }
 .tarjeta-habitacion.ocupada .habitacion-numero { background-color: var(--danger); }
 .tarjeta-habitacion.mantenimiento .habitacion-numero { background-color: var(--warning); }
-.tarjeta-habitacion.reservada .habitacion-numero { background-color: var(--text-muted); }
+.tarjeta-habitacion.en_limpieza .habitacion-numero { background-color: var(--warning); }
 
 /* Tipo y Capacidad */
 .habitacion-tipo {
@@ -118,7 +118,7 @@ select {
 .tarjeta-habitacion.disponible .habitacion-tipo { color: var(--success); }
 .tarjeta-habitacion.ocupada .habitacion-tipo { color: var(--danger); }
 .tarjeta-habitacion.mantenimiento .habitacion-tipo { color: var(--warning); }
-.tarjeta-habitacion.reservada .habitacion-tipo { color: var(--text-muted); }
+.tarjeta-habitacion.en_limpieza .habitacion-tipo { color: var(--warning); }
 
 /* Precio */
 .habitacion-precio {
@@ -159,9 +159,9 @@ select {
 .tarjeta-habitacion.sucia .badge-status.limpieza { background-color: var(--danger); }
 
 .tarjeta-habitacion.mantenimiento .badge-status.operativo,
+.tarjeta-habitacion.en_limpieza .badge-status.operativo,
 .tarjeta-habitacion.en_limpieza .badge-status.limpieza { background-color: var(--warning); }
 
-.tarjeta-habitacion.reservada .badge-status.operativo,
 .tarjeta-habitacion.inspeccion_pendiente .badge-status.limpieza { background-color: var(--text-muted); }
 
 /* Acciones */

@@ -42,7 +42,7 @@
     <select name="estado" id="selectEstado">
       <?php
       $estadoSeleccionado = $_GET['estado'] ?? 'Disponible';
-      $estadosFijos = ['Disponible', 'Ocupada', 'Mantenimiento', 'Reservada'];
+      $estadosFijos = ['Disponible', 'Ocupada', 'En Limpieza', 'Mantenimiento'];
       ?>
       <option value="" <?= ($estadoSeleccionado === '') ? 'selected' : '' ?>>Todos los estados</option>
       <?php foreach ($estadosFijos as $estadoItem): ?>

@@ -121,12 +121,16 @@ class HabitacionController extends ApiController
             'tipo' => $_GET['tipo_referencia'] ?? null,
             'piso' => $_GET['piso_referencia'] ?? null,
         ];
+        $idReservaExcluir = !empty($_GET['id_reserva_excluir'])
+            ? (int) $_GET['id_reserva_excluir']
+            : null;
         $respuesta = $this->habitacionService->disponiblesPorRango(
             $checkIn,
             $checkOut,
             $tipo,
             $piso,
-            $referencia
+            $referencia,
+            $idReservaExcluir
         );
 
         [$payloadBase, $codigoHttp] = CodigoHTTP::prepararRespuesta($respuesta);

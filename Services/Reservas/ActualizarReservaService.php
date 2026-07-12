@@ -84,23 +84,15 @@ class ActualizarReservaService
             $totalCalculado = 0;
 
             foreach ($idsHabitacionesIngresadas as $idHabitacion) {
-                $esHabitacionYaAsignada = in_array(
+                $disponibilidad = $this->reporteOcupacionModel->validarDisponibilidadHabitacion(
                     $idHabitacion,
-                    $idsHabitacionesActuales,
-                    true
+                    $checkIn,
+                    $checkOut,
+                    $idReserva
                 );
 
-                if (!$esHabitacionYaAsignada) {
-                    $disponibilidad = $this->reporteOcupacionModel->validarDisponibilidadHabitacion(
-                        $idHabitacion,
-                        $checkIn,
-                        $checkOut,
-                        $idReserva
-                    );
-
-                    if (!$disponibilidad['disponible']) {
-                        return $this->respuesta(false, 'CONFLICTO', $disponibilidad['mensaje']);
-                    }
+                if (!$disponibilidad['disponible']) {
+                    return $this->respuesta(false, 'CONFLICTO', $disponibilidad['mensaje']);
                 }
 
                 $habitacionActual = $this->habitacionModel->obtenerPorId($idHabitacion);
@@ -135,6 +127,25 @@ class ActualizarReservaService
             $habitacionesAnteriores = $reservaActual->reservaHabitacion ?? [];
 
             DB::connection()->beginTransaction();
+
+            $this->habitacionModel->bloquearParaReserva(array_merge(
+                $idsHabitacionesActuales,
+                $idsHabitacionesIngresadas
+            ));
+
+            foreach ($idsHabitacionesIngresadas as $idHabitacion) {
+                $disponibilidad = $this->reporteOcupacionModel->validarDisponibilidadHabitacion(
+                    $idHabitacion,
+                    $checkIn,
+                    $checkOut,
+                    $idReserva
+                );
+
+                if (!$disponibilidad['disponible']) {
+                    DB::connection()->rollBack();
+                    return $this->respuesta(false, 'CONFLICTO', $disponibilidad['mensaje']);
+                }
+            }
 
             $this->reservaModel->actualizar($reservaActual, [
                 'id_cliente' => (int) ($datos['cliente'] ?? $datos['id_cliente'] ?? $reservaActual->id_cliente),
@@ -312,6 +323,11 @@ class ActualizarReservaService
             $diasPrevios = ReservaHelper::obtenerDiasEstadia($fechaInicioEstadia, $checkOutPrevistoAnterior);
 
             DB::connection()->beginTransaction();
+
+            $this->habitacionModel->bloquearParaReserva(array_merge(
+                $idsActivos,
+                $idsSolicitados
+            ));
 
             foreach ($relacionesActivas as $relacion) {
                 $disponibilidad = $this->reporteOcupacionModel->validarDisponibilidadHabitacion(
@@ -576,9 +592,7 @@ class ActualizarReservaService
         )));
 
         $reservaActual = $this->reservaModel->obtenerReservaSimple($idReserva);
-        $estadoHabitacionDestino = ($reservaActual && !empty($reservaActual->checkin_real))
-            ? 'Mantenimiento'
-            : 'Disponible';
+        $huboCheckin = $reservaActual && !empty($reservaActual->checkin_real);
 
         foreach ($habitacionesAnteriores as $itemHabitacion) {
             if (!$itemHabitacion || empty($itemHabitacion->id_habitacion)) {
@@ -600,8 +614,13 @@ class ActualizarReservaService
                 continue;
             }
 
+            if (!$huboCheckin) {
+                continue;
+            }
+
             Habitacion::where('id', $idHabitacionAnterior)->update([
-                'estado' => $estadoHabitacionDestino,
+                'estado' => 'En Limpieza',
+                'limpieza_inicio' => FechaHotelHelper::ahora(),
             ]);
         }
     }

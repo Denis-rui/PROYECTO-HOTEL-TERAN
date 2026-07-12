@@ -127,6 +127,23 @@ class CambiarHabitacionService
 
             DB::connection()->beginTransaction();
 
+            $this->habitacionModel->bloquearParaReserva([
+                $idHabitacionActual,
+                $idHabitacionNueva,
+            ]);
+
+            $disponibilidad = $this->reporteOcupacionModel->validarDisponibilidadHabitacion(
+                $idHabitacionNueva,
+                $fechaCambio,
+                $checkOut,
+                $idReserva
+            );
+
+            if (!$disponibilidad['disponible']) {
+                DB::connection()->rollBack();
+                return $this->respuesta(false, 'CONFLICTO', $disponibilidad['mensaje']);
+            }
+
             $totalAnterior = (float) ($reservaActual->total ?? 0);
 
             $relacionActual->check_out = $fechaEfectivaCobro;
@@ -154,10 +171,21 @@ class CambiarHabitacionService
                 'subtotal' => $subtotalNuevo,
             ]);
 
-            Habitacion::where('id', $idHabitacionActual)->update([
-                'estado' => 'Mantenimiento',
-                'limpieza_inicio' => $fechaCambio,
-            ]);
+            $estadoHabitacionAnterior = $tipoMotivo === 'falla_hotel'
+                ? 'Mantenimiento'
+                : 'En Limpieza';
+            $datosHabitacionAnterior = [
+                'estado' => $estadoHabitacionAnterior,
+                'limpieza_inicio' => $estadoHabitacionAnterior === 'En Limpieza'
+                    ? $fechaCambio
+                    : null,
+            ];
+
+            if ($tipoMotivo === 'falla_hotel') {
+                $datosHabitacionAnterior['descripcion_habitacion'] = trim($motivo);
+            }
+
+            Habitacion::where('id', $idHabitacionActual)->update($datosHabitacionAnterior);
 
             Habitacion::where('id', $idHabitacionNueva)->update([
                 'estado' => 'Ocupada',
