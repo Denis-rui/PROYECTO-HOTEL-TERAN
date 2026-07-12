@@ -44,6 +44,20 @@ class ReservaHelper
         return $fecha . ' ' . $hora . ':00';
     }
 
+    public static function obtenerFechaMinimaIngresoHotel(?\DateTimeImmutable $ahora = null): string
+    {
+        $zonaHoraria = new \DateTimeZone('America/Lima');
+        $ahoraHotel = $ahora
+            ? $ahora->setTimezone($zonaHoraria)
+            : new \DateTimeImmutable('now', $zonaHoraria);
+
+        if ($ahoraHotel < $ahoraHotel->setTime(12, 0, 0)) {
+            $ahoraHotel = $ahoraHotel->modify('-1 day');
+        }
+
+        return $ahoraHotel->format('Y-m-d');
+    }
+
     public static function calcularCargoCheckoutTarde($minutosDemora, $totalReserva)
     {
         if ($minutosDemora <= 30) {

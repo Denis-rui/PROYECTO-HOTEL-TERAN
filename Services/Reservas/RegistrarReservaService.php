@@ -51,6 +51,17 @@ class RegistrarReservaService
                 $reserva['horaSalida'] ?? null
             );
 
+            $fechaEntrada = ReservaHelper::normalizarFecha($checkIn);
+            $fechaMinimaIngreso = ReservaHelper::obtenerFechaMinimaIngresoHotel();
+
+            if (!$fechaEntrada || $fechaEntrada < $fechaMinimaIngreso) {
+                return $this->respuesta(
+                    false,
+                    'VALIDACION_ERROR',
+                    'La fecha de check-in es anterior a la fecha hotelera permitida.'
+                );
+            }
+
             $dias = ReservaHelper::obtenerDiasEstadia($checkIn, $checkOut);
 
             if ($dias <= 0) {

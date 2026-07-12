@@ -362,11 +362,10 @@ class ReservaController extends ApiController
 
     public function calcularCancelacion($params = '')
     {
-        $this->validarCsrf();
-        $datos = $this->obtenerPayloadJson() ?? [];
+        header('Cache-Control: no-store, no-cache, must-revalidate');
         $modelo = new CalculoDevolucionService();
         [$payload, $codigoHttp] = CodigoHTTP::prepararRespuesta(
-            $modelo->calcular((int) ($datos['id_reserva'] ?? 0))
+            $modelo->calcular((int) ($_GET['id_reserva'] ?? 0))
         );
         $this->responderJson($payload, $codigoHttp);
     }

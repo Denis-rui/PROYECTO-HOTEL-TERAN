@@ -570,11 +570,10 @@ const configurarEventosReservas = () => {
         let calculoCancelacion;
         try {
           const respuestaCalculo = await fetch(
-            BASE_URL + "Reserva/calcularCancelacion",
+            `${BASE_URL}Reserva/calcularCancelacion?id_reserva=${encodeURIComponent(id)}`,
             {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ id_reserva: id }),
+              method: "GET",
+              cache: "no-store",
             },
           );
           calculoCancelacion = await respuestaCalculo.json();
