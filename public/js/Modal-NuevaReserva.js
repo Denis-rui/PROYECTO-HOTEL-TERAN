@@ -44,19 +44,48 @@ const abrirModalNuevoClienteConDocumento = (documento = "") => {
 const esDocumentoCompletoOchoDigitos = (texto = "") =>
   /^\d{8}$/.test(String(texto || "").trim());
 
-const obtenerFechaActualISO = () => {
-  const hoy = new Date();
-  const anio = hoy.getFullYear();
-  const mes = String(hoy.getMonth() + 1).padStart(2, "0");
-  const dia = String(hoy.getDate()).padStart(2, "0");
-  return `${anio}-${mes}-${dia}`;
+const obtenerFechaHoraHotel = () => {
+  try {
+    const partes = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Lima",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    }).formatToParts(new Date());
+    const valores = Object.fromEntries(
+      partes.map(({ type, value }) => [type, value]),
+    );
+
+    return {
+      fecha: `${valores.year}-${valores.month}-${valores.day}`,
+      hora: Number(valores.hour),
+      minutos: Number(valores.minute),
+    };
+  } catch (error) {
+    const ahora = new Date();
+    return {
+      fecha: `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, "0")}-${String(ahora.getDate()).padStart(2, "0")}`,
+      hora: ahora.getHours(),
+      minutos: ahora.getMinutes(),
+    };
+  }
+};
+
+const obtenerFechaActualISO = () => obtenerFechaHoraHotel().fecha;
+
+const obtenerFechaMinimaIngresoHotel = () => {
+  const ahoraHotel = obtenerFechaHoraHotel();
+  return ahoraHotel.hora < 12
+    ? sumarDiasISO(ahoraHotel.fecha, -1)
+    : ahoraHotel.fecha;
 };
 
 const obtenerHoraActualISO = () => {
-  const ahora = new Date();
-  const horas = String(ahora.getHours()).padStart(2, "0");
-  const minutos = String(ahora.getMinutes()).padStart(2, "0");
-  return `${horas}:${minutos}`;
+  const ahoraHotel = obtenerFechaHoraHotel();
+  return `${String(ahoraHotel.hora).padStart(2, "0")}:${String(ahoraHotel.minutos).padStart(2, "0")}`;
 };
 
 const sumarDiasISO = (fechaISO, dias = 1) => {
@@ -648,11 +677,25 @@ const actualizarMinimosFecha = () => {
   if (!fechaEntrada || !fechaSalida) return;
 
   const hoy = obtenerFechaActualISO();
-  fechaEntrada.min = hoy;
+  const fechaMinimaHotel = obtenerFechaMinimaIngresoHotel();
+  const fechaMinimaIngreso =
+    estado.modo === "editar" &&
+    fechaEntrada.value &&
+    fechaEntrada.value < fechaMinimaHotel
+      ? fechaEntrada.value
+      : fechaMinimaHotel;
+  fechaEntrada.min = fechaMinimaIngreso;
   const minimoCheckout = fechaEntrada.value
     ? sumarDiasISO(fechaEntrada.value, 1)
     : sumarDiasISO(hoy, 1);
   fechaSalida.min = minimoCheckout || hoy;
+
+  const mensajeMadrugada = document.getElementById("mensajeLlegadaMadrugada");
+  if (mensajeMadrugada) {
+    const esVentanaMadrugada = fechaMinimaHotel < hoy;
+    mensajeMadrugada.style.display =
+      estado.modo === "nuevo" && esVentanaMadrugada ? "block" : "none";
+  }
 
   if (fechaEntrada.value) {
     if (!fechaSalida.value || fechaSalida.value < fechaSalida.min) {
@@ -972,6 +1015,15 @@ const validarFechasReserva = () => {
 
   if (!fechaEntrada || !horaEntrada || !fechaSalida || !horaSalida) {
     window.Alerta("Completa check-in y check-out", "advertencia");
+    return false;
+  }
+
+  const fechaMinimaIngreso = obtenerFechaMinimaIngresoHotel();
+  if (estado.modo === "nuevo" && fechaEntrada < fechaMinimaIngreso) {
+    window.Alerta(
+      "La fecha de check-in es anterior a la fecha hotelera permitida.",
+      "advertencia",
+    );
     return false;
   }
 

@@ -110,6 +110,7 @@ $porcentajePenalidad = $hotelConfigReserva['exito'] && isset($hotelConfigReserva
           <div class="form-group">
             <label for="fechaEntrada">CHECK-IN (FECHA): <span class="campo-requerido">*</span></label>
             <input type="date" id="fechaEntrada" name="fechaEntrada" required />
+            <small id="mensajeLlegadaMadrugada" style="display: none;">Si el cliente llegó de madrugada, asigne el día anterior como fecha de check-in.</small>
           </div>
 
           <div class="form-group">
