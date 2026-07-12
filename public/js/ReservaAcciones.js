@@ -6,6 +6,7 @@
     checkout: "PATCH",
     marcarAusente: "PATCH",
     marcarRegreso: "PATCH",
+    eliminarPendiente: "PATCH",
   };
 
   window.ejecutarAccionReservaApi = async (accion, datos = {}, opciones = {}) => {
