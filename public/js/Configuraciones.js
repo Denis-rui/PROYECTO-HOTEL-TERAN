@@ -62,6 +62,8 @@ window.inicializarConfiguraciones = () => {
     const ruc = document.getElementById("ruc");
     const telefono = document.getElementById("telefono");
     const correo = document.getElementById("email");
+    const adelanto = document.getElementById("porcentaje_adelanto");
+    const penalidad = document.getElementById("porcentaje_penalidad");
 
     if (nombre.value.trim() === "") {
       mostrarError(nombre, "error-nombre", "El nombre es obligatorio");
@@ -77,6 +79,14 @@ window.inicializarConfiguraciones = () => {
     }
     if (!correo.value.includes("@") || !correo.value.includes(".")) {
       mostrarError(correo, "error-email", "Correo inválido");
+      valido = false;
+    }
+    if (adelanto.value.trim() === "") {
+      mostrarError(adelanto, "error-porcentaje_adelanto", "El adelanto es obligatorio");
+      valido = false;
+    }
+    if (penalidad.value.trim() === "") {
+      mostrarError(penalidad, "error-porcentaje_penalidad", "La penalidad es obligatoria");
       valido = false;
     }
 
