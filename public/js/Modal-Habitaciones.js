@@ -43,13 +43,18 @@ window.editarHabitacion = (btnEl, id, numero, piso, idTipo, capacidad, descripci
   const tarjeta = btnEl.closest('.tarjeta-habitacion');
   let estadoReal = 'disponible';
   if (tarjeta) {
-    if (tarjeta.classList.contains('reservada'))          estadoReal = 'reservada';
-    else if (tarjeta.classList.contains('ocupada'))       estadoReal = 'ocupada';
+    if (tarjeta.classList.contains('ocupada'))            estadoReal = 'ocupada';
+    else if (tarjeta.classList.contains('en_limpieza'))   estadoReal = 'en_limpieza';
     else if (tarjeta.classList.contains('mantenimiento')) estadoReal = 'mantenimiento';
   }
 
-  if (estadoReal === 'reservada' || estadoReal === 'ocupada') {
-    Notificar(`La habitación N° ${numero} está reservada y no puede editarse.`, "error");
+  if (estadoReal === 'ocupada') {
+    Notificar(`La habitación N° ${numero} está ocupada y no puede editarse.`, "error");
+    return;
+  }
+
+  if (estadoReal === 'en_limpieza') {
+    Notificar(`La habitación N° ${numero} está en limpieza y no puede editarse.`, "error");
     return;
   }
 

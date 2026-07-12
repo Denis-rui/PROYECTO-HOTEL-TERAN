@@ -65,8 +65,8 @@
             <select id="estadoHabitacion" name="estado" required>
               <option value="Disponible" selected>Disponible</option>
               <option value="Ocupada">Ocupada</option>
+              <option value="En Limpieza">En Limpieza</option>
               <option value="Mantenimiento">Mantenimiento</option>
-              <option value="Reservada">Reservada</option>
             </select>
           </div>
         </div>

@@ -5,7 +5,6 @@ namespace Models;
 use Models\Entities\Reserva;
 use Models\Entities\ReservaHabitacion;
 use Models\Entities\Cliente;
-use Models\Entities\Habitacion;
 use Helpers\FormatearReservas as ReservaFormatter;
 
 
@@ -303,22 +302,8 @@ class ReservaModel
             }
 
             $idsReserva = $reservasVencidas->pluck('id')->map(fn($id) => (int) $id)->all();
-            $idsHabitacion = $reservasVencidas
-                ->flatMap(fn($reserva) => $reserva->reservaHabitacion->pluck('id_habitacion'))
-                ->filter()
-                ->map(fn($id) => (int) $id)
-                ->unique()
-                ->values()
-                ->all();
-
             $actualizadas = Reserva::whereIn('id', $idsReserva)
                 ->update(['estado' => 'inactiva']);
-
-            if (!empty($idsHabitacion)) {
-                Habitacion::whereIn('id', $idsHabitacion)
-                    ->where('estado', 'Reservada')
-                    ->update(['estado' => 'Disponible']);
-            }
 
             return (int) $actualizadas;
         } catch (\Throwable $e) {

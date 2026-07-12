@@ -1101,6 +1101,10 @@ const cargarHabitacionesDisponibles = () => {
     check_out: checkOut,
   });
 
+  if (estado.modo === "editar" && estado.reservaEditandoId) {
+    params.append("id_reserva_excluir", estado.reservaEditandoId);
+  }
+
   if (filtroTipoReserva && filtroTipoReserva.value)
     params.append("tipo", filtroTipoReserva.value);
   if (filtroPisoReserva && filtroPisoReserva.value)

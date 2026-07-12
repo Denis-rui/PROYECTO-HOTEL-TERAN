@@ -140,6 +140,21 @@ class RegistrarReservaService
 
             DB::connection()->beginTransaction();
 
+            $this->habitacionModel->bloquearParaReserva($idsHabitaciones);
+
+            foreach ($idsHabitaciones as $idHabitacion) {
+                $disponibilidad = $this->reporteOcupacionModel->validarDisponibilidadHabitacion(
+                    $idHabitacion,
+                    $checkIn,
+                    $checkOut
+                );
+
+                if (!$disponibilidad['disponible']) {
+                    DB::connection()->rollBack();
+                    return $this->respuesta(false, 'CONFLICTO', $disponibilidad['mensaje']);
+                }
+            }
+
             $reservaCreada = $this->reservaModel->crear([
                 'id_cliente' => $reserva['cliente'] ?? null,
                 'total' => $totalCalculado,

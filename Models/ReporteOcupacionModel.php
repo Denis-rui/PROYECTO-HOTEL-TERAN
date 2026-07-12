@@ -17,7 +17,7 @@ class ReporteOcupacionModel
 
     private function aplicarCruceFechas($query, $checkIn, $checkOut): void
     {
-        $query->whereRaw('COALESCE(r.checkin_real, rh.check_in) < ?', [$checkOut])
+        $query->where('rh.check_in', '<', $checkOut)
             ->where(function ($q) use ($checkIn) {
                 $q->whereNull('rh.check_out')
                     ->orWhere('rh.check_out', '>', $checkIn)
@@ -59,6 +59,18 @@ class ReporteOcupacionModel
                 return ['disponible' => false, 'mensaje' => 'Parámetros incompletos para validar disponibilidad.'];
             }
 
+            $habitacion = DB::table('habitacion')
+                ->where('id', (int) $idHabitacion)
+                ->first(['activo', 'estado']);
+
+            if (!$habitacion || (int) ($habitacion->activo ?? 0) !== 1) {
+                return ['disponible' => false, 'mensaje' => 'La habitación no está activa.'];
+            }
+
+            if (strtolower(trim((string) ($habitacion->estado ?? ''))) === 'mantenimiento') {
+                return ['disponible' => false, 'mensaje' => 'La habitación está en mantenimiento.'];
+            }
+
             $query = DB::table('reserva_habitacion as rh')
                 ->join('reserva as r', 'r.id', '=', 'rh.id_reserva')
                 ->where('rh.id_habitacion', (int) $idHabitacion)
@@ -98,7 +110,7 @@ class ReporteOcupacionModel
         }
     }
 
-    public function obtenerDisponiblesPorRango($checkIn, $checkOut, $tipo = null, $piso = null, array $referencia = [])
+    public function obtenerDisponiblesPorRango($checkIn, $checkOut, $tipo = null, $piso = null, array $referencia = [], ?int $idReservaExcluir = null)
     {
         try {
             $queryOcupadas = DB::table('reserva_habitacion as rh')
@@ -107,6 +119,10 @@ class ReporteOcupacionModel
 
             $this->aplicarAsignacionActiva($queryOcupadas);
             $this->aplicarCruceFechas($queryOcupadas, $checkIn, $checkOut);
+
+            if ($idReservaExcluir) {
+                $queryOcupadas->where('r.id', '!=', $idReservaExcluir);
+            }
 
             $habitacionesOcupadas = $queryOcupadas
                 ->distinct()

@@ -48,12 +48,10 @@ class CheckInReservaService
                     return $this->respuesta(false, 'CONFLICTO', 'La habitación ' . $numeroHabitacion . ' está ocupada por otra reserva.');
                 }
 
-                if ($this->esAntesCheckinNormal()) {
-                    $estadoHabitacion = strtolower((string) ($reservaHabitacion->habitacion->estado ?? ''));
-                    if (in_array($estadoHabitacion, ['mantenimiento', 'en limpieza'], true)) {
-                        $numeroHabitacion = $reservaHabitacion->habitacion->numero_habitacion ?? '';
-                        return $this->respuesta(false, 'CONFLICTO', 'Early check-in no disponible. La habitación ' . $numeroHabitacion . ' aún no está lista.');
-                    }
+                $estadoHabitacion = strtolower((string) ($reservaHabitacion->habitacion->estado ?? ''));
+                if (in_array($estadoHabitacion, ['mantenimiento', 'en limpieza'], true)) {
+                    $numeroHabitacion = $reservaHabitacion->habitacion->numero_habitacion ?? '';
+                    return $this->respuesta(false, 'CONFLICTO', 'La habitación ' . $numeroHabitacion . ' aún no está lista para el check-in.');
                 }
             }
 

@@ -5,11 +5,10 @@ $notificaciones = $data['notificaciones'] ?? [];
 $graficoIngresos = $stats['grafico_ingresos'] ?? [];
 $graficoEstados = $stats['grafico_estados_reserva'] ?? [];
 
-$habitacionesLabels = json_encode(['Disponibles', 'Ocupadas', 'Reservadas', 'Mantenimiento', 'En limpieza'], JSON_UNESCAPED_UNICODE);
+$habitacionesLabels = json_encode(['Disponibles', 'Ocupadas', 'Mantenimiento', 'En limpieza'], JSON_UNESCAPED_UNICODE);
 $habitacionesTotales = json_encode([
   (int) ($stats['habitaciones_disponibles'] ?? 0),
   (int) ($stats['habitaciones_ocupadas'] ?? 0),
-  (int) ($stats['habitaciones_reservadas'] ?? 0),
   (int) ($stats['habitaciones_mantenimiento'] ?? 0),
   (int) ($stats['habitaciones_en_limpieza'] ?? 0),
 ], JSON_UNESCAPED_UNICODE);

@@ -45,6 +45,22 @@ class HabitacionModel extends Eloquent
         return self::where('id', $id)->update(['activo' => 0]);
     }
 
+    public function bloquearParaReserva(array $idsHabitaciones): void
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $idsHabitaciones))));
+        sort($ids, SORT_NUMERIC);
+
+        if (empty($ids)) {
+            return;
+        }
+
+        DB::table('habitacion')
+            ->whereIn('id', $ids)
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get(['id']);
+    }
+
     public function obtenerPorId(int $id): ?array
     {
         $habitacion = Habitacion::with('tipoHabitacion')
@@ -103,23 +119,17 @@ class HabitacionModel extends Eloquent
     // La búsqueda compleja se queda aquí porque es 100% lógica de Base de Datos
     public function buscar($numero, $tipo, $estadoNorm, $piso)
     {
-        $estadosBloqueantes = ReservaEntity::ESTADOS_BLOQUEANTES;
         $estadosOcupacion = ReservaEntity::ESTADOS_OCUPACION_ACTUAL;
-        $estadosPreCheckin = ReservaEntity::ESTADOS_PRE_CHECKIN;
-        $estadosOcupacionSql = "'" . implode("','", $estadosOcupacion) . "'";
-        $estadosPreCheckinSql = "'" . implode("','", $estadosPreCheckin) . "'";
 
         $subReserva = DB::table('reserva_habitacion as rh2')
             ->join('reserva as r2', 'r2.id', '=', 'rh2.id_reserva')
             ->where('rh2.activo', 1)
-            ->whereIn('r2.estado', $estadosBloqueantes)
-            ->where(function ($q) {
-                $q->whereNull('rh2.check_out')->orWhere('rh2.check_out', '>', DB::raw('NOW()'));
-            })
+            ->whereRaw("LOWER(TRIM(COALESCE(rh2.estado, 'activa'))) = 'activa'")
+            ->whereIn('r2.estado', $estadosOcupacion)
+            ->whereNull('r2.checkout_real')
             ->select([
                 'rh2.id_habitacion',
                 DB::raw('MIN(r2.id) as id_reserva_activa'),
-                DB::raw("MAX(CASE WHEN r2.estado IN ({$estadosOcupacionSql}) THEN 'Ocupada' WHEN r2.estado IN ({$estadosPreCheckinSql}) THEN 'Reservada' ELSE NULL END) as estado_por_reserva")
             ])
             ->groupBy('rh2.id_habitacion');
 
@@ -137,7 +147,7 @@ class HabitacionModel extends Eloquent
                 't.tipo as tipo_nombre',
                 DB::raw("COALESCE(NULLIF(h.descripcion_habitacion, ''), '') as descripcion"),
                 DB::raw('t.precio_base as precio'),
-                DB::raw("CASE WHEN sr.estado_por_reserva IS NOT NULL THEN sr.estado_por_reserva ELSE h.estado END as estado"),
+                DB::raw("CASE WHEN sr.id_reserva_activa IS NOT NULL THEN 'Ocupada' ELSE h.estado END as estado"),
                 'h.estado as estado_bd',
                 'h.capacidad',
                 'h.activo',
@@ -151,22 +161,12 @@ class HabitacionModel extends Eloquent
         if ($piso) $query->where('h.piso', (int) $piso);
 
         if ($estadoNorm) {
-            $query->where(function ($q) use ($estadoNorm, $estadosOcupacion, $estadosPreCheckin) {
+            $query->where(function ($q) use ($estadoNorm) {
                 if ($estadoNorm === 'Ocupada') {
-                    $q->whereIn('r.estado', $estadosOcupacion);
-                } elseif ($estadoNorm === 'Reservada') {
-                    $q->whereIn('r.estado', $estadosPreCheckin)
-                        ->whereNotIn('h.id', function ($sub) {
-                            $sub->select('rh3.id_habitacion')->from('reserva_habitacion as rh3')
-                                ->join('reserva as r3', 'r3.id', '=', 'rh3.id_reserva')
-                                ->whereIn('r3.estado', ReservaEntity::ESTADOS_OCUPACION_ACTUAL)->where('rh3.activo', 1);
-                        });
+                    $q->whereNotNull('sr.id_reserva_activa')
+                        ->orWhere('h.estado', 'Ocupada');
                 } else {
-                    if ($estadoNorm === 'Mantenimiento') {
-                        $q->whereNull('sr.id_reserva_activa')->whereIn('h.estado', ['Mantenimiento', 'En Limpieza']);
-                    } else {
-                        $q->whereNull('sr.id_reserva_activa')->where('h.estado', $estadoNorm);
-                    }
+                    $q->whereNull('sr.id_reserva_activa')->where('h.estado', $estadoNorm);
                 }
             });
         }

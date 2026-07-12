@@ -20,7 +20,6 @@ class DashboardModel
             ->selectRaw("
                 SUM(CASE WHEN estado = 'Disponible'    THEN 1 ELSE 0 END) AS disponibles,
                 SUM(CASE WHEN estado = 'Ocupada'        THEN 1 ELSE 0 END) AS ocupadas,
-                SUM(CASE WHEN estado = 'Reservada'      THEN 1 ELSE 0 END) AS reservadas,
                 SUM(CASE WHEN estado = 'Mantenimiento'  THEN 1 ELSE 0 END) AS mantenimiento,
                 SUM(CASE WHEN estado = 'En Limpieza'    THEN 1 ELSE 0 END) AS en_limpieza,
                 COUNT(*)                                                    AS total
@@ -29,7 +28,6 @@ class DashboardModel
 
         $stats['habitaciones_disponibles']  = (int) ($conteoEstados->disponibles   ?? 0);
         $stats['habitaciones_ocupadas']     = (int) ($conteoEstados->ocupadas      ?? 0);
-        $stats['habitaciones_reservadas']   = (int) ($conteoEstados->reservadas    ?? 0);
         $stats['habitaciones_mantenimiento']= (int) ($conteoEstados->mantenimiento ?? 0);
         $stats['habitaciones_en_limpieza']  = (int) ($conteoEstados->en_limpieza   ?? 0);
         $totalHabitaciones                  = max(1, (int) ($conteoEstados->total  ?? 1));

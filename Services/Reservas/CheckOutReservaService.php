@@ -125,7 +125,7 @@ class CheckOutReservaService
                     [
                         'tipo' => 'checkout',
                         'titulo' => 'Checkout confirmado',
-                        'mensaje' => "El checkout de la habitación {$reservaHabitacion->habitacion->numero_habitacion} ha sido confirmado. La habitación está en mantenimiento hasta limpieza.",
+                        'mensaje' => "El checkout de la habitación {$reservaHabitacion->habitacion->numero_habitacion} ha sido confirmado. La habitación está en limpieza.",
                         'leida' => 0,
                     ]
                 );
