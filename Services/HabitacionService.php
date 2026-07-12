@@ -47,6 +47,19 @@ class HabitacionService
                 'activo' => (int) ($datos['activo'] ?? 1),
             ];
 
+            $habitacionExistente = $this->habitacionModel->obtenerPorNumero($validacion['datos']['numero_habitacion']);
+            if ($habitacionExistente) {
+                if ((int) $habitacionExistente->activo === 1) {
+                    return $this->respuesta(false, 'CONFLICTO', "La habitación número " . $validacion['datos']['numero_habitacion'] . " ya está registrada.");
+                }
+
+                $datosGuardar['activo'] = 1;
+                $this->habitacionModel->actualizar((int) $habitacionExistente->id, $datosGuardar);
+                return $this->respuesta(true, 'CREADO', 'Habitación registrada correctamente.', [
+                    'id' => (int) $habitacionExistente->id,
+                ]);
+            }
+
             $habitacion = $this->habitacionModel->crear($datosGuardar);
             return $this->respuesta(true, 'CREADO', 'Habitación registrada correctamente.', $habitacion);
         } catch (Exception $e) {
