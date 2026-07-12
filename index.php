@@ -78,7 +78,7 @@ $router->patch('Reserva/checkout', ['Reserva', 'checkout']);
 $router->patch('Reserva/marcarAusente', ['Reserva', 'marcarAusente']);
 $router->patch('Reserva/marcarRegreso', ['Reserva', 'marcarRegreso']);
 $router->post('Reserva/cancelar', ['Reserva', 'cancelar']);
-$router->post('Reserva/eliminarPendiente', ['Reserva', 'eliminarPendiente']);
+$router->patch('Reserva/eliminarPendiente', ['Reserva', 'eliminarPendiente']);
 $router->post('Reserva/calcularCancelacion', ['Reserva', 'calcularCancelacion']);
 $router->patch('Reserva/cambiarHabitacion', ['Reserva', 'cambiarHabitacion']);
 $router->post('Reserva/emitirDocumentoElectronico', ['Reserva', 'emitirDocumentoElectronico']);
