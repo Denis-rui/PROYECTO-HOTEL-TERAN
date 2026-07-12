@@ -107,10 +107,13 @@
     const mapa = {
       confirmada: "Confirmada",
       pre_checkin: "Pre-check-in",
+      checkin_realizado: "Check-in realizado",
       en_estadia: "En estadía",
       ausente: "Ausente",
+      checkout_pendiente: "Checkout pendiente",
       checkout_realizado: "Checkout realizado",
       cancelada: "Cancelada",
+      inactiva: "Inactiva",
       emitido: "Emitido",
       aceptado: "Aceptado por SUNAT",
       aceptada: "Aceptado por SUNAT",
@@ -118,7 +121,8 @@
       pendiente: "Pendiente",
     };
 
-    return mapa[normalizarEstado(estado)] || "Pendiente";
+    const estadoNormalizado = normalizarEstado(estado);
+    return mapa[estadoNormalizado] || estadoNormalizado || "Sin estado";
   };
 
   const formatearMotivoCambio = (motivo) => {
