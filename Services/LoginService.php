@@ -34,7 +34,6 @@ class LoginService
                 return $this->respuesta(false, 'VALIDACION_ERROR', 'Contraseña incorrecta');
             }
 
-
             // Validar el rol 
             $rolUsuario = $user->rol->rol ?? '';
             if (strcasecmp(trim($tipousuario), trim((string) $rolUsuario)) !== 0) {

@@ -1,9 +1,19 @@
 // Guardar perfil personal
 document.getElementById('btnGuardarPerfil').addEventListener('click', async () => {
+  const usuarioInput = document.getElementById('usuario');
   const email = document.getElementById('email');
   const telefonoInput = document.getElementById('telefono');
+  const usuario = usuarioInput?.value.trim() || '';
   const correo = email?.value.trim() || '';
   const telefono = telefonoInput?.value.trim() || '';
+
+  if (!usuario) {
+    usuarioInput?.classList.add('error');
+    window.Notificar?.('Ingresa tu usuario de acceso.', 'error');
+    return;
+  }
+
+  usuarioInput?.classList.remove('error');
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
     email?.classList.add('error');

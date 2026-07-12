@@ -44,7 +44,7 @@
 
         <div class="form-campo">
           <label for="usuario" class="form-label">USUARIO (LOGIN)</label>
-          <input type="text" id="usuario" name="usuario" class="form-input" value="<?= htmlspecialchars($perfil['nombre_usuario'] ?? '') ?>">
+          <input type="text" id="usuario" name="usuario" class="form-input" required value="<?= htmlspecialchars($perfil['nombre_usuario'] ?? '') ?>">
         </div>
 
         <div class="form-campo">
