@@ -20,7 +20,7 @@ $estadosTotales = json_encode(array_column($graficoEstados, 'total'), JSON_UNESC
 <section class="main-content dashboard">
   <header class="main-header">
     <div class="header-left">
-      <h1>DASHBOARD - TERAN HOTEL</h1>
+      <h1>DASHBOARD</h1>
     </div>
 
     <div class="header-right">

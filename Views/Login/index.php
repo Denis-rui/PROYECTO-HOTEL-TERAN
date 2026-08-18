@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" href="<?= BASE_URL ?>public/assets/img/image.jpeg" />
-    <title>Hotel Teran - Login</title>
+    <link rel="icon" href="<?= BASE_URL ?>public/assets/img/image.png" />
+    <title>Tú Sistema Hotelero - Login</title>
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/variables.css" />
     <link rel="stylesheet" href="<?= BASE_URL ?>style.css" />
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Login.css" />
@@ -16,8 +16,8 @@
         <section class="login">
             <div class="contenido-login">
                 <div class="login-logo">
-                    <img src="<?= BASE_URL ?>public/assets/img/image.jpeg" alt=" Teran Hotel Logo" />
-                    <h1>Teran Hotel</h1>
+                    <img src="<?= BASE_URL ?>public/assets/img/image.png" alt="Logo" />
+                    <h1>Tú Sistema Hotelero</h1>
                 </div>
                 <div class="formulario">
                     <form action="<?= BASE_URL ?>?url=Login/entrar" class="formulario-login" method="post">
@@ -52,4 +52,5 @@
         </section>
     </div>
 </body>
+
 </html>
