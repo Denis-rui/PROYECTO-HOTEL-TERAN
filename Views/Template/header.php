@@ -6,7 +6,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="<?= BASE_URL ?>public/assets/img/image.jpeg" />
-    <title>Hotel Teran - <?= $page_title ?></title>
+    <title> Sistema Hotelero<?= $page_title ?></title>
 
     <script>
         const BASE_URL = "<?= BASE_URL ?>";
@@ -59,7 +59,7 @@
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Devoluciones.css?v=<?= $cssVersion('public/css/Devoluciones.css') ?>" />
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/Modal-TipoHabitacion.css?v=<?= $cssVersion('public/css/Modal-TipoHabitacion.css') ?>" />
     <link rel="stylesheet" href="https://cdn.datatables.net/2.3.8/css/dataTables.dataTables.css" />
- 
+
 </head>
 
 <body>
